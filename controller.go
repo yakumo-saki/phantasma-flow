@@ -5,28 +5,62 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"path"
 	"syscall"
 
-	"github.com/yakumo-saki/phantasma-flow/dispatcher"
+	"github.com/yakumo-saki/phantasma-flow/controller"
+	"github.com/yakumo-saki/phantasma-flow/repository"
 	"github.com/yakumo-saki/phantasma-flow/util"
 )
+
+// TODO: get path from something
+// ENV or bootstrap parameter
+func getConfigPath() string {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		panic("get homedir fail")
+	}
+
+	return path.Join(home, "phantasma-flow")
+
+}
 
 func main() {
 	log := util.GetLogger()
 
-	signals := make(chan os.Signal, 1)
-	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
+	log.Info().Msg("Starting Phantasma flow version 0.0.0")
 
+	// at first Initialize repository for all configs
+	cfgpath := getConfigPath()
+	err := repository.Initialize(cfgpath)
+	if err != nil {
+		log.Err(err).Msg("Error occured in reading initialize data")
+		return
+	}
+
+	// Start modules
+	shutdownChannel := make(chan string, 1)
+	startServer(shutdownChannel)
+}
+
+func startServer(shutdown chan string) {
+	log := util.GetLogger()
+
+	log.Info().Msg("Starting socket server.")
+
+	// Finally start listening
+	// TODO change port by config
 	psock, err := net.Listen("tcp", ":5000")
 	if err != nil {
 		log.Error().Err(err).Msg("Failed listen tcp.")
 		return
 	}
 
-	allConn := &[]net.Conn{}
-	shutdownChannel := make(chan string, 1)
+	log.Info().Msg("Starting signal handling.")
+	signals := make(chan os.Signal, 1)
+	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
 
-	go awaitListener(shutdownChannel, psock)
+	go awaitListener(shutdown, psock)
 	log.Debug().Msg("TCP Socket start")
 
 	shutdownFlag := false
@@ -37,7 +71,7 @@ func main() {
 			psock.Close()
 			log.Info().Msg("Socket closed.")
 			log.Info().Msg("Awaiting shutdown of other threads.")
-			shutdownChannel <- "SHUTDOWN"
+			shutdown <- "SHUTDOWN"
 			shutdownFlag = true
 			log.Info().Msg("Await done. Shutdown.")
 		default:
@@ -45,10 +79,6 @@ func main() {
 		if shutdownFlag {
 			break
 		}
-	}
-
-	for _, c := range *allConn {
-		c.Close()
 	}
 }
 
@@ -60,7 +90,6 @@ func awaitListener(shutdown <-chan string, psock net.Listener) {
 
 		log.Debug().Msg("Wait for client")
 		conn, err := psock.Accept()
-		log.Debug().Msg("Accepted client")
 		if err != nil {
 			if errors.Is(err, net.ErrClosed) {
 				log.Error().Err(err).Msg("Stop accept because of shutdown")
@@ -73,7 +102,7 @@ func awaitListener(shutdown <-chan string, psock net.Listener) {
 		}
 
 		log.Debug().Msg("Accepted new client")
-		go dispatcher.Dispatch(conn, shutdown)
+		go controller.Dispatch(conn, shutdown)
 
 	}
 }

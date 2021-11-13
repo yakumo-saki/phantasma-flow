@@ -1,0 +1,22 @@
+kind: job
+# meta is updated by ph-flow.
+meta:
+  version:
+    major: 1
+    minor: 0
+  created: 2021-11-13 01:02:03Z
+  created-by: someuser
+name: Test Job
+order: sequential
+steps:
+  - name: step1
+    node: local
+    script: |-
+      echo "`hostname` today is `date`"
+
+  - name: step2
+    node: worker1
+    script: |-
+      echo "`hostname` today is `date`"
+
+    

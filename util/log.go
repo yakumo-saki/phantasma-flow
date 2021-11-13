@@ -18,3 +18,10 @@ func GetLogger() zerolog.Logger {
 		Logger()
 	return log
 }
+
+func Nvl(check string, replaced string) string {
+	if check == "" {
+		return replaced
+	}
+	return check
+}

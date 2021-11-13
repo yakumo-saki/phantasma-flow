@@ -1,0 +1,25 @@
+kind: job-meta
+# meta is updated by ph-flow.
+meta:
+  nextbuild: 3
+results:
+  - build: 1
+    success: true
+    version:
+      major: 1
+      minor: 0
+    results:
+      - stepname: step1
+        success: true
+      - stepname: step2
+        success: true
+  - build: 2
+    success: false
+    version:
+      major: 1
+      minor: 0
+    results:
+      - stepname: step1
+        success: true
+      - stepname: step2
+        success: false

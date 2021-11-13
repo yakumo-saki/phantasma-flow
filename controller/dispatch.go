@@ -1,4 +1,4 @@
-package dispatcher
+package controller
 
 import (
 	"bufio"
@@ -6,7 +6,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/yakumo-saki/phantasma-flow/job"
+	job "github.com/yakumo-saki/phantasma-flow/jobscheduler"
+	"github.com/yakumo-saki/phantasma-flow/logcollecter"
 	"github.com/yakumo-saki/phantasma-flow/util"
 )
 
@@ -26,8 +27,8 @@ func Dispatch(conn net.Conn, shutdownChannel <-chan string) {
 		log.Debug().Str("set-type", lineStr).Msg("Received")
 		if lineStr == "LISTENER" {
 			log.Debug().Msg("Start listener")
-			go job.LogListener(conn, shutdownChannel, stopChannel, logchannel)
-			go job.PseudoLogSender(shutdownChannel, stopChannel, logchannel)
+			go logcollecter.LogListener(conn, shutdownChannel, stopChannel, logchannel)
+			go logcollecter.PseudoLogSender(shutdownChannel, stopChannel, logchannel)
 		} else if lineStr == "COMMANDER" {
 			log.Debug().Msg("Start commander")
 			go job.RequestHandler(conn, shutdownChannel, stopChannel, logchannel)
