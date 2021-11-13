@@ -1,15 +1,13 @@
 package main
 
 import (
-	"errors"
-	"net"
 	"os"
 	"os/signal"
 	"path"
 	"syscall"
 
-	"github.com/yakumo-saki/phantasma-flow/controller"
 	"github.com/yakumo-saki/phantasma-flow/repository"
+	"github.com/yakumo-saki/phantasma-flow/server"
 	"github.com/yakumo-saki/phantasma-flow/util"
 )
 
@@ -34,25 +32,17 @@ func main() {
 	cfgpath := getConfigPath()
 	err := repository.Initialize(cfgpath)
 	if err != nil {
-		log.Err(err).Msg("Error occured in reading initialize data")
+		log.Err(err).Msg("Error occured at reading initialize data")
 		return
 	}
 
 	// Start modules
-	shutdownChannel := make(chan string, 1)
-	startServer(shutdownChannel)
-}
+	globalCh := make(chan string, 1)
 
-func startServer(shutdown chan string) {
-	log := util.GetLogger()
-
-	log.Info().Msg("Starting socket server.")
-
-	// Finally start listening
-	// TODO change port by config
-	psock, err := net.Listen("tcp", ":5000")
+	server.Initialize(globalCh)
+	err = server.Start()
 	if err != nil {
-		log.Error().Err(err).Msg("Failed listen tcp.")
+		log.Err(err).Msg("Error occured at starting server")
 		return
 	}
 
@@ -60,49 +50,20 @@ func startServer(shutdown chan string) {
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
 
-	go awaitListener(shutdown, psock)
-	log.Debug().Msg("TCP Socket start")
-
 	shutdownFlag := false
 	for {
 		select {
 		case sig := <-signals:
 			log.Info().Str("signal", sig.String()).Msg("Got stop signal")
-			psock.Close()
-			log.Info().Msg("Socket closed.")
+			globalCh <- "SHUTDOWN"
 			log.Info().Msg("Awaiting shutdown of other threads.")
-			shutdown <- "SHUTDOWN"
 			shutdownFlag = true
 			log.Info().Msg("Await done. Shutdown.")
 		default:
 		}
+
 		if shutdownFlag {
 			break
 		}
-	}
-}
-
-func awaitListener(shutdown <-chan string, psock net.Listener) {
-	log := util.GetLogger()
-	log.With().Str("module", "awaitListener")
-	log.Info().Msg("Start Listener")
-	for {
-
-		log.Debug().Msg("Wait for client")
-		conn, err := psock.Accept()
-		if err != nil {
-			if errors.Is(err, net.ErrClosed) {
-				log.Error().Err(err).Msg("Stop accept because of shutdown")
-				return
-			} else {
-				// Only network error. dont shutdown server
-				log.Error().Err(err).Msg("Accept failed. continue")
-				continue
-			}
-		}
-
-		log.Debug().Msg("Accepted new client")
-		go controller.Dispatch(conn, shutdown)
-
 	}
 }

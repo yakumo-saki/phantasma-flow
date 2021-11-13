@@ -1,63 +1,58 @@
 package jobscheduler
 
 import (
-	"bufio"
-	"net"
-	"strings"
-	"time"
+	"github.com/rs/zerolog/log"
+	"github.com/yakumo-saki/phantasma-flow/repository"
+	"github.com/yakumo-saki/phantasma-flow/util"
 )
 
-type JobInterface interface {
-	run() string
-}
-type Job struct{ param string }
-type SmallJob struct{ Job }
-type LargeJob struct{ Job }
-type InvalidJob struct{ Job }
-
-func (job SmallJob) run() string {
-	time.Sleep(1 * time.Second)
-	return "Completed in 1 second with param = " + job.param
+type jobScheduler struct {
+	globalCh chan string
+	stopCh   <-chan string
 }
 
-func (job LargeJob) run() string {
-	time.Sleep(5 * time.Second)
-	return "Completed in 5 second with param = " + job.param
+var scheduler jobScheduler
+
+func (js *jobScheduler) RequestHandler() {
+	log := util.GetLogger()
+	log.Debug().Msg("JobScheduler start")
 }
 
-func (job InvalidJob) run() string {
-	return "Invalid command is specified"
-}
-
-func job_runner(job JobInterface, stop <-chan string, out chan string) {
-	out <- job.run() + "\n"
-}
-
-func job_factory(input string) JobInterface {
-	array := strings.Split(input, " ")
-	if len(array) >= 2 {
-		command := array[0]
-		param := array[1]
-
-		if command == "SMALL" {
-			return SmallJob{Job{param}}
-		} else if command == "LARGE" {
-			return LargeJob{Job{param}}
-		}
-	}
-	return InvalidJob{Job{""}}
-}
-
-func RequestHandler(conn net.Conn, shutdown <-chan string, stop <-chan string, out chan string) {
-	// defer close(stop)
+func (js *jobScheduler) Loop() {
+	stopFlag := false
 
 	for {
-		line, err := bufio.NewReader(conn).ReadBytes('\n')
-		if err != nil {
-			return
+		select {
+		case v := <-js.stopCh:
+			log.Info().Msgf("STOP signal received %s", v)
+			stopFlag = true
+		case v := <-js.globalCh:
+			log.Info().Msgf("SHUTDOWN signal received %s", v)
+			stopFlag = true
+		default:
 		}
 
-		job := job_factory(strings.TrimRight(string(line), "\n"))
-		go job_runner(job, stop, out)
+		if stopFlag {
+			break
+		}
 	}
+	log.Info().Msg("JobScheduler stopped")
+}
+
+func (js *jobScheduler) Start() {
+	log := util.GetLogger()
+
+	log.Info().Msg("Starting JobScheduler.")
+	go js.Loop()
+	log.Info().Msg("Started JobScheduler.")
+}
+
+func Initialize() {
+	repository.GetConfig()
+
+}
+
+func Start(globalCh chan string, stop <-chan string, out chan string) {
+	scheduler.globalCh = globalCh
+	scheduler.stopCh = stop
 }
