@@ -6,6 +6,7 @@ import (
 	"path"
 	"syscall"
 
+	"github.com/yakumo-saki/phantasma-flow/procman"
 	"github.com/yakumo-saki/phantasma-flow/repository"
 	"github.com/yakumo-saki/phantasma-flow/server"
 	"github.com/yakumo-saki/phantasma-flow/util"
@@ -37,9 +38,15 @@ func main() {
 	}
 
 	// Start modules
-	globalCh := make(chan string, 1)
 
-	server.Initialize(globalCh)
+	globalCh := make(chan string, 1)
+	procman := procman.NewProcessManager(globalCh)
+	ch, ok := procman.Subscribe("server")
+	if !ok {
+		panic("Duplicate name of processManager")
+	}
+
+	server.Initialize(ch)
 	err = server.Start()
 	if err != nil {
 		log.Err(err).Msg("Error occured at starting server")
@@ -54,11 +61,10 @@ func main() {
 	for {
 		select {
 		case sig := <-signals:
-			log.Info().Str("signal", sig.String()).Msg("Got stop signal")
-			globalCh <- "SHUTDOWN"
-			log.Info().Msg("Awaiting shutdown of other threads.")
+			log.Info().Str("signal", sig.String()).Msg("Got signal")
+			r := procman.Shutdown()
 			shutdownFlag = true
-			log.Info().Msg("Await done. Shutdown.")
+			log.Info().Str("result", r).Msg("Threads shutdown done.")
 		default:
 		}
 
