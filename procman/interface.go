@@ -1,6 +1,14 @@
 package procman
 
+type ProcmanModuleStruct struct {
+	ProcmanCh    chan string
+	ShutdownFlag bool
+	Name         string // Recommended for debug
+	Initialized  bool
+}
+
 type ProcmanModule interface {
+	IsInitialized() bool
 	Initialize(chan string) error
 	Start() error
 	Shutdown()

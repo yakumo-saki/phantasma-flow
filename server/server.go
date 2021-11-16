@@ -14,14 +14,16 @@ import (
 )
 
 type Server struct {
-	procmanCh    chan string
-	shutdownFlag bool
-	listener     net.Listener
-	Name         string
+	procman.ProcmanModuleStruct
+	listener net.Listener
+}
+
+func (sv *Server) IsInitialized() bool {
+	return sv.Initialized
 }
 
 func (sv *Server) Initialize(procmanCh chan string) error {
-	sv.procmanCh = procmanCh
+	sv.ProcmanCh = procmanCh
 	sv.Name = "server"
 	return nil
 }
@@ -46,7 +48,7 @@ func (sv *Server) Start() error {
 	log := util.GetLogger()
 
 	log.Info().Msg("Starting socket server.")
-	sv.shutdownFlag = false
+	sv.ShutdownFlag = false
 
 	err := sv.startListen()
 	if err != nil {
@@ -59,16 +61,16 @@ func (sv *Server) Start() error {
 
 	for {
 		select {
-		case v := <-sv.procmanCh:
+		case v := <-sv.ProcmanCh:
 			log.Debug().Msgf("Got request from procman %s", v)
 		default:
 		}
 
-		if sv.shutdownFlag {
+		if sv.ShutdownFlag {
 			break
 		}
 
-		time.Sleep(1 * time.Second)
+		time.Sleep(procman.MAIN_LOOP_WAIT)
 	}
 
 	sv.listener.Close()
@@ -78,7 +80,7 @@ func (sv *Server) Start() error {
 
 func (sv *Server) Shutdown() {
 	log := util.GetLogger()
-	sv.shutdownFlag = true
+	sv.ShutdownFlag = true
 	log.Info().Msg("Shutdown initiated")
 }
 
@@ -104,7 +106,7 @@ func (sv *Server) awaitListener() {
 			}
 		}
 
-		if sv.shutdownFlag {
+		if sv.ShutdownFlag {
 			break
 		}
 
@@ -113,7 +115,7 @@ func (sv *Server) awaitListener() {
 
 	}
 
-	sv.procmanCh <- procman.RES_SHUTDOWN_DONE
+	sv.ProcmanCh <- procman.RES_SHUTDOWN_DONE
 	log.Info().Msg("Socket server stopped.")
 }
 

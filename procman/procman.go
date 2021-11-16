@@ -1,6 +1,7 @@
 package procman
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/yakumo-saki/phantasma-flow/util"
@@ -20,7 +21,11 @@ type ProcessManager struct {
 	shutdownFlag   bool // shutdown initiated flag of Procmanager
 }
 
+const MAIN_LOOP_WAIT = 500 * time.Millisecond
+
 const MSG_SHUTDOWN_COMPLETE = "SHUTDOWN COMPLETE"
+const TYPE_MOD = "modules"
+const TYPE_SVC = "services"
 
 func (p *ProcessManager) Add(module ProcmanModule) bool {
 	return p.AddImpl("Module", p.modules, module)
@@ -33,29 +38,43 @@ func (p *ProcessManager) AddService(module ProcmanModule) bool {
 func (p *ProcessManager) AddImpl(typeName string, modmap map[string]*process, module ProcmanModule) bool {
 	log := util.GetLogger()
 
+	channel := make(chan string, 1)
+
+	if !module.IsInitialized() {
+		module.Initialize(channel)
+	}
+
 	name := module.GetName()
+	if name == "" {
+		msg := fmt.Sprintf("[%s] empty name is not allowed", typeName)
+		panic(msg)
+	}
 	if _, ok := p.modules[name]; ok {
 		log.Error().Msgf("[%s] name %s is already subscribed.", typeName, name)
 		return false
 	}
 
-	proc := process{channel: make(chan string, 1), module: module}
-
+	proc := process{channel: channel, module: module}
 	modmap[name] = &proc
+
+	log.Debug().Msgf("[%s] %s is added.", typeName, name)
 	return true
 }
 
 func (p *ProcessManager) Start() {
+	log := util.GetLogger()
 	for _, proc := range p.serviceModules {
 		proc.module.Initialize(proc.channel)
-		proc.module.Start()
+		go proc.module.Start()
 		proc.started = true
+		log.Debug().Msgf("[%s] %s is started.", TYPE_SVC, proc.module.GetName())
 	}
 
 	for _, proc := range p.modules {
 		proc.module.Initialize(proc.channel)
-		proc.module.Start()
+		go proc.module.Start()
 		proc.started = true
+		log.Debug().Msgf("[%s] %s is started.", TYPE_MOD, proc.module.GetName())
 	}
 
 }
@@ -65,7 +84,7 @@ func (p *ProcessManager) Shutdown() (string, string) {
 
 	reason1 := p.shutdownImpl("modules", p.modules)
 
-	//todo
+	// todo allow timeout?
 
 	reason2 := p.shutdownImpl("services", p.serviceModules)
 

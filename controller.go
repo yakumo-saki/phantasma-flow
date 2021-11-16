@@ -7,6 +7,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/yakumo-saki/phantasma-flow/logcollecter"
 	"github.com/yakumo-saki/phantasma-flow/procman"
 	"github.com/yakumo-saki/phantasma-flow/repository"
 	"github.com/yakumo-saki/phantasma-flow/server"
@@ -39,12 +40,14 @@ func main() {
 	}
 
 	// Start modules
-	procmanCh := make(chan string, 1) // controller to procman. signal only
-	procman := procman.NewProcessManager(procmanCh)
+	procmanCh := make(chan string, 1) // controller to pman. signal only
+	pman := procman.NewProcessManager(procmanCh)
 
-	procman.AddService(&server.Server{})
+	pman.Add(&procman.MinimalProcmanModule{})
+	pman.AddService(&server.Server{})
+	pman.AddService(&logcollecter.LogListenerModule{})
 
-	go procman.Start()
+	go pman.Start()
 
 	log.Info().Msg("Starting signal handling.")
 	signals := make(chan os.Signal, 1)
@@ -66,12 +69,12 @@ func main() {
 		select {
 		case sig := <-signals:
 			log.Info().Str("signal", sig.String()).Msg("Got signal")
-			r1, r2 := procman.Shutdown()
+			r1, r2 := pman.Shutdown()
 			shutdownFlag = true
 			log.Info().Str("modules", r1).Str("services", r2).Msg("Threads shutdown done.")
 		case <-debugCh:
 			log.Warn().Msg("Debug shutdown start.")
-			r1, r2 := procman.Shutdown()
+			r1, r2 := pman.Shutdown()
 			shutdownFlag = true
 			log.Info().Str("modules", r1).Str("services", r2).Msg("Threads shutdown done.")
 		default:
