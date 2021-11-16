@@ -9,18 +9,26 @@ import (
 
 	"github.com/rs/zerolog/log"
 	"github.com/yakumo-saki/phantasma-flow/logcollecter"
+	"github.com/yakumo-saki/phantasma-flow/procman"
 	"github.com/yakumo-saki/phantasma-flow/util"
 )
 
-type server struct {
-	globalCh     chan string
+type Server struct {
+	procmanCh    chan string
 	shutdownFlag bool
 	listener     net.Listener
 }
 
-var srv server
+func (sv *Server) Initialize(procmanCh chan string) error {
+	sv.procmanCh = procmanCh
+	return nil
+}
 
-func (sv *server) startListen() error {
+func (sv *Server) GetName() string {
+	return "server"
+}
+
+func (sv *Server) startListen() error {
 	// Finally start listening
 	// TODO change port by config
 	psock, err := net.Listen("tcp", ":5000")
@@ -32,45 +40,61 @@ func (sv *server) startListen() error {
 	return nil
 }
 
-func (sv *server) start() {
+func (sv *Server) Start() error {
 	log := util.GetLogger()
 
 	log.Info().Msg("Starting socket server.")
 	sv.shutdownFlag = false
 
-	go sv.awaitListener(sv.globalCh)
+	err := sv.startListen()
+	if err != nil {
+		return err
+	}
 	log.Debug().Msg("TCP Socket start")
 
+	go sv.awaitListener()
 	log.Info().Msg("Socket server started.")
 
 	for {
 		select {
-		case v := <-sv.globalCh:
-			log.Info().Msgf("Got shutdown message %s", v)
-			sv.listener.Close()
-			log.Info().Msg("Socket closed.")
-			sv.shutdownFlag = true
+		case v := <-sv.procmanCh:
+			log.Debug().Msgf("Got request from procman %s", v)
 		default:
 		}
+
 		if sv.shutdownFlag {
 			break
 		}
+
+		time.Sleep(1 * time.Second)
 	}
-	log.Info().Msg("Socket server stopped.")
+
+	sv.listener.Close()
+	log.Debug().Msg("Main thread exited.")
+	return nil
 }
 
-func (sv *server) awaitListener(globalCh <-chan string) {
+func (sv *Server) Shutdown() {
+	log := util.GetLogger()
+	sv.shutdownFlag = true
+	log.Info().Msg("Shutdown initiated")
+}
+
+// Socket handling thread
+func (sv *Server) awaitListener() {
 	log := util.GetLogger()
 	log.With().Str("module", "awaitListener")
 	log.Info().Msg("Start Listener")
-	for {
 
+	for {
 		log.Debug().Msg("Wait for client")
+
+		// Accept() block execution.
+		// continue when new client accepted or listener is closed (=shutdown)
 		conn, err := sv.listener.Accept()
 		if err != nil {
 			if errors.Is(err, net.ErrClosed) {
 				log.Error().Err(err).Msg("Stop accept because of shutdown")
-				return
 			} else {
 				// Only network error. dont shutdown server
 				log.Error().Err(err).Msg("Accept failed. continue")
@@ -78,13 +102,22 @@ func (sv *server) awaitListener(globalCh <-chan string) {
 			}
 		}
 
+		if sv.shutdownFlag {
+			break
+		}
+
 		log.Debug().Msg("Accepted new client")
-		go sv.dispatch(conn, globalCh)
+		go sv.dispatch(conn)
 
 	}
+
+	sv.procmanCh <- procman.RES_SHUTDOWN_DONE
+	log.Info().Msg("Socket server stopped.")
 }
 
-func (sv *server) dispatch(conn net.Conn, shutdownChannel <-chan string) {
+// Connected socket handling thread
+// move to module
+func (sv *Server) dispatch(conn net.Conn) {
 	log := util.GetLogger()
 
 	log.Debug().Msg("request_dispatcher")
@@ -100,8 +133,8 @@ func (sv *server) dispatch(conn net.Conn, shutdownChannel <-chan string) {
 		log.Debug().Str("set-type", lineStr).Msg("Received")
 		if lineStr == "LISTENER" {
 			log.Debug().Msg("Start listener")
-			go logcollecter.LogListener(conn, shutdownChannel, stopChannel, logchannel)
-			go logcollecter.PseudoLogSender(shutdownChannel, stopChannel, logchannel)
+			go logcollecter.LogListener(conn, nil, stopChannel, logchannel)
+			go logcollecter.PseudoLogSender(nil, stopChannel, logchannel)
 		} else if lineStr == "COMMANDER" {
 			log.Debug().Msg("Start commander")
 			// go job.RequestHandler(conn, shutdownChannel, stopChannel, logchannel)
@@ -114,18 +147,4 @@ func (sv *server) dispatch(conn net.Conn, shutdownChannel <-chan string) {
 			break
 		}
 	}
-}
-
-func Initialize(globalChannel chan string) error {
-	srv.globalCh = globalChannel
-	return nil
-}
-
-func Start() error {
-	err := srv.startListen()
-	if err != nil {
-		return err
-	}
-	go srv.start()
-	return nil
 }

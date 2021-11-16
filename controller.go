@@ -5,6 +5,7 @@ import (
 	"os/signal"
 	"path"
 	"syscall"
+	"time"
 
 	"github.com/yakumo-saki/phantasma-flow/procman"
 	"github.com/yakumo-saki/phantasma-flow/repository"
@@ -38,33 +39,41 @@ func main() {
 	}
 
 	// Start modules
+	procmanCh := make(chan string, 1) // controller to procman. signal only
+	procman := procman.NewProcessManager(procmanCh)
 
-	globalCh := make(chan string, 1)
-	procman := procman.NewProcessManager(globalCh)
-	ch, ok := procman.Subscribe("server")
-	if !ok {
-		panic("Duplicate name of processManager")
-	}
+	procman.AddService(&server.Server{})
 
-	server.Initialize(ch)
-	err = server.Start()
-	if err != nil {
-		log.Err(err).Msg("Error occured at starting server")
-		return
-	}
+	go procman.Start()
 
 	log.Info().Msg("Starting signal handling.")
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
+
+	// for debug
+	debugCh := make(chan string, 1)
+	go func() {
+		log := util.GetLogger()
+		for i := 0; i < 5; i++ {
+			time.Sleep(1 * time.Second)
+			log.Debug().Msgf("Wait for timeout %d", i)
+		}
+		debugCh <- "SHUTDOWN"
+	}()
 
 	shutdownFlag := false
 	for {
 		select {
 		case sig := <-signals:
 			log.Info().Str("signal", sig.String()).Msg("Got signal")
-			r := procman.Shutdown()
+			r1, r2 := procman.Shutdown()
 			shutdownFlag = true
-			log.Info().Str("result", r).Msg("Threads shutdown done.")
+			log.Info().Str("modules", r1).Str("services", r2).Msg("Threads shutdown done.")
+		case <-debugCh:
+			log.Warn().Msg("Debug shutdown start.")
+			r1, r2 := procman.Shutdown()
+			shutdownFlag = true
+			log.Info().Str("modules", r1).Str("services", r2).Msg("Threads shutdown done.")
 		default:
 		}
 

@@ -1,5 +1,8 @@
 build/
 
+#
+__debug_bin
+
 # Binaries for programs and plugins
 *.exe
 *.exe~
