@@ -17,15 +17,17 @@ type Server struct {
 	procmanCh    chan string
 	shutdownFlag bool
 	listener     net.Listener
+	Name         string
 }
 
 func (sv *Server) Initialize(procmanCh chan string) error {
 	sv.procmanCh = procmanCh
+	sv.Name = "server"
 	return nil
 }
 
 func (sv *Server) GetName() string {
-	return "server"
+	return sv.Name
 }
 
 func (sv *Server) startListen() error {

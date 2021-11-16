@@ -14,8 +14,8 @@ type process struct {
 }
 
 type ProcessManager struct {
-	modules        map[string]process // start last, shutdown first
-	serviceModules map[string]process // start first, shutdown last
+	modules        map[string]*process // start last, shutdown first
+	serviceModules map[string]*process // start first, shutdown last
 	inChannel      chan string
 	shutdownFlag   bool // shutdown initiated flag of Procmanager
 }
@@ -30,7 +30,7 @@ func (p *ProcessManager) AddService(module ProcmanModule) bool {
 	return p.AddImpl("Service", p.serviceModules, module)
 }
 
-func (p *ProcessManager) AddImpl(typeName string, modmap map[string]process, module ProcmanModule) bool {
+func (p *ProcessManager) AddImpl(typeName string, modmap map[string]*process, module ProcmanModule) bool {
 	log := util.GetLogger()
 
 	name := module.GetName()
@@ -41,7 +41,7 @@ func (p *ProcessManager) AddImpl(typeName string, modmap map[string]process, mod
 
 	proc := process{channel: make(chan string, 1), module: module}
 
-	modmap[name] = proc
+	modmap[name] = &proc
 	return true
 }
 
@@ -74,21 +74,21 @@ func (p *ProcessManager) Shutdown() (string, string) {
 	return reason1, reason2
 }
 
-func (p *ProcessManager) shutdownImpl(typeName string, modmap map[string]process) string {
+func (p *ProcessManager) shutdownImpl(typeName string, modmap map[string]*process) string {
 	log := util.GetLogger()
 
 	var reason string
 
 	if len(modmap) == 0 {
 		log.Debug().Msgf("[%s] Has no modules.", typeName)
-		return RES_SHUTDOWN_DONE
+		return MSG_SHUTDOWN_COMPLETE
 	}
 
 	timeoutCh := make(chan string, 1)
 	go func() {
 		time.Sleep(10 * time.Second)
-		log.Debug().Msgf("[%s] Shutdown timeout reached", typeName)
 		timeoutCh <- "TIMEOUT"
+		log.Debug().Msgf("[%s] Shutdown timeout reached", typeName)
 	}()
 
 	for k, proc := range modmap {
@@ -121,14 +121,16 @@ func (p *ProcessManager) shutdownImpl(typeName string, modmap map[string]process
 		}
 
 		if stop {
-			log.Debug().Msgf("Stop for %s", reason)
+			log.Debug().Msgf("[%s] Stopped cause: %s", typeName, reason)
 			break
 		}
+
+		time.Sleep(100 * time.Millisecond)
 	}
 	return reason
 }
 
-func (p *ProcessManager) isShutdownComplete(modmap map[string]process) bool {
+func (p *ProcessManager) isShutdownComplete(modmap map[string]*process) bool {
 	for _, proc := range modmap {
 		if !proc.shutdown {
 			return false
@@ -137,7 +139,7 @@ func (p *ProcessManager) isShutdownComplete(modmap map[string]process) bool {
 	return true
 }
 
-func (p *ProcessManager) outputTimeoutLog(typeName string, modmap map[string]process) {
+func (p *ProcessManager) outputTimeoutLog(typeName string, modmap map[string]*process) {
 	log := util.GetLogger()
 
 	for name, proc := range modmap {
@@ -153,8 +155,8 @@ func NewProcessManager(channel chan string) ProcessManager {
 	var p ProcessManager
 	p.inChannel = channel
 	p.shutdownFlag = false
-	p.modules = make(map[string]process, 10)
-	p.serviceModules = make(map[string]process, 10)
+	p.modules = make(map[string]*process, 10)
+	p.serviceModules = make(map[string]*process, 10)
 
 	return p
 }
