@@ -9,6 +9,7 @@ import (
 
 	"github.com/yakumo-saki/phantasma-flow/logcollecter"
 	"github.com/yakumo-saki/phantasma-flow/procman"
+	"github.com/yakumo-saki/phantasma-flow/procmanExample"
 	"github.com/yakumo-saki/phantasma-flow/repository"
 	"github.com/yakumo-saki/phantasma-flow/server"
 	"github.com/yakumo-saki/phantasma-flow/util"
@@ -40,14 +41,14 @@ func main() {
 	}
 
 	// Start modules
-	procmanCh := make(chan string, 1) // controller to pman. signal only
-	pman := procman.NewProcessManager(procmanCh)
+	procmanCh := make(chan string, 1) // controller to processManager. signal only
+	processManager := procman.NewProcessManager(procmanCh)
 
-	pman.Add(&procman.MinimalProcmanModule{})
-	pman.AddService(&server.Server{})
-	pman.AddService(&logcollecter.LogListenerModule{})
+	processManager.Add(&procmanExample.MinimalProcmanModule{})
+	processManager.AddService(&server.Server{})
+	processManager.AddService(&logcollecter.LogListenerModule{})
 
-	go pman.Start()
+	go processManager.Start()
 
 	log.Info().Msg("Starting signal handling.")
 	signals := make(chan os.Signal, 1)
@@ -57,7 +58,7 @@ func main() {
 	debugCh := make(chan string, 1)
 	go func() {
 		log := util.GetLogger()
-		for i := 0; i < 5; i++ {
+		for i := 0; i < 3; i++ {
 			time.Sleep(1 * time.Second)
 			log.Debug().Msgf("Wait for timeout %d", i)
 		}
@@ -69,12 +70,12 @@ func main() {
 		select {
 		case sig := <-signals:
 			log.Info().Str("signal", sig.String()).Msg("Got signal")
-			r1, r2 := pman.Shutdown()
+			r1, r2 := processManager.Shutdown()
 			shutdownFlag = true
 			log.Info().Str("modules", r1).Str("services", r2).Msg("Threads shutdown done.")
 		case <-debugCh:
 			log.Warn().Msg("Debug shutdown start.")
-			r1, r2 := pman.Shutdown()
+			r1, r2 := processManager.Shutdown()
 			shutdownFlag = true
 			log.Info().Str("modules", r1).Str("services", r2).Msg("Threads shutdown done.")
 		default:
@@ -83,5 +84,7 @@ func main() {
 		if shutdownFlag {
 			break
 		}
+
+		time.Sleep(procman.MAIN_LOOP_WAIT)
 	}
 }
