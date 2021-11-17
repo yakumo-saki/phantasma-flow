@@ -2,10 +2,20 @@
 
 SCRIPT_DIR=$(cd $(dirname $0); pwd)
 
-VERSION=` cat ./global/version.go | grep -o "Version.*\".*\"" | sed -e 's/.*=\s//g' -e 's/"//g'`
+VERSION=`cat ${SCRIPT_DIR}/global/version.go | grep -o "Version.*\".*\"" | sed -e 's/.*=\s//g' -e 's/"//g'`
+COMMIT=`git log -n 1 --pretty=format:"%H" | cut -c 1-7`
 
-BIN_BASENAME=zabbix-getter
-ENTRYPOINT=zabbix-getter.go
+# worktree is dirty? rc = 1 means dirty
+set +e
+git diff --quiet --exit-code
+ISDIRTY=$?
+set -e
+if [ $ISDIRTY -eq 1 ]; then
+  COMMIT="$COMMIT-Working"
+fi
+
+BIN_BASENAME=phantasma-flow
+ENTRYPOINT=phantasma-flow.go
 
 BUILD_DIR=./build
 BIN_DIR=${SCRIPT_DIR}/${BUILD_DIR}/bin
@@ -43,14 +53,21 @@ function build_unixlike () {
     echo "done => ${FINAL_PATH}"
 }
 
+####################################################################
+# preprocess
+####################################################################
+sed -i ${SCRIPT_DIR}/global/commit.go -e "s/\".*\"/\"${COMMIT}\"/g"
+
+####################################################################
+# build
+####################################################################
+
 # Windows
-echo Building Windows binary
-GOOS=windows GOARCH=386 go build -o ${BIN_DIR}/${BIN_BASENAME}.exe ${ENTRYPOINT}
-zip ${RELEASE_DIR}/${BIN_BASENAME}_${VERSION}_win32.zip ${BIN_DIR}/${BIN_BASENAME}.exe
+# echo Building Windows binary
+# GOOS=windows GOARCH=386 go build -o ${BIN_DIR}/${BIN_BASENAME}.exe ${ENTRYPOINT}
+# zip ${RELEASE_DIR}/${BIN_BASENAME}_${VERSION}_win32.zip ${BIN_DIR}/${BIN_BASENAME}.exe
 
 # Unixlike
 build_unixlike linux amd64
-build_unixlike linux arm
-build_unixlike linux arm64
-build_unixlike darwin amd64
-build_unixlike darwin arm64
+#build_unixlike linux arm
+#build_unixlike linux arm64

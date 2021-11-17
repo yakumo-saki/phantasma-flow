@@ -7,6 +7,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/yakumo-saki/phantasma-flow/global"
 	"github.com/yakumo-saki/phantasma-flow/jobscheduler"
 	"github.com/yakumo-saki/phantasma-flow/logcollecter"
 	"github.com/yakumo-saki/phantasma-flow/procman"
@@ -31,7 +32,8 @@ func getConfigPath() string {
 func main() {
 	log := util.GetLogger()
 
-	log.Info().Msg("Starting Phantasma flow version 0.0.0")
+	log.Info().Msgf("Starting Phantasma flow version %s (commit %s) %s",
+		global.VERSION, global.COMMIT, global.URL)
 
 	// at first Initialize repository for all configs
 	cfgpath := getConfigPath()

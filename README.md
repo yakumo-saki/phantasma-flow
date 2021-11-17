@@ -30,3 +30,8 @@ Work in progress... (maybe WIP forever)
 * yamlファイルの在処だけは何らかの方法で指定してもらう必要がある
 * phctl コマンドを作って通信できるようにする
 * phctlの認証はなにかの証明書的なキーで行う（サーバー側ダイジェストに一致するなにか）
+
+## 関連リポジトリ
+
+* github.com/yakumosaki/phantasma-flow-cli  ... phantasma-flow CLI
+* github.com/yakumosaki/phantasma-flow-web  ... phantasma-flow Web GUI using CLI
