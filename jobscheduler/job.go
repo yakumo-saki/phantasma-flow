@@ -1,58 +1,74 @@
 package jobscheduler
 
 import (
-	"github.com/rs/zerolog/log"
-	"github.com/yakumo-saki/phantasma-flow/repository"
+	"time"
+
+	"github.com/yakumo-saki/phantasma-flow/procman"
 	"github.com/yakumo-saki/phantasma-flow/util"
 )
 
-type jobScheduler struct {
-	globalCh chan string
-	stopCh   <-chan string
+type JobScheduler struct {
+	procman.ProcmanModuleStruct
 }
 
-var scheduler jobScheduler
+func (m *JobScheduler) IsInitialized() bool {
+	return m.Initialized
+}
 
-func (js *jobScheduler) RequestHandler() {
+func (m *JobScheduler) Initialize(procmanCh chan string) error {
+	// used for procman <-> module communication
+	// procman -> PAUSE(prepare for backup) is considered
+	m.ProcmanCh = procmanCh
+	m.Name = "JobScheduler"
+	m.Initialized = true
+	return nil
+}
+
+func (m *JobScheduler) GetName() string {
+	// Name of module. must be unique.
+	// return fix value indicates this module must be singleton.
+	// add secondary instance of this module can cause panic by procman.Add
+	return m.Name
+}
+
+func (js *JobScheduler) Start() error {
 	log := util.GetLogger()
-	log.Debug().Msg("JobScheduler start")
-}
 
-func (js *jobScheduler) Loop() {
-	stopFlag := false
+	log.Info().Msgf("Starting %s server.", js.GetName())
+	js.ShutdownFlag = false
 
 	for {
 		select {
-		case v := <-js.stopCh:
-			log.Info().Msgf("STOP signal received %s", v)
-			stopFlag = true
-		case v := <-js.globalCh:
-			log.Info().Msgf("SHUTDOWN signal received %s", v)
-			stopFlag = true
+		case v := <-js.ProcmanCh:
+			log.Debug().Msgf("Got request %s", v)
 		default:
 		}
 
-		if stopFlag {
+		// todo Job Submitting
+
+		if js.ShutdownFlag {
 			break
 		}
+
+		time.Sleep(procman.MAIN_LOOP_WAIT)
 	}
-	log.Info().Msg("JobScheduler stopped")
+
+	log.Info().Msgf("%s Stopped.", js.GetName())
+	js.ProcmanCh <- procman.RES_SHUTDOWN_DONE
+	return nil
 }
 
-func (js *jobScheduler) Start() {
+func (sv *JobScheduler) Shutdown() {
+	// When shutdown initiated, procman calls this function.
+	// All modules must send SHUTDOWN_DONE to procman before timeout.
+	// Otherwise procman is not stop or force shutdown.
+
 	log := util.GetLogger()
-
-	log.Info().Msg("Starting JobScheduler.")
-	go js.Loop()
-	log.Info().Msg("Started JobScheduler.")
+	log.Info().Msg("Shutdown initiated")
+	sv.ShutdownFlag = true
 }
 
-func Initialize() {
-	repository.GetConfig()
-
-}
-
-func Start(globalCh chan string, stop <-chan string, out chan string) {
-	scheduler.globalCh = globalCh
-	scheduler.stopCh = stop
+func (js *JobScheduler) RequestHandler() {
+	log := util.GetLogger()
+	log.Debug().Msg("JobScheduler start")
 }

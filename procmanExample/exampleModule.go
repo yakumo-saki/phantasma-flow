@@ -20,6 +20,9 @@ func (m *MinimalProcmanModule) IsInitialized() bool {
 	return m.initialized
 }
 
+// initialize this instance.
+// Between Initialize and Start, no shutdown is called when error occures.
+// so, dont initialize something needs shutdown sequence.
 func (m *MinimalProcmanModule) Initialize(procmanCh chan string) error {
 	// used for procman <-> module communication
 	// procman -> PAUSE(prepare for backup) is considered

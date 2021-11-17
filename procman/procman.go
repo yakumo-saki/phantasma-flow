@@ -21,18 +21,24 @@ type ProcessManager struct {
 	shutdownFlag   bool // shutdown initiated flag of Procmanager
 }
 
-const MAIN_LOOP_WAIT = 500 * time.Millisecond
+const MAIN_LOOP_WAIT = 1000 * time.Millisecond // Recommended wait for message loop
 
 const MSG_SHUTDOWN_COMPLETE = "SHUTDOWN COMPLETE"
 const TYPE_MOD = "modules"
 const TYPE_SVC = "services"
 
-func (p *ProcessManager) Add(module ProcmanModule) bool {
-	return p.AddImpl("Module", p.modules, module)
+func (p *ProcessManager) Add(module ProcmanModule) {
+	success := p.AddImpl("Module", p.modules, module)
+	if !success {
+		panic("Add failed. name=" + module.GetName())
+	}
 }
 
-func (p *ProcessManager) AddService(module ProcmanModule) bool {
-	return p.AddImpl("Service", p.serviceModules, module)
+func (p *ProcessManager) AddService(module ProcmanModule) {
+	success := p.AddImpl("Service", p.serviceModules, module)
+	if !success {
+		panic("AddService failed. name=" + module.GetName())
+	}
 }
 
 func (p *ProcessManager) AddImpl(typeName string, modmap map[string]*process, module ProcmanModule) bool {
@@ -49,8 +55,10 @@ func (p *ProcessManager) AddImpl(typeName string, modmap map[string]*process, mo
 		msg := fmt.Sprintf("[%s] empty name is not allowed", typeName)
 		panic(msg)
 	}
-	if _, ok := p.modules[name]; ok {
-		log.Error().Msgf("[%s] name %s is already subscribed.", typeName, name)
+
+	_, ok := modmap[name]
+	if ok {
+		log.Error().Msgf("[%s] name %s is already registered.", typeName, name)
 		return false
 	}
 

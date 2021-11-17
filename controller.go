@@ -7,6 +7,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/yakumo-saki/phantasma-flow/jobscheduler"
 	"github.com/yakumo-saki/phantasma-flow/logcollecter"
 	"github.com/yakumo-saki/phantasma-flow/procman"
 	"github.com/yakumo-saki/phantasma-flow/procmanExample"
@@ -47,6 +48,7 @@ func main() {
 	processManager.Add(&procmanExample.MinimalProcmanModule{})
 	processManager.AddService(&server.Server{})
 	processManager.AddService(&logcollecter.LogListenerModule{})
+	processManager.AddService(&jobscheduler.JobScheduler{})
 
 	go processManager.Start()
 
