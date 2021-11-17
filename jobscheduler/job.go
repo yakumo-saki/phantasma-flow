@@ -25,22 +25,24 @@ func (m *JobScheduler) GetName() string {
 	return m.Name
 }
 
-func (js *JobScheduler) Start(procmanCh chan string) error {
-	js.ProcmanCh = procmanCh
+func (js *JobScheduler) Start(inCh <-chan string, outCh chan<- string) error {
+	js.FromProcmanCh = inCh
+	js.ToProcmanCh = outCh
 	log := util.GetLogger()
 
 	log.Info().Msgf("Starting %s server.", js.GetName())
 	js.ShutdownFlag = false
 
+	js.ToProcmanCh <- procman.RES_STARTUP_DONE
+
 	for {
 		select {
-		case v := <-js.ProcmanCh:
+		case v := <-js.FromProcmanCh:
 			log.Debug().Msgf("Got request %s", v)
 		default:
 		}
 
 		// todo Job Submitting
-
 		if js.ShutdownFlag {
 			break
 		}
@@ -49,7 +51,7 @@ func (js *JobScheduler) Start(procmanCh chan string) error {
 	}
 
 	log.Info().Msgf("%s Stopped.", js.GetName())
-	js.ProcmanCh <- procman.RES_SHUTDOWN_DONE
+	js.ToProcmanCh <- procman.RES_SHUTDOWN_DONE
 	return nil
 }
 

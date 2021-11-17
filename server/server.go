@@ -23,7 +23,7 @@ func (sv *Server) IsInitialized() bool {
 }
 
 func (sv *Server) Initialize() error {
-	sv.Name = "server"
+	sv.Name = "Server"
 	return nil
 }
 
@@ -43,8 +43,9 @@ func (sv *Server) startListen() error {
 	return nil
 }
 
-func (sv *Server) Start(procmanCh chan string) error {
-	sv.ProcmanCh = procmanCh
+func (sv *Server) Start(inCh <-chan string, outCh chan<- string) error {
+	sv.FromProcmanCh = inCh
+	sv.ToProcmanCh = outCh
 	log := util.GetLogger()
 
 	log.Info().Msg("Starting socket server.")
@@ -61,7 +62,7 @@ func (sv *Server) Start(procmanCh chan string) error {
 
 	for {
 		select {
-		case v := <-sv.ProcmanCh:
+		case v := <-sv.FromProcmanCh:
 			log.Debug().Msgf("Got request from procman %s", v)
 		default:
 		}
@@ -90,6 +91,8 @@ func (sv *Server) awaitListener() {
 	log.With().Str("module", "awaitListener")
 	log.Info().Msg("Start Listener")
 
+	sv.ToProcmanCh <- procman.RES_STARTUP_DONE
+
 	for {
 		log.Debug().Msg("Wait for client")
 
@@ -115,7 +118,7 @@ func (sv *Server) awaitListener() {
 
 	}
 
-	sv.ProcmanCh <- procman.RES_SHUTDOWN_DONE
+	sv.ToProcmanCh <- procman.RES_SHUTDOWN_DONE
 	log.Info().Msg("Socket server stopped.")
 }
 

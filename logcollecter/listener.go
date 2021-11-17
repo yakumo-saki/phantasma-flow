@@ -34,16 +34,19 @@ func (m *LogListenerModule) GetName() string {
 	return m.Name
 }
 
-func (m *LogListenerModule) Start(procmanCh chan string) error {
-	m.ProcmanCh = procmanCh
+func (m *LogListenerModule) Start(inCh <-chan string, outCh chan<- string) error {
+	m.FromProcmanCh = inCh
+	m.ToProcmanCh = outCh
 	log := util.GetLogger()
 
 	log.Info().Msgf("Starting %s server.", m.GetName())
 	m.ShutdownFlag = false
 
+	m.ToProcmanCh <- procman.RES_STARTUP_DONE
+
 	for {
 		select {
-		case v := <-m.ProcmanCh:
+		case v := <-m.FromProcmanCh:
 			log.Debug().Msgf("Got request %s", v)
 		default:
 		}
@@ -56,7 +59,7 @@ func (m *LogListenerModule) Start(procmanCh chan string) error {
 	}
 
 	log.Info().Msgf("%s Stopped.", m.GetName())
-	m.ProcmanCh <- procman.RES_SHUTDOWN_DONE
+	m.ToProcmanCh <- procman.RES_SHUTDOWN_DONE
 	return nil
 }
 

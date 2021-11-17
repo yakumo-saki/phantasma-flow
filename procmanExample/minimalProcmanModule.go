@@ -8,16 +8,13 @@ import (
 )
 
 type MinimalProcmanModule struct {
-	procmanCh    chan string
-	shutdownFlag bool
-	Name         string // Recommended for debug
-	initialized  bool
+	procman.ProcmanModuleStruct
 }
 
 // returns this instance is initialized or not.
 // When procman.Add, Procman calls Initialize() if not initialized.
 func (m *MinimalProcmanModule) IsInitialized() bool {
-	return m.initialized
+	return m.Initialized
 }
 
 // initialize this instance.
@@ -27,7 +24,7 @@ func (m *MinimalProcmanModule) Initialize() error {
 	// used for procman <-> module communication
 	// procman -> PAUSE(prepare for backup) is considered
 	m.Name = "MinimalProcmanModule" // if you want to multiple instance, change name here
-	m.initialized = true
+	m.Initialized = true
 	return nil
 }
 
@@ -39,24 +36,26 @@ func (m *MinimalProcmanModule) GetName() string {
 }
 
 // lets roll! Do not forget to save procmanCh from parameter.
-func (m *MinimalProcmanModule) Start(procmanCh chan string) error {
-	m.procmanCh = procmanCh
+func (m *MinimalProcmanModule) Start(inCh <-chan string, outCh chan<- string) error {
+	m.FromProcmanCh = inCh
+	m.ToProcmanCh = outCh
 	log := util.GetLogger()
 
 	log.Info().Msgf("Starting %s.", m.GetName())
-	m.shutdownFlag = false
+	m.ShutdownFlag = false
 
 	go m.loop()
+	m.ToProcmanCh <- procman.RES_STARTUP_DONE
 
 	// wait for other message from Procman
 	for {
 		select {
-		case v := <-m.procmanCh:
+		case v := <-m.FromProcmanCh:
 			log.Debug().Msgf("Got request %s", v)
 		default:
 		}
 
-		if m.shutdownFlag {
+		if m.ShutdownFlag {
 			break
 		}
 
@@ -64,14 +63,14 @@ func (m *MinimalProcmanModule) Start(procmanCh chan string) error {
 	}
 
 	log.Info().Msgf("%s Stopped.", m.GetName())
-	m.procmanCh <- procman.RES_SHUTDOWN_DONE
+	m.ToProcmanCh <- procman.RES_SHUTDOWN_DONE
 	return nil
 }
 
 func (m *MinimalProcmanModule) loop() {
 	for {
 		time.Sleep(procman.MAIN_LOOP_WAIT)
-		if m.shutdownFlag {
+		if m.ShutdownFlag {
 			break
 		}
 	}
@@ -85,5 +84,5 @@ func (sv *MinimalProcmanModule) Shutdown() {
 
 	log := util.GetLogger()
 	log.Info().Msg("Shutdown initiated")
-	sv.shutdownFlag = true
+	sv.ShutdownFlag = true
 }
