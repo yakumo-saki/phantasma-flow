@@ -23,10 +23,9 @@ func (m *MinimalProcmanModule) IsInitialized() bool {
 // initialize this instance.
 // Between Initialize and Start, no shutdown is called when error occures.
 // so, dont initialize something needs shutdown sequence.
-func (m *MinimalProcmanModule) Initialize(procmanCh chan string) error {
+func (m *MinimalProcmanModule) Initialize() error {
 	// used for procman <-> module communication
 	// procman -> PAUSE(prepare for backup) is considered
-	m.procmanCh = procmanCh
 	m.Name = "MinimalProcmanModule" // if you want to multiple instance, change name here
 	m.initialized = true
 	return nil
@@ -39,7 +38,9 @@ func (m *MinimalProcmanModule) GetName() string {
 	return m.Name
 }
 
-func (m *MinimalProcmanModule) Start() error {
+// lets roll! Do not forget to save procmanCh from parameter.
+func (m *MinimalProcmanModule) Start(procmanCh chan string) error {
+	m.procmanCh = procmanCh
 	log := util.GetLogger()
 
 	log.Info().Msgf("Starting %s.", m.GetName())

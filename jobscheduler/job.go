@@ -15,23 +15,18 @@ func (m *JobScheduler) IsInitialized() bool {
 	return m.Initialized
 }
 
-func (m *JobScheduler) Initialize(procmanCh chan string) error {
-	// used for procman <-> module communication
-	// procman -> PAUSE(prepare for backup) is considered
-	m.ProcmanCh = procmanCh
+func (m *JobScheduler) Initialize() error {
 	m.Name = "JobScheduler"
 	m.Initialized = true
 	return nil
 }
 
 func (m *JobScheduler) GetName() string {
-	// Name of module. must be unique.
-	// return fix value indicates this module must be singleton.
-	// add secondary instance of this module can cause panic by procman.Add
 	return m.Name
 }
 
-func (js *JobScheduler) Start() error {
+func (js *JobScheduler) Start(procmanCh chan string) error {
+	js.ProcmanCh = procmanCh
 	log := util.GetLogger()
 
 	log.Info().Msgf("Starting %s server.", js.GetName())

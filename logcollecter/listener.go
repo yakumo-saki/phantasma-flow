@@ -19,10 +19,9 @@ func (m *LogListenerModule) IsInitialized() bool {
 	return m.Initialized
 }
 
-func (m *LogListenerModule) Initialize(procmanCh chan string) error {
+func (m *LogListenerModule) Initialize() error {
 	// used for procman <-> module communication
 	// procman -> PAUSE(prepare for backup) is considered
-	m.ProcmanCh = procmanCh
 	m.Name = "LogListener"
 	m.Initialized = true
 	return nil
@@ -35,7 +34,8 @@ func (m *LogListenerModule) GetName() string {
 	return m.Name
 }
 
-func (m *LogListenerModule) Start() error {
+func (m *LogListenerModule) Start(procmanCh chan string) error {
+	m.ProcmanCh = procmanCh
 	log := util.GetLogger()
 
 	log.Info().Msgf("Starting %s server.", m.GetName())

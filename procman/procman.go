@@ -15,7 +15,7 @@ type process struct {
 }
 
 type ProcessManager struct {
-	modules        map[string]*process // start last, shutdown first
+	workerModules  map[string]*process // start last, shutdown first
 	serviceModules map[string]*process // start first, shutdown last
 	inChannel      chan string
 	shutdownFlag   bool // shutdown initiated flag of Procmanager
@@ -28,7 +28,7 @@ const TYPE_MOD = "modules"
 const TYPE_SVC = "services"
 
 func (p *ProcessManager) Add(module ProcmanModule) {
-	success := p.AddImpl("Module", p.modules, module)
+	success := p.AddImpl("Module", p.workerModules, module)
 	if !success {
 		panic("Add failed. name=" + module.GetName())
 	}
@@ -47,7 +47,7 @@ func (p *ProcessManager) AddImpl(typeName string, modmap map[string]*process, mo
 	channel := make(chan string, 1)
 
 	if !module.IsInitialized() {
-		module.Initialize(channel)
+		module.Initialize()
 	}
 
 	name := module.GetName()
@@ -69,28 +69,28 @@ func (p *ProcessManager) AddImpl(typeName string, modmap map[string]*process, mo
 	return true
 }
 
+// Blocks until all modules are start or not.
 func (p *ProcessManager) Start() {
+	// log := util.GetLogger()
+	p.startImpl(TYPE_SVC, p.serviceModules)
+	p.startImpl(TYPE_MOD, p.workerModules)
+
+}
+
+func (p *ProcessManager) startImpl(typeName string, modmap map[string]*process) {
 	log := util.GetLogger()
-	for _, proc := range p.serviceModules {
-		proc.module.Initialize(proc.channel)
-		go proc.module.Start()
+	for _, proc := range modmap {
+		proc.module.Initialize()
+		go proc.module.Start(proc.channel)
 		proc.started = true
 		log.Debug().Msgf("[%s] %s is started.", TYPE_SVC, proc.module.GetName())
 	}
-
-	for _, proc := range p.modules {
-		proc.module.Initialize(proc.channel)
-		go proc.module.Start()
-		proc.started = true
-		log.Debug().Msgf("[%s] %s is started.", TYPE_MOD, proc.module.GetName())
-	}
-
 }
 
 func (p *ProcessManager) Shutdown() (string, string) {
 	// log := util.GetLogger()
 
-	reason1 := p.shutdownImpl("modules", p.modules)
+	reason1 := p.shutdownImpl("modules", p.workerModules)
 
 	// todo allow timeout?
 
@@ -140,7 +140,7 @@ func (p *ProcessManager) shutdownImpl(typeName string, modmap map[string]*proces
 				}
 			case <-timeoutCh:
 				reason = "TIMEOUT"
-				p.outputTimeoutLog(typeName, p.modules)
+				p.outputTimeoutLog(typeName, p.workerModules)
 
 				stop = true
 			default:
@@ -182,7 +182,7 @@ func NewProcessManager(channel chan string) ProcessManager {
 	var p ProcessManager
 	p.inChannel = channel
 	p.shutdownFlag = false
-	p.modules = make(map[string]*process, 10)
+	p.workerModules = make(map[string]*process, 10)
 	p.serviceModules = make(map[string]*process, 10)
 
 	return p

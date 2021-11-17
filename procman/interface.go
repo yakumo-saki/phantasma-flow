@@ -9,8 +9,8 @@ type ProcmanModuleStruct struct {
 
 type ProcmanModule interface {
 	IsInitialized() bool
-	Initialize(chan string) error
-	Start() error
+	Initialize() error
+	Start(chan string) error
 	Shutdown()
 	GetName() string
 }

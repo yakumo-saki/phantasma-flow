@@ -22,8 +22,7 @@ func (sv *Server) IsInitialized() bool {
 	return sv.Initialized
 }
 
-func (sv *Server) Initialize(procmanCh chan string) error {
-	sv.ProcmanCh = procmanCh
+func (sv *Server) Initialize() error {
 	sv.Name = "server"
 	return nil
 }
@@ -44,7 +43,8 @@ func (sv *Server) startListen() error {
 	return nil
 }
 
-func (sv *Server) Start() error {
+func (sv *Server) Start(procmanCh chan string) error {
+	sv.ProcmanCh = procmanCh
 	log := util.GetLogger()
 
 	log.Info().Msg("Starting socket server.")
@@ -98,7 +98,7 @@ func (sv *Server) awaitListener() {
 		conn, err := sv.listener.Accept()
 		if err != nil {
 			if errors.Is(err, net.ErrClosed) {
-				log.Error().Err(err).Msg("Stop accept because of shutdown")
+				log.Info().Err(err).Msg("Stop accept because of shutdown")
 			} else {
 				// Only network error. dont shutdown server
 				log.Error().Err(err).Msg("Accept failed. continue")
