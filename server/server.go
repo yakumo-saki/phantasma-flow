@@ -22,9 +22,8 @@ func (sv *Server) IsInitialized() bool {
 	return sv.Initialized
 }
 
-func (sv *Server) Initialize(procmanCh chan string) error {
-	sv.ProcmanCh = procmanCh
-	sv.Name = "server"
+func (sv *Server) Initialize() error {
+	sv.Name = "Server"
 	return nil
 }
 
@@ -44,7 +43,9 @@ func (sv *Server) startListen() error {
 	return nil
 }
 
-func (sv *Server) Start() error {
+func (sv *Server) Start(inCh <-chan string, outCh chan<- string) error {
+	sv.FromProcmanCh = inCh
+	sv.ToProcmanCh = outCh
 	log := util.GetLogger()
 
 	log.Info().Msg("Starting socket server.")
@@ -61,7 +62,7 @@ func (sv *Server) Start() error {
 
 	for {
 		select {
-		case v := <-sv.ProcmanCh:
+		case v := <-sv.FromProcmanCh:
 			log.Debug().Msgf("Got request from procman %s", v)
 		default:
 		}
@@ -90,6 +91,8 @@ func (sv *Server) awaitListener() {
 	log.With().Str("module", "awaitListener")
 	log.Info().Msg("Start Listener")
 
+	sv.ToProcmanCh <- procman.RES_STARTUP_DONE
+
 	for {
 		log.Debug().Msg("Wait for client")
 
@@ -98,7 +101,7 @@ func (sv *Server) awaitListener() {
 		conn, err := sv.listener.Accept()
 		if err != nil {
 			if errors.Is(err, net.ErrClosed) {
-				log.Error().Err(err).Msg("Stop accept because of shutdown")
+				log.Info().Err(err).Msg("Stop accept because of shutdown")
 			} else {
 				// Only network error. dont shutdown server
 				log.Error().Err(err).Msg("Accept failed. continue")
@@ -115,7 +118,7 @@ func (sv *Server) awaitListener() {
 
 	}
 
-	sv.ProcmanCh <- procman.RES_SHUTDOWN_DONE
+	sv.ToProcmanCh <- procman.RES_SHUTDOWN_DONE
 	log.Info().Msg("Socket server stopped.")
 }
 

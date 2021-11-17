@@ -17,6 +17,8 @@ import (
 	"github.com/yakumo-saki/phantasma-flow/util"
 )
 
+const DEBUG = false
+
 // TODO: get path from something
 // ENV or bootstrap parameter
 func getConfigPath() string {
@@ -52,22 +54,27 @@ func main() {
 	processManager.AddService(&logcollecter.LogListenerModule{})
 	processManager.AddService(&jobscheduler.JobScheduler{})
 
-	go processManager.Start()
+	processManager.Start()
 
 	log.Info().Msg("Starting signal handling.")
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
 
+	// main loop
+	log.Info().Msg("Phantasma-flow started.")
+
 	// for debug
 	debugCh := make(chan string, 1)
-	go func() {
-		log := util.GetLogger()
-		for i := 0; i < 3; i++ {
-			time.Sleep(1 * time.Second)
-			log.Debug().Msgf("Wait for timeout %d", i)
-		}
-		debugCh <- "SHUTDOWN"
-	}()
+	if DEBUG {
+		go func() {
+			log := util.GetLogger()
+			for i := 0; i < 3; i++ {
+				time.Sleep(1 * time.Second)
+				log.Debug().Msgf("Wait for timeout %d", i)
+			}
+			debugCh <- "SHUTDOWN"
+		}()
+	}
 
 	shutdownFlag := false
 	for {

@@ -15,37 +15,34 @@ func (m *JobScheduler) IsInitialized() bool {
 	return m.Initialized
 }
 
-func (m *JobScheduler) Initialize(procmanCh chan string) error {
-	// used for procman <-> module communication
-	// procman -> PAUSE(prepare for backup) is considered
-	m.ProcmanCh = procmanCh
+func (m *JobScheduler) Initialize() error {
 	m.Name = "JobScheduler"
 	m.Initialized = true
 	return nil
 }
 
 func (m *JobScheduler) GetName() string {
-	// Name of module. must be unique.
-	// return fix value indicates this module must be singleton.
-	// add secondary instance of this module can cause panic by procman.Add
 	return m.Name
 }
 
-func (js *JobScheduler) Start() error {
+func (js *JobScheduler) Start(inCh <-chan string, outCh chan<- string) error {
+	js.FromProcmanCh = inCh
+	js.ToProcmanCh = outCh
 	log := util.GetLogger()
 
 	log.Info().Msgf("Starting %s server.", js.GetName())
 	js.ShutdownFlag = false
 
+	js.ToProcmanCh <- procman.RES_STARTUP_DONE
+
 	for {
 		select {
-		case v := <-js.ProcmanCh:
+		case v := <-js.FromProcmanCh:
 			log.Debug().Msgf("Got request %s", v)
 		default:
 		}
 
 		// todo Job Submitting
-
 		if js.ShutdownFlag {
 			break
 		}
@@ -54,7 +51,7 @@ func (js *JobScheduler) Start() error {
 	}
 
 	log.Info().Msgf("%s Stopped.", js.GetName())
-	js.ProcmanCh <- procman.RES_SHUTDOWN_DONE
+	js.ToProcmanCh <- procman.RES_SHUTDOWN_DONE
 	return nil
 }
 

@@ -8,8 +8,14 @@
 * シャットダウン時のメッセージ伝達
 * シャットダウン完了まで待つ(shutdown)
 
+## スタートアップシーケンス
+
+* procman.Start() -> Added modules
+* modules -> "STARTUP_DONE" -> channel -> procman
+* NOTE: start all services -> wait for started up -> start all modules -> wait
+
 ## シャットダウンシーケンス
 
-* procman.Shutdown() -> "SHUTDOWN" -> Subscribed modules
-* Subscribed module -> "SHUTDOWN_DONE" -> procman
+* procman.Shutdown() -> Added modules
+* modules -> "SHUTDOWN_DONE" -> channel -> procman
 * All modules shutdown or timeout, then return REASON("DONE" / "TIMEOUT")
