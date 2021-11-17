@@ -1,4 +1,4 @@
 package global
 
-const Version string = "v0.9.3"
-const Url string = "https://github.com/yakumo-saki/zabbix-getter/"
+const VERSION string = "v0.0.1"
+const URL string = "https://github.com/yakumo-saki/phantasma-flow/"
