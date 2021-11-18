@@ -38,10 +38,12 @@ func main() {
 		global.VERSION, global.COMMIT, global.URL)
 
 	// at first Initialize repository for all configs
+	repo := repository.Repository{}
 	cfgpath := getConfigPath()
-	err := repository.Initialize(cfgpath)
+	err := repo.Initialize(cfgpath)
 	if err != nil {
-		log.Err(err).Msg("Error occured at reading initialize data")
+		log.Error().Err(err).Msg("Error occured at reading initialize data")
+		log.Error().Msg("Maybe data is corrupted or misseditted.")
 		return
 	}
 
@@ -98,4 +100,5 @@ func main() {
 
 		time.Sleep(procman.MAIN_LOOP_WAIT)
 	}
+	log.Info().Msg("Phantasma-flow stopped.")
 }

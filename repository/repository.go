@@ -11,15 +11,13 @@ import (
 	"github.com/yakumo-saki/phantasma-flow/util"
 )
 
-type repository struct {
-	Nodes   []objects.NodeDefinition
-	Jobs    []objects.JobDefinition
-	Configs []objects.Config
+type Repository struct {
+	nodes   []objects.NodeDefinition
+	jobs    []objects.JobDefinition
+	configs []objects.Config
 }
 
-var repo repository
-
-func Initialize(path string) error {
+func (r *Repository) Initialize(path string) error {
 	log := util.GetLogger()
 	log.Debug().Msg("Repository initialize")
 
@@ -32,13 +30,13 @@ func Initialize(path string) error {
 	for typ, pt := range dirType {
 		readDirPath := util.JoinPath(path, pt)
 		log.Debug().Msgf("Reading %s from %s", typ, readDirPath)
-		err := readAllYaml(readDirPath, typ)
+		err := r.readAllYaml(readDirPath, typ)
 		if err != nil {
 			return err
 		}
 	}
 
-	if dump() {
+	if r.Dump() {
 		log.Debug().Msg("Repository initialized")
 		return errors.New("not impremented")
 	}
@@ -46,21 +44,21 @@ func Initialize(path string) error {
 	return nil
 }
 
-func dump() bool {
+func (repo *Repository) Dump() bool {
 	fmt.Println("Jobs")
-	for _, v := range repo.Jobs {
+	for _, v := range repo.jobs {
 		fmt.Println(v)
 		fmt.Println("")
 	}
 	fmt.Println("-------------------------------------")
 	fmt.Println("Nodes")
-	for _, v := range repo.Nodes {
+	for _, v := range repo.nodes {
 		fmt.Println(v)
 		fmt.Println("")
 	}
 	fmt.Println("-------------------------------------")
 	fmt.Println("Configs")
-	for _, v := range repo.Configs {
+	for _, v := range repo.configs {
 		fmt.Println(v)
 		fmt.Println("")
 	}
@@ -68,7 +66,7 @@ func dump() bool {
 	return false
 }
 
-func readAllYaml(path string, objType objectType) error {
+func (repo *Repository) readAllYaml(path string, objType objectType) error {
 	log := util.GetLogger()
 	files, err := ioutil.ReadDir(path)
 	if err != nil {
@@ -95,38 +93,24 @@ func readAllYaml(path string, objType objectType) error {
 			if err != nil {
 				return err
 			}
-			repo.Nodes = append(repo.Nodes, obj)
+			repo.nodes = append(repo.nodes, obj)
 		case JOB:
 			obj := objects.JobDefinition{}
 			err := yaml.Unmarshal(bytes, &obj)
 			if err != nil {
 				return err
 			}
-			repo.Jobs = append(repo.Jobs, obj)
+			repo.jobs = append(repo.jobs, obj)
 		case CONFIG:
 			obj := objects.Config{}
 			err := yaml.Unmarshal(bytes, &obj)
 			if err != nil {
 				return err
 			}
-			repo.Configs = append(repo.Configs, obj)
+			repo.configs = append(repo.configs, obj)
 		}
 
 	}
 
 	return nil
-}
-
-func GetConfig() {}
-
-func ApplyNode(nodeDef objects.NodeDefinition) {
-
-}
-
-func ApplyJob(nodeDef objects.JobDefinition) {
-
-}
-
-func ApplyConfig(nodeDef objects.Config) {
-
 }
