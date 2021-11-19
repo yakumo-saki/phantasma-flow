@@ -52,7 +52,6 @@ func main() {
 	processManager := procman.NewProcessManager(procmanCh)
 
 	processManager.Add(&procmanExample.MinimalProcmanModule{})
-	processManager.AddService(&server.Server{})
 	processManager.AddService(&logcollecter.LogListenerModule{})
 	processManager.AddService(&jobscheduler.JobScheduler{})
 
@@ -63,6 +62,7 @@ func main() {
 	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
 
 	// main loop
+	processManager.AddService(&server.Server{})
 	log.Info().Msg("Phantasma-flow started.")
 
 	// for debug
@@ -78,6 +78,7 @@ func main() {
 		}()
 	}
 
+	// wait for stop signal
 	shutdownFlag := false
 	for {
 		select {

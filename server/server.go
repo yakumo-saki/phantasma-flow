@@ -82,7 +82,7 @@ func (sv *Server) Start(inCh <-chan string, outCh chan<- string) error {
 func (sv *Server) Shutdown() {
 	log := util.GetLogger()
 	sv.ShutdownFlag = true
-	log.Info().Msg("Shutdown initiated")
+	log.Debug().Msg("Shutdown initiated")
 }
 
 // Socket handling thread
@@ -101,7 +101,7 @@ func (sv *Server) awaitListener() {
 		conn, err := sv.listener.Accept()
 		if err != nil {
 			if errors.Is(err, net.ErrClosed) {
-				log.Info().Err(err).Msg("Stop accept because of shutdown")
+				log.Debug().Err(err).Msg("Stop accept because of shutdown")
 			} else {
 				// Only network error. dont shutdown server
 				log.Error().Err(err).Msg("Accept failed. continue")

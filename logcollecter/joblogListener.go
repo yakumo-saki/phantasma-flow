@@ -69,7 +69,7 @@ func (sv *LogListenerModule) Shutdown() {
 	// Otherwise procman is not stop or force shutdown.
 
 	log := util.GetLogger()
-	log.Info().Msg("Shutdown initiated")
+	log.Debug().Msg("Shutdown initiated")
 	sv.ShutdownFlag = true
 }
 
