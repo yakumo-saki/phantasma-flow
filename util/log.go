@@ -19,6 +19,10 @@ func GetLogger() zerolog.Logger {
 	return log
 }
 
+func GetLoggerWithSource(name string) zerolog.Logger {
+	return GetLogger().With().Str("source", name).Logger()
+}
+
 func Nvl(check string, replaced string) string {
 	if check == "" {
 		return replaced

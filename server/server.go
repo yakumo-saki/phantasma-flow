@@ -2,13 +2,18 @@ package server
 
 import (
 	"bufio"
+	"bytes"
+	"encoding/json"
 	"errors"
+	"fmt"
+	"io"
 	"net"
 	"strings"
 	"time"
 
 	"github.com/rs/zerolog/log"
 	"github.com/yakumo-saki/phantasma-flow/logcollecter"
+	"github.com/yakumo-saki/phantasma-flow/pkg/server"
 	"github.com/yakumo-saki/phantasma-flow/procman"
 	"github.com/yakumo-saki/phantasma-flow/util"
 )
@@ -125,7 +130,7 @@ func (sv *Server) awaitListener() {
 // Connected socket handling thread
 // move to module
 func (sv *Server) dispatch(conn net.Conn) {
-	log := util.GetLogger()
+	log := util.GetLoggerWithSource("Dispatch")
 
 	log.Debug().Msg("request_dispatcher")
 	scanner := bufio.NewScanner(conn)
@@ -137,15 +142,28 @@ func (sv *Server) dispatch(conn net.Conn) {
 		line := scanner.Text() // スキャンした内容を文字列で取得
 		lineStr := strings.ToUpper(strings.TrimSpace(string(line)))
 
-		log.Debug().Str("set-type", lineStr).Msg("Received")
-		if lineStr == "LISTENER" {
+		log.Debug().Str("set-type", lineStr).Msg("Received from client")
+		switch lineStr {
+		case "LISTENER":
 			log.Debug().Msg("Start listener")
 			go logcollecter.LogListener(conn, nil, stopChannel, logchannel)
 			go logcollecter.PseudoLogSender(nil, stopChannel, logchannel)
-		} else if lineStr == "COMMANDER" {
+		case "COMMANDER":
 			log.Debug().Msg("Start commander")
-			// go job.RequestHandler(conn, shutdownChannel, stopChannel, logchannel)
-			// TODO
+		case "PING":
+			res := server.ResPong{}
+			res.Message = "PONG"
+			msgBytes, _ := json.Marshal(res)
+			msg := string(msgBytes) + "\n" + server.MSG_SEPARATOR
+
+			sentBytes, err := io.Copy(conn, bytes.NewBufferString(msg))
+			if err != nil {
+				log.Err(err).Msg("Send PONG response failed")
+			}
+			fmt.Println(bytes.NewBufferString(msg).Len())
+			log.Debug().Int64("bytes", sentBytes).Msg("Sent")
+			conn.Close()
+			return
 		}
 
 		if time.Since(start).Seconds() > 10 {
