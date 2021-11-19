@@ -1,4 +1,4 @@
-package messagehub
+package messagehub_impl
 
 import (
 	"context"
@@ -7,17 +7,18 @@ import (
 	"time"
 
 	"github.com/enriquebris/goconcurrentqueue"
+	"github.com/yakumo-saki/phantasma-flow/pkg/messagehub"
 	"github.com/yakumo-saki/phantasma-flow/util"
 )
 
 type listener struct {
 	name string
-	ch   chan *Message
+	ch   chan *messagehub.Message
 }
 
 type MessageHub struct {
 	listeners       sync.Map
-	listenerMutex   sync.Mutex // to read listeners TODO: mutex can be per topic basis
+	listenerMutex   sync.Mutex // to read listeners TODO: mutex can be per topic basis for performance
 	queue           *goconcurrentqueue.FIFO
 	senderCtx       *context.Context
 	senderCancel    *context.CancelFunc
@@ -120,7 +121,7 @@ func (hub *MessageHub) Sender(ctxptr *context.Context) {
 
 	ctx := *ctxptr
 	for {
-		var msg *Message
+		var msg *messagehub.Message
 		select {
 		case <-ctx.Done():
 			log.Info().Msg("Sender stopped.")
@@ -133,7 +134,7 @@ func (hub *MessageHub) Sender(ctxptr *context.Context) {
 			if err != nil {
 				continue
 			}
-			msg = m.(*Message)
+			msg = m.(*messagehub.Message)
 		}
 
 		topic := msg.Topic
@@ -164,24 +165,19 @@ func (hub *MessageHub) GetMessageCount() uint64 {
 	return atomic.LoadUint64(&hub.messageCount)
 }
 
-func (hub *MessageHub) NewMessage() *Message {
-	msg := Message{}
-	return &msg
-}
-
 // Post() is add message to queue. no need to call as goroutine
 // post(msg) is available.
 // async / sync is up to you.
 func (hub *MessageHub) Post(topic string, body interface{}) {
-	hub.PostMsg(&Message{Topic: topic, Body: body})
+	hub.PostMsg(&messagehub.Message{Topic: topic, Body: body})
 }
 
-func (hub *MessageHub) PostMsg(msg *Message) {
+func (hub *MessageHub) PostMsg(msg *messagehub.Message) {
 	hub.queue.Enqueue(msg)
 	atomic.AddUint64(&hub.messageCount, 1)
 }
 
-func (hub *MessageHub) Listen(topic string, name string) chan *Message {
+func (hub *MessageHub) Listen(topic string, name string) chan *messagehub.Message {
 	log := util.GetLogger()
 
 	hub.listenerMutex.Lock()
@@ -193,7 +189,7 @@ func (hub *MessageHub) Listen(topic string, name string) chan *Message {
 		array = arr.(*[]listener)
 	}
 
-	ch := make(chan *Message, 1)
+	ch := make(chan *messagehub.Message, 1)
 	newListener := listener{name: name, ch: ch}
 	ls := append(*array, newListener)
 

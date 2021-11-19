@@ -4,13 +4,13 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/yakumo-saki/phantasma-flow/messagehub"
+	"github.com/yakumo-saki/phantasma-flow/messagehub/messagehub_impl"
 	"github.com/yakumo-saki/phantasma-flow/util"
 )
 
 func TestBenchMessageHubSync(t *testing.T) {
 	// null sending
-	hub := messagehub.MessageHub{}
+	hub := messagehub_impl.MessageHub{}
 	hub.Initialize()
 	// hub.StartSender()   // stop due to No listener for topic "topicname" log is weird
 

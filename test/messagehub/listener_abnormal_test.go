@@ -6,18 +6,19 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/yakumo-saki/phantasma-flow/messagehub"
+	"github.com/yakumo-saki/phantasma-flow/messagehub/messagehub_impl"
 )
 
 // Test abnormal state of messagehub
 func TestMessageHubAbnormal(t *testing.T) {
 	count := 0
 
-	hub := messagehub.MessageHub{}
+	hub := messagehub_impl.MessageHub{}
 	hub.Initialize()
 
 	hub.StopSender() // Stop not started sender is ok
 
-	msg := hub.NewMessage()
+	msg := messagehub.NewMessage()
 	msg.Topic = "topic1"
 	msg.Body = "ABC1"
 	hub.PostMsg(msg)

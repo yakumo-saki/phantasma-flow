@@ -5,7 +5,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/yakumo-saki/phantasma-flow/messagehub"
+	"github.com/yakumo-saki/phantasma-flow/messagehub/messagehub_impl"
 	"github.com/yakumo-saki/phantasma-flow/util"
 )
 
@@ -13,7 +13,7 @@ func TestBenchMessageHubSync(t *testing.T) {
 	const LISTENER_MAX = 10
 
 	// null sending
-	hub := messagehub.MessageHub{}
+	hub := messagehub_impl.MessageHub{}
 	hub.Initialize()
 
 	wg := sync.WaitGroup{}
