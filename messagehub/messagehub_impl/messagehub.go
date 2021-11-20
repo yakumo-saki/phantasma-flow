@@ -7,13 +7,13 @@ import (
 	"time"
 
 	"github.com/enriquebris/goconcurrentqueue"
-	"github.com/yakumo-saki/phantasma-flow/pkg/messagehub"
+	"github.com/yakumo-saki/phantasma-flow/pkg/messagehubObjects"
 	"github.com/yakumo-saki/phantasma-flow/util"
 )
 
 type listener struct {
 	name string
-	ch   chan *messagehub.Message
+	ch   chan *messagehubObjects.Message
 }
 
 type MessageHub struct {
@@ -86,6 +86,7 @@ func (hub *MessageHub) Shutdown() {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
+	// wait for queue flushed
 	stop := false
 	for {
 		if hub.queue.GetLen() == 0 {
@@ -121,20 +122,20 @@ func (hub *MessageHub) Sender(ctxptr *context.Context) {
 
 	ctx := *ctxptr
 	for {
-		var msg *messagehub.Message
+		var msg *messagehubObjects.Message
 		select {
 		case <-ctx.Done():
 			log.Info().Msg("Sender stopped.")
 			return
 		default:
-			c, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+			c, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
 			m, err := hub.queue.DequeueOrWaitForNextElementContext(c)
 			cancel()
 
 			if err != nil {
 				continue
 			}
-			msg = m.(*messagehub.Message)
+			msg = m.(*messagehubObjects.Message)
 		}
 
 		topic := msg.Topic
@@ -169,15 +170,15 @@ func (hub *MessageHub) GetMessageCount() uint64 {
 // post(msg) is available.
 // async / sync is up to you.
 func (hub *MessageHub) Post(topic string, body interface{}) {
-	hub.PostMsg(&messagehub.Message{Topic: topic, Body: body})
+	hub.PostMsg(&messagehubObjects.Message{Topic: topic, Body: body})
 }
 
-func (hub *MessageHub) PostMsg(msg *messagehub.Message) {
+func (hub *MessageHub) PostMsg(msg *messagehubObjects.Message) {
 	hub.queue.Enqueue(msg)
 	atomic.AddUint64(&hub.messageCount, 1)
 }
 
-func (hub *MessageHub) Listen(topic string, name string) chan *messagehub.Message {
+func (hub *MessageHub) Listen(topic string, name string) chan *messagehubObjects.Message {
 	log := util.GetLogger()
 
 	hub.listenerMutex.Lock()
@@ -189,7 +190,7 @@ func (hub *MessageHub) Listen(topic string, name string) chan *messagehub.Messag
 		array = arr.(*[]listener)
 	}
 
-	ch := make(chan *messagehub.Message, 1)
+	ch := make(chan *messagehubObjects.Message, 1)
 	newListener := listener{name: name, ch: ch}
 	ls := append(*array, newListener)
 

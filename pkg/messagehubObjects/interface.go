@@ -1,4 +1,4 @@
-package messagehub
+package messagehubObjects
 
 type Message struct {
 	Topic string

@@ -6,7 +6,7 @@ type NodeDefinition struct {
 	ObjectBase
 	Meta     ObjectMetaBase `yaml:"meta"`
 	Name     string         `yaml:"name"`
-	NodeType string         `yaml:"nodeType"`
+	NodeType string         `yaml:"nodeType"` // SSH / WinRM / internal
 }
 
 func (nd NodeDefinition) String() string {

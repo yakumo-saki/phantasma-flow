@@ -4,6 +4,7 @@ build/
 __debug_bin
 
 # Binaries for programs and plugins
+phantasma-flow
 *.exe
 *.exe~
 *.dll
