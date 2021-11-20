@@ -2,14 +2,16 @@ package repository
 
 import (
 	"errors"
-	"fmt"
 	"io/ioutil"
 	"path/filepath"
 
 	"github.com/goccy/go-yaml"
-	"github.com/yakumo-saki/phantasma-flow/objects"
+	"github.com/yakumo-saki/phantasma-flow/messagehub"
+	"github.com/yakumo-saki/phantasma-flow/pkg/objects"
 	"github.com/yakumo-saki/phantasma-flow/util"
 )
+
+const myname = "Repository"
 
 type Repository struct {
 	nodes   []objects.NodeDefinition
@@ -18,7 +20,7 @@ type Repository struct {
 }
 
 func (r *Repository) Initialize(path string) error {
-	log := util.GetLogger()
+	log := util.GetLoggerWithSource(myname, "initialize")
 	log.Debug().Msg("Repository initialize")
 
 	dirType := map[objectType][]string{
@@ -45,29 +47,30 @@ func (r *Repository) Initialize(path string) error {
 }
 
 func (repo *Repository) Dump() bool {
-	fmt.Println("Jobs")
+	log := util.GetLoggerWithSource(myname, "dump")
+	log.Debug().Msg("Jobs")
 	for _, v := range repo.jobs {
-		fmt.Println(v)
-		fmt.Println("")
+		log.Debug().Msgf("%s", v)
+		log.Debug().Msg("")
 	}
-	fmt.Println("-------------------------------------")
-	fmt.Println("Nodes")
+	log.Debug().Msg("-------------------------------------")
+	log.Debug().Msg("Nodes")
 	for _, v := range repo.nodes {
-		fmt.Println(v)
-		fmt.Println("")
+		log.Debug().Msgf("%s", v)
+		log.Debug().Msg("")
 	}
-	fmt.Println("-------------------------------------")
-	fmt.Println("Configs")
+	log.Debug().Msg("-------------------------------------")
+	log.Debug().Msg("Configs")
 	for _, v := range repo.configs {
-		fmt.Println(v)
-		fmt.Println("")
+		log.Debug().Msgf("%s", v)
+		log.Debug().Msg("")
 	}
-	fmt.Println("-------------------------------------")
+	log.Debug().Msg("-------------------------------------")
 	return false
 }
 
 func (repo *Repository) readAllYaml(path string, objType objectType) error {
-	log := util.GetLogger()
+	log := util.GetLoggerWithSource(myname, "readYaml")
 	files, err := ioutil.ReadDir(path)
 	if err != nil {
 		log.Err(err)
@@ -113,4 +116,17 @@ func (repo *Repository) readAllYaml(path string, objType objectType) error {
 	}
 
 	return nil
+}
+
+func (repo *Repository) SendAllNodes() {
+	for _, v := range repo.nodes {
+		messagehub.Post(messagehub.TOPIC_NODE_DEFINITION, v)
+
+	}
+}
+
+func (repo *Repository) SendAllJobs() {
+	for _, v := range repo.jobs {
+		messagehub.Post(messagehub.TOPIC_JOB_DEFINITION, v)
+	}
 }

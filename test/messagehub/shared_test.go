@@ -4,14 +4,14 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/yakumo-saki/phantasma-flow/messagehub"
+	"github.com/yakumo-saki/phantasma-flow/messagehub/messagehub_impl"
 )
 
 const MSG_EXIT = "exit"
 
 var listenResult sync.Map
 
-func Listen(hub *messagehub.MessageHub, wg *sync.WaitGroup, topic, myname string) {
+func Listen(hub *messagehub_impl.MessageHub, wg *sync.WaitGroup, topic, myname string) {
 	count := 0
 	ch := hub.Listen(topic, myname)
 	wg.Done()
@@ -29,7 +29,7 @@ func Listen(hub *messagehub.MessageHub, wg *sync.WaitGroup, topic, myname string
 	}
 }
 
-func ListenBench(hub *messagehub.MessageHub, topic, myname string) {
+func ListenBench(hub *messagehub_impl.MessageHub, topic, myname string) {
 	count := 0
 	ch := hub.Listen(topic, myname)
 	fmt.Printf("%s listen %s ok\n", myname, topic)

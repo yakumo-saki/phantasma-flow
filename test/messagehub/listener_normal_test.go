@@ -7,16 +7,17 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/yakumo-saki/phantasma-flow/messagehub"
+	"github.com/yakumo-saki/phantasma-flow/messagehub/messagehub_impl"
 )
 
 func TestMessageHubSync(t *testing.T) {
 	count := 0
 
 	// null sending
-	hub := messagehub.MessageHub{}
+	hub := messagehub_impl.MessageHub{}
 	hub.Initialize()
 
-	msg := hub.NewMessage()
+	msg := messagehub.NewMessage()
 	msg.Topic = "topic1"
 	msg.Body = "ABC1"
 	hub.PostMsg(msg)

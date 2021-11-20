@@ -24,13 +24,15 @@ type ProcessManager struct {
 	startupDone       bool // Startup done flag
 }
 
-const MAIN_LOOP_WAIT = 1000 * time.Millisecond // Recommended wait for message loop
+const MAIN_LOOP_WAIT = 500 * time.Millisecond // Recommended wait for message loop
 
 const REASON_COMPLETE = "COMPLETE"
 const REASON_TIMEOUT = "TIMEOUT"
 
 const TYPE_MOD = "modules"
 const TYPE_SVC = "services"
+
+const myname = "procman"
 
 // Add module as Worker module
 // if procman is started, module is automaticaly start
@@ -51,7 +53,7 @@ func (p *ProcessManager) AddService(module ProcmanModule) {
 }
 
 func (p *ProcessManager) AddImpl(typeName string, modmap map[string]*process, module ProcmanModule) bool {
-	log := util.GetLogger()
+	log := util.GetLoggerWithSource(myname, "add")
 
 	toCh := make(chan string, 1)
 	fromCh := make(chan string, 1)
@@ -92,7 +94,7 @@ func (p *ProcessManager) AddImpl(typeName string, modmap map[string]*process, mo
 
 // Blocks until all modules are start or not.
 func (p *ProcessManager) Start() {
-	log := util.GetLogger()
+	log := util.GetLoggerWithSource(myname, "start")
 	svcResult := p.startImpl(TYPE_SVC, p.serviceModules)
 	if svcResult == REASON_COMPLETE {
 		log.Debug().Msgf("[%s] All services started", TYPE_SVC)
@@ -115,7 +117,7 @@ func (p *ProcessManager) Start() {
 }
 
 func (p *ProcessManager) startImpl(typeName string, modmap map[string]*process) string {
-	log := util.GetLogger()
+	log := util.GetLoggerWithSource(myname, "start")
 	for _, proc := range modmap {
 		if !proc.started {
 			go proc.module.Start(proc.toModCh, proc.fromModCh)
@@ -167,7 +169,7 @@ func (p *ProcessManager) Shutdown() (string, string) {
 }
 
 func (p *ProcessManager) shutdownImpl(typeName string, modmap map[string]*process) string {
-	log := util.GetLogger()
+	log := util.GetLoggerWithSource(myname + "shutdown")
 
 	var reason string
 
@@ -240,7 +242,7 @@ func (p *ProcessManager) isStartupComplete(modmap map[string]*process) bool {
 }
 
 func (p *ProcessManager) outputTimeoutLog(typeName string, action string, modmap map[string]*process) {
-	log := util.GetLogger()
+	log := util.GetLoggerWithSource(myname, "timeout")
 
 	for name, proc := range modmap {
 		switch action {

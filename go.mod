@@ -11,6 +11,7 @@ require (
 	github.com/enriquebris/goconcurrentqueue v0.6.0 // indirect
 	github.com/fatih/color v1.10.0 // indirect
 	github.com/goccy/go-yaml v1.9.4 // indirect
+	github.com/google/uuid v1.3.0 // indirect
 	github.com/imdario/mergo v0.3.12 // indirect
 	github.com/jinzhu/copier v0.3.2 // indirect
 	github.com/mattn/go-colorable v0.1.8 // indirect

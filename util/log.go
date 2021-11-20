@@ -2,6 +2,7 @@ package util
 
 import (
 	"os"
+	"strings"
 
 	"github.com/rs/zerolog"
 )
@@ -19,8 +20,8 @@ func GetLogger() zerolog.Logger {
 	return log
 }
 
-func GetLoggerWithSource(name string) zerolog.Logger {
-	return GetLogger().With().Str("source", name).Logger()
+func GetLoggerWithSource(name ...string) zerolog.Logger {
+	return GetLogger().With().Str("source", strings.Join(name, "/")).Logger()
 }
 
 func Nvl(check string, replaced string) string {

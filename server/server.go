@@ -49,9 +49,10 @@ func (sv *Server) startListen() error {
 }
 
 func (sv *Server) Start(inCh <-chan string, outCh chan<- string) error {
+	log := util.GetLoggerWithSource(sv.GetName(), "start")
+
 	sv.FromProcmanCh = inCh
 	sv.ToProcmanCh = outCh
-	log := util.GetLogger()
 
 	log.Info().Msg("Starting socket server.")
 	sv.ShutdownFlag = false
@@ -85,14 +86,14 @@ func (sv *Server) Start(inCh <-chan string, outCh chan<- string) error {
 }
 
 func (sv *Server) Shutdown() {
-	log := util.GetLogger()
+	log := util.GetLoggerWithSource(sv.GetName(), "shutdown")
 	sv.ShutdownFlag = true
 	log.Debug().Msg("Shutdown initiated")
 }
 
 // Socket handling thread
 func (sv *Server) awaitListener() {
-	log := util.GetLogger()
+	log := util.GetLoggerWithSource(sv.GetName(), "awaitListener")
 	log.With().Str("module", "awaitListener")
 	log.Info().Msg("Start Listener")
 
@@ -130,7 +131,7 @@ func (sv *Server) awaitListener() {
 // Connected socket handling thread
 // move to module
 func (sv *Server) dispatch(conn net.Conn) {
-	log := util.GetLoggerWithSource("Dispatch")
+	log := util.GetLoggerWithSource(sv.GetName(), "dispatch")
 
 	log.Debug().Msg("request_dispatcher")
 	scanner := bufio.NewScanner(conn)
@@ -146,7 +147,6 @@ func (sv *Server) dispatch(conn net.Conn) {
 		switch lineStr {
 		case "LISTENER":
 			log.Debug().Msg("Start listener")
-			go logcollecter.LogListener(conn, nil, stopChannel, logchannel)
 			go logcollecter.PseudoLogSender(nil, stopChannel, logchannel)
 		case "COMMANDER":
 			log.Debug().Msg("Start commander")
