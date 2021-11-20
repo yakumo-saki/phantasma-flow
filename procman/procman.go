@@ -169,7 +169,7 @@ func (p *ProcessManager) Shutdown() (string, string) {
 }
 
 func (p *ProcessManager) shutdownImpl(typeName string, modmap map[string]*process) string {
-	log := util.GetLoggerWithSource(myname + "shutdown")
+	log := util.GetLoggerWithSource(myname, "shutdown")
 
 	var reason string
 
