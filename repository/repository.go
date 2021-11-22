@@ -25,9 +25,9 @@ func (r *Repository) Initialize(path string) error {
 	log.Debug().Msg("Repository initialize")
 
 	dirType := map[objectType][]string{
-		NODE:   {"node"},
-		CONFIG: {"config"},
-		JOB:    {"job", "definitions"},
+		NODE:   {"definitions", "node"},
+		CONFIG: {"definitions", "config"},
+		JOB:    {"definitions", "job"},
 	}
 
 	for typ, pt := range dirType {

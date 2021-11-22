@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"os/signal"
 	"path"
@@ -30,32 +31,76 @@ const myname = "main"
 func getHomeDir() string {
 	util.GetLoggerWithSource(myname, "homedir")
 	homeDir := os.Getenv("PHFLOW_HOME")
-	if homeDir != "" {
-		st, err := os.Stat(homeDir)
-		if !st.IsDir() {
-
-			panic("PHFLOW_HOME is defined but it is file. It must be directory:" + homeDir)
+	dataDir := os.Getenv("PHFLOW_DATA")
+	tempDir := os.Getenv("PHFLOW_TEMP")
+	if homeDir == "" {
+		home, err := os.UserHomeDir()
+		if err != nil {
+			panic("Get homedir fail, Please set PHFLOW_HOME environment value.")
 		}
-		if os.IsNotExist(err) {
-			// not exist is ok. try to create after this
-		} else {
-			panic("can't stat PHFLOW_HOME:" + homeDir)
-		}
+		homeDir = path.Join(home, ".config", "phantasma-flow")
+	}
+	if dataDir == "" {
+		dataDir = path.Join(homeDir, "data")
+	}
+	if tempDir == "" {
+		tempDir = path.Join(homeDir, "temp")
 	}
 
-	home, err := os.UserHomeDir()
-	if err != nil {
-		panic("get homedir fail")
-	}
-	homeDir = path.Join(home, "phantasma-flow")
-	makeSureHomeDirExists(homeDir)
+	isNotGoodDir(homeDir, "PHFLOW_HOME")
+	isNotGoodDir(dataDir, "PHFLOW_DATA")
+	isNotGoodDir(tempDir, "PHFLOW_TEMP")
+
+	makeSureHomeDirExists(homeDir, dataDir, tempDir)
 
 	return homeDir
 
 }
 
-func makeSureHomeDirExists(homeDir string) {
-	// panic("unimplemented")
+func isNotGoodDir(dirname string, name string) {
+	fmt.Println(dirname, name)
+	if dirname != "" {
+		st, err := os.Stat(dirname)
+		if os.IsNotExist(err) {
+			// not exist is ok. try to create after this
+			return
+		}
+		if st == nil {
+			return
+		}
+		if !st.IsDir() {
+			panic(name + " is defined but it is file. It must be directory:" + dirname)
+		}
+	}
+
+}
+
+func makeSureHomeDirExists(homeDir, dataDir, tempDir string) {
+	mkdir := func(p string) {
+		if e := os.MkdirAll(p, 0750); e != nil {
+			panic(fmt.Sprintf("mkdir failed %s %e\n", p, e))
+		}
+	}
+
+	def := path.Join(homeDir, "definitions")
+
+	dCfg := path.Join(def, "config")
+	dJob := path.Join(def, "job")
+	dNode := path.Join(def, "node")
+
+	mkdir(dCfg)
+	mkdir(dJob)
+	mkdir(dNode)
+
+	dt := path.Join(dataDir, "data")
+	dlog := path.Join(dt, "data")
+	dmeta := path.Join(dt, "meta")
+
+	mkdir(dlog)
+	mkdir(dmeta)
+
+	tmp := path.Join(tempDir, "temp")
+	mkdir(tmp)
 }
 
 func main() {
