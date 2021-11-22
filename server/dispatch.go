@@ -51,6 +51,17 @@ func (sv *Server) dispatch(conn net.Conn) {
 			log.Debug().Int64("bytes", sentBytes).Msg("Sent")
 			conn.Close()
 			return
+		default:
+			if strings.Contains(lineStr, "HTTP/1.") {
+				msg := "HTTP/1.0 400 Bad Request\n\n" +
+					"This is not HTTP(s) port."
+
+				_, err := io.Copy(conn, bytes.NewBufferString(msg))
+				if err != nil {
+					log.Err(err).Msg("Send 'this is not http' response failed")
+				}
+				conn.Close()
+			}
 		}
 
 		// TODO: use context
