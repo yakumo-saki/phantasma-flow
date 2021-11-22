@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/yakumo-saki/phantasma-flow/messagehub"
+	"github.com/yakumo-saki/phantasma-flow/pkg/messagehubObjects"
 	"github.com/yakumo-saki/phantasma-flow/pkg/objects"
 	"github.com/yakumo-saki/phantasma-flow/procman"
 	"github.com/yakumo-saki/phantasma-flow/util"
@@ -70,10 +71,11 @@ func (js *JobScheduler) Start(inCh <-chan string, outCh chan<- string) error {
 		case v := <-js.FromProcmanCh:
 			log.Debug().Msgf("Got request %s", v)
 		case job := <-jobDefCh:
-			log.Debug().Msgf("Got request %s", job)
+			log.Debug().Msgf("Got JobDefinitionMsg %s", job)
 
 			// TODO JOBS and re-schedule
-			jobdef := job.Body.(objects.JobDefinition)
+			jobDefMsg := job.Body.(messagehubObjects.JobDefinitionMsg)
+			jobdef := jobDefMsg.JobDefinition
 			id := js.addJob(jobdef)
 			js.schedule(id)
 		default:

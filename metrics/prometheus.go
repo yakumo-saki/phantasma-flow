@@ -1,14 +1,21 @@
-package prometheus
+package metrics
 
 import (
+	"context"
+	"net/http"
+	"runtime"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/yakumo-saki/phantasma-flow/procman"
 	"github.com/yakumo-saki/phantasma-flow/util"
 )
 
 type PrometeusExporterModule struct {
 	procman.ProcmanModuleStruct
+
+	serv *http.Server
 }
 
 // returns this instance is initialized or not.
@@ -23,7 +30,7 @@ func (m *PrometeusExporterModule) IsInitialized() bool {
 func (m *PrometeusExporterModule) Initialize() error {
 	// used for procman <-> module communication
 	// procman -> PAUSE(prepare for backup) is considered
-	m.Name = "MinimalProcmanModule" // if you want to multiple instance, change name here
+	m.Name = "PrometeusExporterModule" // if you want to multiple instance, change name here
 	m.Initialized = true
 	return nil
 }
@@ -39,12 +46,12 @@ func (m *PrometeusExporterModule) GetName() string {
 func (m *PrometeusExporterModule) Start(inCh <-chan string, outCh chan<- string) error {
 	m.FromProcmanCh = inCh
 	m.ToProcmanCh = outCh
-	log := util.GetLogger()
+	log := util.GetLoggerWithSource(m.GetName(), "main")
 
 	log.Info().Msgf("Starting %s.", m.GetName())
 	m.ShutdownFlag = false
 
-	go m.loop()
+	go m.startServer()
 	m.ToProcmanCh <- procman.RES_STARTUP_DONE
 
 	// wait for other message from Procman
@@ -69,14 +76,44 @@ shutdown:
 	return nil
 }
 
-func (m *PrometeusExporterModule) loop() {
-	for {
-		time.Sleep(procman.MAIN_LOOP_WAIT)
-		if m.ShutdownFlag {
-			break
-		}
-	}
+func (m *PrometeusExporterModule) startServer() {
+	log := util.GetLoggerWithSource(m.GetName(), "startServer")
+	m.addPrometheusMetrics()
 
+	mux := http.NewServeMux()
+	mux.Handle("/metrics", promhttp.Handler())
+	server := http.Server{Addr: ":5001", Handler: mux}
+
+	m.serv = &server
+
+	log.Info().Msg("Prometeus exporter started.")
+	err := server.ListenAndServe() // block until server.shutdown() called
+	if err != http.ErrServerClosed {
+		log.Err(err).Msg("Prometeus exporter startup failed.")
+	}
+}
+
+func (m *PrometeusExporterModule) addPrometheusMetrics() {
+	// Subsystem: "runtime",
+	// Name:      "goroutines_count",
+	// Help:      "Number of goroutines that currently exist.",
+
+	// In prometheus keys "-" is prohibited. use "_" instead
+	err := prometheus.Register(
+		prometheus.NewGaugeFunc(
+			prometheus.GaugeOpts{
+				Subsystem: "phantasmaflow",
+				Name:      "messageHub_queue_length",
+				Help:      "Number of messages queued in messageHub.",
+			},
+			func() float64 {
+				return float64(runtime.NumGoroutine())
+			},
+		),
+	)
+	if err != nil {
+		panic("Failed to register prometheus metrics (messagequeue)")
+	}
 }
 
 func (sv *PrometeusExporterModule) Shutdown() {
@@ -86,5 +123,13 @@ func (sv *PrometeusExporterModule) Shutdown() {
 
 	log := util.GetLogger()
 	log.Debug().Msg("Shutdown initiated")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	sv.serv.Shutdown(ctx) // Its no problem calling shutdown. if server startup failed
+	log.Debug().Msg("Metrics server shutdown complete.")
+	<-ctx.Done()
+
 	sv.ShutdownFlag = true
 }

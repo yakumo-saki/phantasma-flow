@@ -13,6 +13,7 @@ import (
 	"github.com/yakumo-saki/phantasma-flow/logcollecter"
 	"github.com/yakumo-saki/phantasma-flow/messagehub"
 	"github.com/yakumo-saki/phantasma-flow/messagehub/messagehub_impl"
+	"github.com/yakumo-saki/phantasma-flow/metrics"
 	"github.com/yakumo-saki/phantasma-flow/node"
 	"github.com/yakumo-saki/phantasma-flow/procman"
 	"github.com/yakumo-saki/phantasma-flow/procmanExample"
@@ -53,6 +54,10 @@ func getHomeDir() string {
 
 }
 
+func makeSureHomeDirExists(homeDir string) {
+	// panic("unimplemented")
+}
+
 func main() {
 	log := util.GetLoggerWithSource("main")
 
@@ -82,6 +87,7 @@ func main() {
 	processManager.AddService(&logcollecter.LogListenerModule{})
 	processManager.AddService(&jobscheduler.JobScheduler{})
 	processManager.AddService(&node.NodeManager{})
+	processManager.AddService(&metrics.PrometeusExporterModule{})
 
 	processManager.Start()
 
