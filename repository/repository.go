@@ -7,6 +7,7 @@ import (
 
 	"github.com/goccy/go-yaml"
 	"github.com/yakumo-saki/phantasma-flow/messagehub"
+	"github.com/yakumo-saki/phantasma-flow/pkg/messagehubObjects"
 	"github.com/yakumo-saki/phantasma-flow/pkg/objects"
 	"github.com/yakumo-saki/phantasma-flow/util"
 )
@@ -118,15 +119,26 @@ func (repo *Repository) readAllYaml(path string, objType objectType) error {
 	return nil
 }
 
-func (repo *Repository) SendAllNodes() {
+func (repo *Repository) SendAllNodes() int {
+	sent := 0
 	for _, v := range repo.nodes {
-		messagehub.Post(messagehub.TOPIC_NODE_DEFINITION, v)
-
+		nodeMsg := messagehubObjects.NodeDefinitionMsg{}
+		nodeMsg.Reason = messagehubObjects.DEF_REASON_INITIAL
+		nodeMsg.NodeDefinition = v
+		messagehub.Post(messagehub.TOPIC_NODE_DEFINITION, nodeMsg)
+		sent++
 	}
+	return sent
 }
 
-func (repo *Repository) SendAllJobs() {
+func (repo *Repository) SendAllJobs() int {
+	sent := 0
 	for _, v := range repo.jobs {
-		messagehub.Post(messagehub.TOPIC_JOB_DEFINITION, v)
+		jobMsg := messagehubObjects.JobDefinitionMsg{}
+		jobMsg.Reason = messagehubObjects.DEF_REASON_INITIAL
+		jobMsg.JobDefinition = v
+		messagehub.Post(messagehub.TOPIC_JOB_DEFINITION, jobMsg)
+		sent++
 	}
+	return sent
 }

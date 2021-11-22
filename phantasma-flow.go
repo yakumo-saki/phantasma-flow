@@ -7,6 +7,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/rs/zerolog"
 	"github.com/yakumo-saki/phantasma-flow/global"
 	"github.com/yakumo-saki/phantasma-flow/jobscheduler"
 	"github.com/yakumo-saki/phantasma-flow/logcollecter"
@@ -21,16 +22,34 @@ import (
 )
 
 const DEBUG = false
+const myname = "main"
 
-// TODO: get path from something
-// ENV or bootstrap parameter
-func getConfigPath() string {
+// Get phantasma-flow home path.
+// ENV or ~/.config/phantasma-flow
+func getHomeDir() string {
+	util.GetLoggerWithSource(myname, "homedir")
+	homeDir := os.Getenv("PHFLOW_HOME")
+	if homeDir != "" {
+		st, err := os.Stat(homeDir)
+		if !st.IsDir() {
+
+			panic("PHFLOW_HOME is defined but it is file. It must be directory:" + homeDir)
+		}
+		if os.IsNotExist(err) {
+			// not exist is ok. try to create after this
+		} else {
+			panic("can't stat PHFLOW_HOME:" + homeDir)
+		}
+	}
+
 	home, err := os.UserHomeDir()
 	if err != nil {
 		panic("get homedir fail")
 	}
+	homeDir = path.Join(home, "phantasma-flow")
+	makeSureHomeDirExists(homeDir)
 
-	return path.Join(home, "phantasma-flow")
+	return homeDir
 
 }
 
@@ -42,7 +61,7 @@ func main() {
 
 	// at first Initialize repository for all configs
 	repo := repository.Repository{}
-	cfgpath := getConfigPath()
+	cfgpath := getHomeDir()
 	err := repo.Initialize(cfgpath)
 	if err != nil {
 		log.Error().Err(err).Msg("Error occured at reading initialize data")
@@ -71,8 +90,12 @@ func main() {
 	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
 
 	// Load definitions
+	repo.SendAllNodes() // must send node before job (must exist node, job requires)
 	repo.SendAllJobs()
-	repo.SendAllNodes()
+
+	waitForMessageHub(&log, &hub)
+	// XXX: ノードとかジョブが行き渡ったことを確認する必要がある？
+	// nodeDef とか JobDef を送った数の分のノードができたことをチェックする？
 
 	// main loop
 	processManager.AddService(&server.Server{})
@@ -120,4 +143,14 @@ func shutdown(pm *procman.ProcessManager, hub *messagehub_impl.MessageHub) {
 	hub.Shutdown()
 	r1, r2 := pm.Shutdown()
 	log.Info().Str("modules", r1).Str("services", r2).Msg("Threads shutdown done.")
+}
+
+func waitForMessageHub(log *zerolog.Logger, hub *messagehub_impl.MessageHub) {
+	for {
+		if hub.GetQueueLength() == 0 {
+			log.Debug().Msg("Wait for message hub done.")
+			break
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
 }

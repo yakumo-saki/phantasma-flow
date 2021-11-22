@@ -1,15 +1,18 @@
 package jobscheduler
 
 import (
+	"container/list"
 	"sync"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/yakumo-saki/phantasma-flow/messagehub"
 	"github.com/yakumo-saki/phantasma-flow/pkg/objects"
 	"github.com/yakumo-saki/phantasma-flow/procman"
 	"github.com/yakumo-saki/phantasma-flow/util"
 )
 
+// Create from jobdefinition. Filter out not needed for scheduling.
 type job struct {
 	id      string
 	name    string
@@ -27,7 +30,7 @@ type JobScheduler struct {
 	procman.ProcmanModuleStruct
 
 	jobs      map[string]job
-	schedules []job
+	schedules *list.List
 	mutex     sync.Mutex
 }
 
@@ -39,7 +42,7 @@ func (m *JobScheduler) Initialize() error {
 	m.Name = "JobScheduler"
 	m.Initialized = true
 	m.jobs = make(map[string]job)
-	m.schedules = make([]job, 50)
+	m.schedules = list.New()
 	m.mutex = sync.Mutex{}
 	return nil
 }
@@ -49,7 +52,7 @@ func (m *JobScheduler) GetName() string {
 }
 
 func (js *JobScheduler) Start(inCh <-chan string, outCh chan<- string) error {
-	log := util.GetLoggerWithSource(js.GetName(), "start")
+	log := util.GetLoggerWithSource(js.GetName(), "main")
 	js.FromProcmanCh = inCh
 	js.ToProcmanCh = outCh
 
@@ -57,7 +60,7 @@ func (js *JobScheduler) Start(inCh <-chan string, outCh chan<- string) error {
 	js.ShutdownFlag = false
 
 	// subscribe to messagehub
-	msgCh := messagehub.Listen(messagehub.TOPIC_JOB_DEFINITION, js.GetName())
+	jobDefCh := messagehub.Listen(messagehub.TOPIC_JOB_DEFINITION, js.GetName())
 
 	// start ok
 	js.ToProcmanCh <- procman.RES_STARTUP_DONE
@@ -66,9 +69,13 @@ func (js *JobScheduler) Start(inCh <-chan string, outCh chan<- string) error {
 		select {
 		case v := <-js.FromProcmanCh:
 			log.Debug().Msgf("Got request %s", v)
-		case job := <-msgCh:
+		case job := <-jobDefCh:
 			log.Debug().Msgf("Got request %s", job)
+
 			// TODO JOBS and re-schedule
+			jobdef := job.Body.(objects.JobDefinition)
+			id := js.addJob(jobdef)
+			js.schedule(id)
 		default:
 		}
 
@@ -83,6 +90,37 @@ func (js *JobScheduler) Start(inCh <-chan string, outCh chan<- string) error {
 	log.Info().Msgf("%s Stopped.", js.GetName())
 	js.ToProcmanCh <- procman.RES_SHUTDOWN_DONE
 	return nil
+}
+
+func (js *JobScheduler) schedule(jobId string) {
+	js.mutex.Lock()
+	defer js.mutex.Unlock()
+	for e := js.schedules.Front(); e != nil; e = e.Next() {
+		j := e.Value.(job)
+		if j.id == jobId {
+			js.schedules.Remove(e)
+		}
+	}
+
+	newSchedule := schedule{}
+	uuid4, _ := uuid.NewRandom()
+	newSchedule.runId = uuid4.String()
+	newSchedule.time = 0 // TODO: FIXME
+	js.schedules.PushFront(newSchedule)
+}
+
+// Add new job
+func (js *JobScheduler) addJob(jobDef objects.JobDefinition) string {
+	j := job{}
+	j.id = jobDef.Id
+	j.jobMeta = jobDef.JobMeta
+	j.lastRun = 0
+	j.name = jobDef.Name
+
+	js.mutex.Lock()
+	defer js.mutex.Unlock()
+	js.jobs[j.id] = j
+	return j.id
 }
 
 func (sv *JobScheduler) Shutdown() {
