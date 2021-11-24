@@ -34,14 +34,14 @@ Work in progress... (maybe WIP forever)
 ## ディレクトリ構造
 
 PHFLOW_HOME
-  definitions
+  definitions    `PHFLOW_DEF_DIR`
     config       設定ファイルyaml
     job          ジョブ定義yaml
     node         ノード定義yaml
-  data           PHFLOW_DATA
+  data           `PHFLOW_DATA`
     logs         ジョブ実行ログ 
     meta         ジョブ実行結果ログ
-  tmp            実行中ログ書き込み
+  tmp            `PHFLOW_TEMP_DIR` 実行中ログ書き込み os.temp使うべき？
 
 ## 関連リポジトリ
 

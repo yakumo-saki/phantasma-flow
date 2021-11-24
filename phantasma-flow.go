@@ -31,14 +31,18 @@ const myname = "main"
 func getHomeDir() string {
 	util.GetLoggerWithSource(myname, "homedir")
 	homeDir := os.Getenv("PHFLOW_HOME")
-	dataDir := os.Getenv("PHFLOW_DATA")
-	tempDir := os.Getenv("PHFLOW_TEMP")
+	defDir := os.Getenv("PHFLOW_DEF_DIR")
+	dataDir := os.Getenv("PHFLOW_DATA_DIR")
+	tempDir := os.Getenv("PHFLOW_TEMP_DIR")
 	if homeDir == "" {
 		home, err := os.UserHomeDir()
 		if err != nil {
 			panic("Get homedir fail, Please set PHFLOW_HOME environment value.")
 		}
 		homeDir = path.Join(home, ".config", "phantasma-flow")
+	}
+	if defDir == "" {
+		defDir = path.Join(homeDir, "definitions")
 	}
 	if dataDir == "" {
 		dataDir = path.Join(homeDir, "data")
@@ -47,11 +51,12 @@ func getHomeDir() string {
 		tempDir = path.Join(homeDir, "temp")
 	}
 
-	isNotGoodDir(homeDir, "PHFLOW_HOME")
-	isNotGoodDir(dataDir, "PHFLOW_DATA")
-	isNotGoodDir(tempDir, "PHFLOW_TEMP")
+	isNotGoodDir(homeDir, "PHFLOW_HOME_DIR")
+	isNotGoodDir(defDir, "PHFLOW_DEF_DIR")
+	isNotGoodDir(dataDir, "PHFLOW_DATA_DIR")
+	isNotGoodDir(tempDir, "PHFLOW_TEMP_DIR")
 
-	makeSureHomeDirExists(homeDir, dataDir, tempDir)
+	makeSureHomeDirExists(defDir, dataDir, tempDir)
 
 	return homeDir
 
@@ -75,32 +80,28 @@ func isNotGoodDir(dirname string, name string) {
 
 }
 
-func makeSureHomeDirExists(homeDir, dataDir, tempDir string) {
+func makeSureHomeDirExists(defDir, dataDir, tempDir string) {
 	mkdir := func(p string) {
 		if e := os.MkdirAll(p, 0750); e != nil {
 			panic(fmt.Sprintf("mkdir failed %s %e\n", p, e))
 		}
 	}
 
-	def := path.Join(homeDir, "definitions")
-
-	dCfg := path.Join(def, "config")
-	dJob := path.Join(def, "job")
-	dNode := path.Join(def, "node")
+	dCfg := path.Join(defDir, "config")
+	dJob := path.Join(defDir, "job")
+	dNode := path.Join(defDir, "node")
 
 	mkdir(dCfg)
 	mkdir(dJob)
 	mkdir(dNode)
 
-	dt := path.Join(dataDir, "data")
-	dlog := path.Join(dt, "data")
-	dmeta := path.Join(dt, "meta")
+	dlog := path.Join(dataDir, "log")
+	dmeta := path.Join(dataDir, "meta")
 
 	mkdir(dlog)
 	mkdir(dmeta)
 
-	tmp := path.Join(tempDir, "temp")
-	mkdir(tmp)
+	mkdir(tempDir)
 }
 
 func main() {

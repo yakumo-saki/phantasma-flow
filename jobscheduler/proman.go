@@ -5,35 +5,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/yakumo-saki/phantasma-flow/messagehub"
 	"github.com/yakumo-saki/phantasma-flow/pkg/messagehubObjects"
 	"github.com/yakumo-saki/phantasma-flow/pkg/objects"
 	"github.com/yakumo-saki/phantasma-flow/procman"
 	"github.com/yakumo-saki/phantasma-flow/util"
 )
-
-// Create from jobdefinition. Filter out not needed for scheduling.
-type job struct {
-	id      string
-	name    string
-	lastRun int64
-	jobMeta objects.JobMetaInfo
-}
-
-type schedule struct {
-	time  int64  // unixtime
-	runId string // sha1 of uuid
-
-}
-
-type JobScheduler struct {
-	procman.ProcmanModuleStruct
-
-	jobs      map[string]job
-	schedules *list.List
-	mutex     sync.Mutex
-}
 
 func (m *JobScheduler) IsInitialized() bool {
 	return m.Initialized
@@ -63,6 +40,8 @@ func (js *JobScheduler) Start(inCh <-chan string, outCh chan<- string) error {
 	// subscribe to messagehub
 	jobDefCh := messagehub.Listen(messagehub.TOPIC_JOB_DEFINITION, js.GetName())
 
+	go js.runner()
+
 	// start ok
 	js.ToProcmanCh <- procman.RES_STARTUP_DONE
 
@@ -77,7 +56,7 @@ func (js *JobScheduler) Start(inCh <-chan string, outCh chan<- string) error {
 			jobDefMsg := job.Body.(messagehubObjects.JobDefinitionMsg)
 			jobdef := jobDefMsg.JobDefinition
 			id := js.addJob(jobdef)
-			js.schedule(id)
+			js.schedule(id, time.Now())
 		default:
 		}
 
@@ -92,23 +71,6 @@ func (js *JobScheduler) Start(inCh <-chan string, outCh chan<- string) error {
 	log.Info().Msgf("%s Stopped.", js.GetName())
 	js.ToProcmanCh <- procman.RES_SHUTDOWN_DONE
 	return nil
-}
-
-func (js *JobScheduler) schedule(jobId string) {
-	js.mutex.Lock()
-	defer js.mutex.Unlock()
-	for e := js.schedules.Front(); e != nil; e = e.Next() {
-		j := e.Value.(job)
-		if j.id == jobId {
-			js.schedules.Remove(e)
-		}
-	}
-
-	newSchedule := schedule{}
-	uuid4, _ := uuid.NewRandom()
-	newSchedule.runId = uuid4.String()
-	newSchedule.time = 0 // TODO: FIXME
-	js.schedules.PushFront(newSchedule)
 }
 
 // Add new job
