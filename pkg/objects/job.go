@@ -17,7 +17,7 @@ type JobMetaInfo struct {
 }
 
 type JobSchedule struct {
-	ScheduleType string `json:"scheduleType"`
+	ScheduleType string `json:"type"` // cron
 	Param        string `json:"param"`
 }
 
