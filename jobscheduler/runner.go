@@ -1,14 +1,14 @@
 package jobscheduler
 
 import (
+	"context"
 	"time"
 
 	"github.com/yakumo-saki/phantasma-flow/util"
 )
 
 // job runner
-// TODO: use context !!!!!!
-func (js *JobScheduler) runner() {
+func (js *JobScheduler) runner(ctx context.Context) {
 	log := util.GetLoggerWithSource(js.GetName(), "runner")
 	for {
 		benchTime := time.Now()
@@ -33,6 +33,13 @@ func (js *JobScheduler) runner() {
 		if took > 500 {
 			log.Warn().Msgf("Runner took %d ms", took)
 		}
-		time.Sleep(1 * time.Second)
+
+		select {
+		case <-ctx.Done():
+			log.Debug().Msgf("%s/runner stopped.", js.GetName())
+			return
+		case <-time.After(1 * time.Second):
+			// nothing to do
+		}
 	}
 }

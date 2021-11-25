@@ -2,6 +2,7 @@ package jobscheduler
 
 import (
 	"container/list"
+	"context"
 	"sync"
 	"time"
 
@@ -22,6 +23,7 @@ func (m *JobScheduler) Initialize() error {
 	m.jobs = make(map[string]job)
 	m.schedules = list.New()
 	m.mutex = sync.Mutex{}
+	m.rootCtx, m.rootCancel = context.WithCancel(context.Background())
 	return nil
 }
 
@@ -40,7 +42,7 @@ func (js *JobScheduler) Start(inCh <-chan string, outCh chan<- string) error {
 	// subscribe to messagehub
 	jobDefCh := messagehub.Listen(messagehub.TOPIC_JOB_DEFINITION, js.GetName())
 
-	go js.runner()
+	go js.runner(js.rootCtx)
 
 	// start ok
 	js.ToProcmanCh <- procman.RES_STARTUP_DONE
@@ -57,17 +59,12 @@ func (js *JobScheduler) Start(inCh <-chan string, outCh chan<- string) error {
 			jobdef := jobDefMsg.JobDefinition
 			id := js.addJob(jobdef)
 			js.schedule(id, time.Now())
-		default:
+		case <-js.rootCtx.Done():
+			goto shutdown
 		}
-
-		// todo Job Submitting
-		if js.ShutdownFlag {
-			break
-		}
-
-		time.Sleep(procman.MAIN_LOOP_WAIT)
 	}
 
+shutdown:
 	log.Info().Msgf("%s Stopped.", js.GetName())
 	js.ToProcmanCh <- procman.RES_SHUTDOWN_DONE
 	return nil
@@ -95,6 +92,7 @@ func (sv *JobScheduler) Shutdown() {
 	log := util.GetLogger()
 	log.Debug().Msg("Shutdown initiated")
 	sv.ShutdownFlag = true
+	sv.rootCancel()
 }
 
 func (js *JobScheduler) RequestHandler() {
