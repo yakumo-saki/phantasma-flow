@@ -43,7 +43,7 @@ func (m *NodeManager) GetName() string {
 func (nm *NodeManager) Start(inCh <-chan string, outCh chan<- string) error {
 	nm.FromProcmanCh = inCh
 	nm.ToProcmanCh = outCh
-	log := util.GetLoggerWithSource(nm.GetName(), "start")
+	log := util.GetLoggerWithSource(nm.GetName(), "main")
 
 	log.Info().Msgf("Starting %s.", nm.GetName())
 	nm.ShutdownFlag = false

@@ -31,6 +31,18 @@ Work in progress... (maybe WIP forever)
 * phctl コマンドを作って通信できるようにする
 * phctlの認証はなにかの証明書的なキーで行う（サーバー側ダイジェストに一致するなにか）
 
+## ディレクトリ構造
+
+PHFLOW_HOME
+  definitions    `PHFLOW_DEF_DIR`
+    config       設定ファイルyaml
+    job          ジョブ定義yaml
+    node         ノード定義yaml
+  data           `PHFLOW_DATA`
+    logs         ジョブ実行ログ 
+    meta         ジョブ実行結果ログ
+  tmp            `PHFLOW_TEMP_DIR` 実行中ログ書き込み os.temp使うべき？
+
 ## 関連リポジトリ
 
 * github.com/yakumosaki/phantasma-flow-cli  ... phantasma-flow CLI

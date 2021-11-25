@@ -31,16 +31,17 @@ func (hub *MessageHub) Initialize() {
 	hub.queue = goconcurrentqueue.NewFIFO()
 	hub.senderWaitGroup = sync.WaitGroup{}
 
-	go hub.reportQueueLength()
+	// go hub.reportQueueLength()
 }
 
-func (hub *MessageHub) reportQueueLength() int {
-	log := util.GetLogger()
-	for {
-		time.Sleep(30 * time.Second)
-		log.Info().Msgf("Queue length: %d", hub.queue.GetLen())
-	}
-}
+// deleted due to prometheus exporter
+// func (hub *MessageHub) reportQueueLength() int {
+// 	log := util.GetLogger()
+// 	for {
+// 		time.Sleep(30 * time.Second)
+// 		log.Info().Msgf("Queue length: %d", hub.queue.GetLen())
+// 	}
+// }
 
 func (hub *MessageHub) StartSender() {
 	if hub.senderCtx == nil {

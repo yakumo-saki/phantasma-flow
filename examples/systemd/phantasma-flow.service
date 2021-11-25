@@ -1,0 +1,16 @@
+[Unit]
+Description=Phantasma-flow job scheduler server
+After=network.target remote-fs.target nss-lookup.target
+
+[Service]
+Type=exec
+#EnvironmentFile=/etc/sysconfig/httpd
+Environment=PHFLOW_HOME=/opt/phantasma-flow
+ExecStart=/opt/phantasma-flow/bin/phantasma-flow
+#ExecReload=/usr/sbin/httpd $OPTIONS -k graceful
+#ExecStop=/bin/kill -WINCH ${MAINPID}
+#KillSignal=SIGCONT
+#PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
