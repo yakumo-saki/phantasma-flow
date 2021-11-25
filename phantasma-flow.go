@@ -130,10 +130,10 @@ func main() {
 	processManager := procman.NewProcessManager(procmanCh)
 
 	processManager.Add(&procmanExample.MinimalProcmanModule{})
+	processManager.Add(&jobscheduler.JobScheduler{})
+	processManager.Add(&metrics.PrometeusExporterModule{})
 	processManager.AddService(&logcollecter.LogListenerModule{})
-	processManager.AddService(&jobscheduler.JobScheduler{})
 	processManager.AddService(&node.NodeManager{})
-	processManager.AddService(&metrics.PrometeusExporterModule{})
 
 	processManager.Start()
 
