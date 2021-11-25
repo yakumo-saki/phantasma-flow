@@ -3,6 +3,7 @@ package server
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -25,7 +26,19 @@ func (sv *Server) dispatch(conn net.Conn) {
 	logchannel := make(chan string, 100)
 	stopChannel := make(chan string, 1)
 
-	start := time.Now()
+	ctx, negotiationDone := context.WithCancel(context.Background())
+	defer negotiationDone()
+
+	go func(ctx context.Context) {
+		select {
+		case <-ctx.Done():
+			return
+		case <-time.After(10 * time.Second):
+			log.Error().Msg("Timeout until negotiation. Closing connection")
+			conn.Close()
+		}
+	}(ctx)
+
 	for scanner.Scan() {
 		line := scanner.Text() // スキャンした内容を文字列で取得
 		lineStr := strings.ToUpper(strings.TrimSpace(string(line)))
@@ -33,11 +46,14 @@ func (sv *Server) dispatch(conn net.Conn) {
 		log.Debug().Str("set-type", lineStr).Msg("Received from client")
 		switch lineStr {
 		case "LISTENER":
+			negotiationDone()
 			log.Debug().Msg("Start listener")
 			go logcollecter.PseudoLogSender(nil, stopChannel, logchannel)
 		case "COMMANDER":
+			negotiationDone()
 			log.Debug().Msg("Start commander")
 		case "PING":
+			negotiationDone()
 			res := server.ResPong{}
 			res.Message = "PONG"
 			msgBytes, _ := json.Marshal(res)
@@ -52,6 +68,7 @@ func (sv *Server) dispatch(conn net.Conn) {
 			conn.Close()
 			return
 		default:
+			negotiationDone()
 			if strings.Contains(lineStr, "HTTP/1.") {
 				msg := "HTTP/1.0 400 Bad Request\n\n" +
 					"This is not HTTP(s) port."
@@ -62,13 +79,6 @@ func (sv *Server) dispatch(conn net.Conn) {
 				}
 				conn.Close()
 			}
-		}
-
-		// TODO: use context
-		if time.Since(start).Seconds() > 10 {
-			log.Error().Msg("Timeout waiting first message. Closing connection")
-			conn.Close()
-			break
 		}
 	}
 }
