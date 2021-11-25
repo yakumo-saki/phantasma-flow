@@ -32,6 +32,7 @@ func (m *PrometeusExporterModule) Initialize() error {
 	// procman -> PAUSE(prepare for backup) is considered
 	m.Name = "PrometeusExporterModule" // if you want to multiple instance, change name here
 	m.Initialized = true
+	m.RootCtx, m.RootCancel = context.WithCancel(context.Background())
 	return nil
 }
 
@@ -49,7 +50,6 @@ func (m *PrometeusExporterModule) Start(inCh <-chan string, outCh chan<- string)
 	log := util.GetLoggerWithSource(m.GetName(), "main")
 
 	log.Info().Msgf("Starting %s.", m.GetName())
-	m.ShutdownFlag = false
 
 	go m.startServer()
 	m.ToProcmanCh <- procman.RES_STARTUP_DONE
@@ -59,14 +59,9 @@ func (m *PrometeusExporterModule) Start(inCh <-chan string, outCh chan<- string)
 		select {
 		case v := <-m.FromProcmanCh:
 			log.Debug().Msgf("Got request %s", v)
-		default:
-		}
-
-		if m.ShutdownFlag {
+		case <-m.RootCtx.Done():
 			goto shutdown
 		}
-
-		time.Sleep(procman.MAIN_LOOP_WAIT) // Do not want to rush this loop
 	}
 
 shutdown:
@@ -131,5 +126,5 @@ func (sv *PrometeusExporterModule) Shutdown() {
 	log.Debug().Msg("Metrics server shutdown complete.")
 	<-ctx.Done()
 
-	sv.ShutdownFlag = true
+	sv.RootCancel()
 }

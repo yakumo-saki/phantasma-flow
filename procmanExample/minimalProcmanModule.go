@@ -1,8 +1,10 @@
 package procmanExample
 
 import (
+	"context"
 	"time"
 
+	"github.com/rs/zerolog/log"
 	"github.com/yakumo-saki/phantasma-flow/procman"
 	"github.com/yakumo-saki/phantasma-flow/util"
 )
@@ -25,6 +27,7 @@ func (m *MinimalProcmanModule) Initialize() error {
 	// procman -> PAUSE(prepare for backup) is considered
 	m.Name = "MinimalProcmanModule" // if you want to multiple instance, change name here
 	m.Initialized = true
+	m.RootCtx, m.RootCancel = context.WithCancel(context.Background())
 	return nil
 }
 
@@ -42,9 +45,8 @@ func (m *MinimalProcmanModule) Start(inCh <-chan string, outCh chan<- string) er
 	log := util.GetLogger()
 
 	log.Info().Msgf("Starting %s.", m.GetName())
-	m.ShutdownFlag = false
 
-	go m.loop()
+	go m.loop(m.RootCtx)
 	m.ToProcmanCh <- procman.RES_STARTUP_DONE
 
 	// wait for other message from Procman
@@ -52,29 +54,21 @@ func (m *MinimalProcmanModule) Start(inCh <-chan string, outCh chan<- string) er
 		select {
 		case v := <-m.FromProcmanCh:
 			log.Debug().Msgf("Got request %s", v)
-		default:
+		case <-m.RootCtx.Done():
+			goto shutdown
 		}
-
-		if m.ShutdownFlag {
-			break
-		}
-
-		time.Sleep(procman.MAIN_LOOP_WAIT) // Do not want to rush this loop
 	}
 
+shutdown:
 	log.Info().Msgf("%s Stopped.", m.GetName())
 	m.ToProcmanCh <- procman.RES_SHUTDOWN_DONE
 	return nil
 }
 
-func (m *MinimalProcmanModule) loop() {
-	for {
-		time.Sleep(procman.MAIN_LOOP_WAIT)
-		if m.ShutdownFlag {
-			break
-		}
-	}
-
+func (m *MinimalProcmanModule) loop(ctx context.Context) {
+	time.Sleep(procman.MAIN_LOOP_WAIT)
+	<-ctx.Done()
+	log.Logger.Debug().Msg("loop exit")
 }
 
 func (sv *MinimalProcmanModule) Shutdown() {
@@ -84,5 +78,5 @@ func (sv *MinimalProcmanModule) Shutdown() {
 
 	log := util.GetLogger()
 	log.Debug().Msg("Shutdown initiated")
-	sv.ShutdownFlag = true
+	sv.RootCancel()
 }

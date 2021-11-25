@@ -47,13 +47,12 @@ func (sv *Server) startListen() error {
 }
 
 func (sv *Server) Start(inCh <-chan string, outCh chan<- string) error {
-	log := util.GetLoggerWithSource(sv.GetName(), "start")
+	log := util.GetLoggerWithSource(sv.GetName(), "main")
 
 	sv.FromProcmanCh = inCh
 	sv.ToProcmanCh = outCh
 
 	log.Info().Msg("Starting socket server.")
-	sv.ShutdownFlag = false
 
 	err := sv.startListen()
 	if err != nil {
@@ -81,7 +80,6 @@ shutdown:
 
 func (sv *Server) Shutdown() {
 	log := util.GetLoggerWithSource(sv.GetName(), "shutdown")
-	sv.ShutdownFlag = true
 	sv.rootCancel()
 	log.Debug().Msg("Shutdown initiated")
 }
@@ -102,6 +100,7 @@ func (sv *Server) awaitListener(ctx context.Context) {
 		if err != nil {
 			if errors.Is(err, net.ErrClosed) {
 				log.Debug().Err(err).Msg("Stop accept because of shutdown")
+				goto shutdown
 			} else {
 				// Only network error. dont shutdown server
 				log.Error().Err(err).Msg("Accept failed. continue")
@@ -109,14 +108,12 @@ func (sv *Server) awaitListener(ctx context.Context) {
 			}
 		}
 
-		if sv.ShutdownFlag {
-			break
-		}
-
 		log.Debug().Msg("Accepted new client")
 		go sv.dispatch(ctx, conn)
 
 	}
+
+shutdown:
 
 	sv.ToProcmanCh <- procman.RES_SHUTDOWN_DONE
 	log.Info().Msg("Socket server stopped.")

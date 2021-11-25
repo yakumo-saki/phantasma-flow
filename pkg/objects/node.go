@@ -4,12 +4,14 @@ import "fmt"
 
 type NodeDefinition struct {
 	ObjectBase
-	Meta     ObjectMetaBase `yaml:"meta"`
-	Name     string         `yaml:"name"`
-	NodeType string         `yaml:"nodeType"` // SSH / WinRM / internal
+	Meta            ObjectMetaBase `json:"meta"`
+	Id              string         `json:"id"`              // key
+	Name            string         `json:"name"`            // display name
+	NodeType        string         `json:"nodeType"`        // SSH / WinRM / internal
+	MaxParallelJobs int            `json:"maxParallelJobs"` // max concurrent job
 }
 
 func (nd NodeDefinition) String() string {
-	return fmt.Sprintf("Name: %s, Type: %s, Meta: %v",
-		nd.Name, nd.NodeType, nd.Meta)
+	return fmt.Sprintf("ID: %s, Name: %s, Type: %s, Meta: %v",
+		nd.Id, nd.Name, nd.NodeType, nd.Meta)
 }

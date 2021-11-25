@@ -37,7 +37,6 @@ func (js *JobScheduler) Start(inCh <-chan string, outCh chan<- string) error {
 	js.ToProcmanCh = outCh
 
 	log.Info().Msgf("Starting %s server.", js.GetName())
-	js.ShutdownFlag = false
 
 	// subscribe to messagehub
 	jobDefCh := messagehub.Listen(messagehub.TOPIC_JOB_DEFINITION, js.GetName())
@@ -91,7 +90,6 @@ func (sv *JobScheduler) Shutdown() {
 
 	log := util.GetLogger()
 	log.Debug().Msg("Shutdown initiated")
-	sv.ShutdownFlag = true
 	sv.rootCancel()
 }
 

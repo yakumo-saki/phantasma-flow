@@ -1,7 +1,7 @@
 package logcollecter
 
 import (
-	"time"
+	"context"
 
 	"github.com/yakumo-saki/phantasma-flow/procman"
 	"github.com/yakumo-saki/phantasma-flow/util"
@@ -20,6 +20,7 @@ func (m *LogListenerModule) Initialize() error {
 	// procman -> PAUSE(prepare for backup) is considered
 	m.Name = "LogListener"
 	m.Initialized = true
+	m.RootCtx, m.RootCancel = context.WithCancel(context.Background())
 	return nil
 }
 
@@ -36,7 +37,6 @@ func (m *LogListenerModule) Start(inCh <-chan string, outCh chan<- string) error
 	log := util.GetLoggerWithSource(m.GetName(), "start")
 
 	log.Info().Msgf("Starting %s server.", m.GetName())
-	m.ShutdownFlag = false
 
 	m.ToProcmanCh <- procman.RES_STARTUP_DONE
 
@@ -44,27 +44,19 @@ func (m *LogListenerModule) Start(inCh <-chan string, outCh chan<- string) error
 		select {
 		case v := <-m.FromProcmanCh:
 			log.Debug().Msgf("Got request %s", v)
-		default:
+		case <-m.RootCtx.Done():
+			goto shutdown
 		}
-
-		if m.ShutdownFlag {
-			break
-		}
-
-		time.Sleep(procman.MAIN_LOOP_WAIT)
 	}
 
+shutdown:
 	log.Info().Msgf("%s Stopped.", m.GetName())
 	m.ToProcmanCh <- procman.RES_SHUTDOWN_DONE
 	return nil
 }
 
 func (sv *LogListenerModule) Shutdown() {
-	// When shutdown initiated, procman calls this function.
-	// All modules must send SHUTDOWN_DONE to procman before timeout.
-	// Otherwise procman is not stop or force shutdown.
-
 	log := util.GetLoggerWithSource(sv.GetName(), "shutdown")
 	log.Debug().Msg("Shutdown initiated")
-	sv.ShutdownFlag = true
+	sv.RootCancel()
 }

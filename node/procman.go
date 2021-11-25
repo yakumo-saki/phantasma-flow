@@ -1,7 +1,7 @@
 package node
 
 import (
-	"time"
+	"context"
 
 	"github.com/yakumo-saki/phantasma-flow/messagehub"
 	"github.com/yakumo-saki/phantasma-flow/procman"
@@ -29,6 +29,7 @@ func (m *NodeManager) Initialize() error {
 	// procman -> PAUSE(prepare for backup) is considered
 	m.Name = "NodeManager" // if you want to multiple instance, change name here
 	m.Initialized = true
+	m.RootCtx, m.RootCancel = context.WithCancel(context.Background())
 	return nil
 }
 
@@ -46,7 +47,6 @@ func (nm *NodeManager) Start(inCh <-chan string, outCh chan<- string) error {
 	log := util.GetLoggerWithSource(nm.GetName(), "main")
 
 	log.Info().Msgf("Starting %s.", nm.GetName())
-	nm.ShutdownFlag = false
 
 	nodeCh := messagehub.Listen(messagehub.TOPIC_NODE_DEFINITION, nm.GetName())
 
@@ -59,15 +59,13 @@ func (nm *NodeManager) Start(inCh <-chan string, outCh chan<- string) error {
 			log.Debug().Msgf("Got request %s", v)
 		case node := <-nodeCh:
 			log.Info().Msgf("%s", node)
-		default:
+		case <-nm.RootCtx.Done():
+			goto shutdown
 		}
-
-		if nm.ShutdownFlag {
-			break
-		}
-
-		time.Sleep(procman.MAIN_LOOP_WAIT) // Do not want to rush this loop
 	}
+
+shutdown:
+	// stop all node
 
 	log.Info().Msgf("%s Stopped.", nm.GetName())
 	nm.ToProcmanCh <- procman.RES_SHUTDOWN_DONE
@@ -81,5 +79,5 @@ func (nm *NodeManager) Shutdown() {
 
 	log := util.GetLoggerWithSource(nm.GetName(), "shutdown")
 	log.Debug().Msg("Shutdown initiated")
-	nm.ShutdownFlag = true
+	nm.RootCancel()
 }
