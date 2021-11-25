@@ -1,9 +1,9 @@
 package server
 
 import (
+	"context"
 	"errors"
 	"net"
-	"time"
 
 	"github.com/rs/zerolog/log"
 	"github.com/yakumo-saki/phantasma-flow/procman"
@@ -12,7 +12,10 @@ import (
 
 type Server struct {
 	procman.ProcmanModuleStruct
-	listener net.Listener
+
+	rootCtx    context.Context
+	rootCancel context.CancelFunc
+	listener   net.Listener
 }
 
 func (sv *Server) IsInitialized() bool {
@@ -21,6 +24,7 @@ func (sv *Server) IsInitialized() bool {
 
 func (sv *Server) Initialize() error {
 	sv.Name = "Server"
+	sv.rootCtx, sv.rootCancel = context.WithCancel(context.Background())
 	return nil
 }
 
@@ -55,23 +59,19 @@ func (sv *Server) Start(inCh <-chan string, outCh chan<- string) error {
 	}
 	log.Debug().Msg("TCP Socket start")
 
-	go sv.awaitListener()
+	go sv.awaitListener(sv.rootCtx)
 	log.Info().Msg("Socket server started.")
 
 	for {
 		select {
 		case v := <-sv.FromProcmanCh:
 			log.Debug().Msgf("Got request from procman %s", v)
-		default:
+		case <-sv.rootCtx.Done():
+			goto shutdown
 		}
-
-		if sv.ShutdownFlag {
-			break
-		}
-
-		time.Sleep(procman.MAIN_LOOP_WAIT)
 	}
 
+shutdown:
 	sv.listener.Close()
 	log.Debug().Msg("Main thread exited.")
 	return nil
@@ -80,13 +80,13 @@ func (sv *Server) Start(inCh <-chan string, outCh chan<- string) error {
 func (sv *Server) Shutdown() {
 	log := util.GetLoggerWithSource(sv.GetName(), "shutdown")
 	sv.ShutdownFlag = true
+	sv.rootCancel()
 	log.Debug().Msg("Shutdown initiated")
 }
 
 // Socket handling thread
-func (sv *Server) awaitListener() {
+func (sv *Server) awaitListener(ctx context.Context) {
 	log := util.GetLoggerWithSource(sv.GetName(), "awaitListener")
-	log.With().Str("module", "awaitListener")
 	log.Info().Msg("Start Listener")
 
 	sv.ToProcmanCh <- procman.RES_STARTUP_DONE
@@ -112,7 +112,7 @@ func (sv *Server) awaitListener() {
 		}
 
 		log.Debug().Msg("Accepted new client")
-		go sv.dispatch(conn)
+		go sv.dispatch(ctx, conn)
 
 	}
 

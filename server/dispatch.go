@@ -18,7 +18,7 @@ import (
 
 // Connected socket handling thread
 // move to module
-func (sv *Server) dispatch(conn net.Conn) {
+func (sv *Server) dispatch(rootctx context.Context, conn net.Conn) {
 	log := util.GetLoggerWithSource(sv.GetName(), "dispatch")
 
 	log.Debug().Msg("request_dispatcher")
@@ -26,7 +26,7 @@ func (sv *Server) dispatch(conn net.Conn) {
 	logchannel := make(chan string, 100)
 	stopChannel := make(chan string, 1)
 
-	ctx, negotiationDone := context.WithCancel(context.Background())
+	ctx, negotiationDone := context.WithCancel(rootctx)
 	defer negotiationDone()
 
 	go func(ctx context.Context) {
@@ -34,7 +34,7 @@ func (sv *Server) dispatch(conn net.Conn) {
 		case <-ctx.Done():
 			return
 		case <-time.After(10 * time.Second):
-			log.Error().Msg("Timeout until negotiation. Closing connection")
+			log.Error().Msg("Timeout until negotiation or shutdown. Closing connection")
 			conn.Close()
 		}
 	}(ctx)
