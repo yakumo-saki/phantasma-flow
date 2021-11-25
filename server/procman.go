@@ -16,6 +16,8 @@ type Server struct {
 	rootCtx    context.Context
 	rootCancel context.CancelFunc
 	listener   net.Listener
+
+	connections int32 // use with atomic.Add atomic.Load
 }
 
 func (sv *Server) IsInitialized() bool {

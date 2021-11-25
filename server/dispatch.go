@@ -9,6 +9,7 @@ import (
 	"io"
 	"net"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/yakumo-saki/phantasma-flow/logcollecter"
@@ -26,6 +27,8 @@ func (sv *Server) dispatch(rootctx context.Context, conn net.Conn) {
 	logchannel := make(chan string, 100)
 	stopChannel := make(chan string, 1)
 
+	atomic.AddInt32(&sv.connections, 1)
+
 	ctx, negotiationDone := context.WithCancel(rootctx)
 	defer negotiationDone()
 
@@ -35,6 +38,7 @@ func (sv *Server) dispatch(rootctx context.Context, conn net.Conn) {
 			return
 		case <-time.After(10 * time.Second):
 			log.Error().Msg("Timeout until negotiation or shutdown. Closing connection")
+			atomic.AddInt32(&sv.connections, -1)
 			conn.Close()
 		}
 	}(ctx)
@@ -44,16 +48,14 @@ func (sv *Server) dispatch(rootctx context.Context, conn net.Conn) {
 		lineStr := strings.ToUpper(strings.TrimSpace(string(line)))
 
 		log.Debug().Str("set-type", lineStr).Msg("Received from client")
+		// TODO: Need phflow protocol
 		switch lineStr {
 		case "LISTENER":
-			negotiationDone()
 			log.Debug().Msg("Start listener")
 			go logcollecter.PseudoLogSender(nil, stopChannel, logchannel)
 		case "COMMANDER":
-			negotiationDone()
 			log.Debug().Msg("Start commander")
 		case "PING":
-			negotiationDone()
 			res := server.ResPong{}
 			res.Message = "PONG"
 			msgBytes, _ := json.Marshal(res)
@@ -68,7 +70,6 @@ func (sv *Server) dispatch(rootctx context.Context, conn net.Conn) {
 			conn.Close()
 			return
 		default:
-			negotiationDone()
 			if strings.Contains(lineStr, "HTTP/1.") {
 				msg := "HTTP/1.0 400 Bad Request\n\n" +
 					"This is not HTTP(s) port."
