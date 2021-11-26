@@ -21,7 +21,8 @@ func (js *JobScheduler) runner(ctx context.Context) {
 			schedule := e.Value.(schedule)
 			if schedule.time <= nowUnix {
 				// this is temporary
-				log.Debug().Msgf("Running jobId=%s runId=%s", schedule.jobId, schedule.runId)
+				log.Debug().Int64("scheduled", schedule.time).Str("jobId", schedule.jobId).
+					Str("runId", schedule.runId).Msg("Running")
 				js.scheduleWithoutLock(schedule.jobId, now)
 			}
 		}

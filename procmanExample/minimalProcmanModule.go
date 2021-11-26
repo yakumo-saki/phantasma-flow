@@ -4,7 +4,6 @@ import (
 	"context"
 	"time"
 
-	"github.com/rs/zerolog/log"
 	"github.com/yakumo-saki/phantasma-flow/procman"
 	"github.com/yakumo-saki/phantasma-flow/util"
 )
@@ -68,7 +67,8 @@ shutdown:
 func (m *MinimalProcmanModule) loop(ctx context.Context) {
 	time.Sleep(procman.MAIN_LOOP_WAIT)
 	<-ctx.Done()
-	log.Logger.Debug().Msg("loop exit")
+	log := util.GetLogger()
+	log.Debug().Msg("loop exit")
 }
 
 func (sv *MinimalProcmanModule) Shutdown() {

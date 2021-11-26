@@ -53,14 +53,15 @@ func main() {
 
 	// Load definitions
 	repo.SendAllNodes() // must send node before job (must exist node, job requires)
-	repo.SendAllJobs()
-
 	messagehub.WaitForQueueEmpty(&log, hub)
+	repo.SendAllJobs()
+	messagehub.WaitForQueueEmpty(&log, hub)
+
 	// XXX: ノードとかジョブが行き渡ったことを確認する必要がある？
 	// nodeDef とか JobDef を送った数の分のノードができたことをチェックする？
 
 	// main loop
-	processManager.AddService(&server.Server{})
+	processManager.Add(&server.Server{})
 	log.Info().Msg("Phantasma-flow started.")
 
 	// for debug

@@ -5,6 +5,7 @@ import (
 	"os"
 	"path"
 
+	"github.com/rs/zerolog/log"
 	"github.com/yakumo-saki/phantasma-flow/util"
 )
 
@@ -30,7 +31,7 @@ type phflowPath struct {
 // ENV or ~/.config/phantasma-flow
 // if fail, cause PANIC
 func aquirePhflowPath() phflowPath {
-	util.GetLoggerWithSource(myname, "p.Home")
+	util.GetLoggerWithSource(myname, "phflowPath")
 
 	p := phflowPath{}
 
@@ -41,7 +42,7 @@ func aquirePhflowPath() phflowPath {
 	if p.Home == "" {
 		home, err := os.UserHomeDir()
 		if err != nil {
-			panic("Get p.Home fail, Please set PHFLOW_HOME environment value.")
+			panic("Get home fail, Please set PHFLOW_HOME environment value.")
 		}
 		p.Home = path.Join(home, ".config", "phantasma-flow")
 	}
@@ -54,6 +55,12 @@ func aquirePhflowPath() phflowPath {
 	if p.Temp == "" {
 		p.Temp = path.Join(p.Home, "temp")
 	}
+
+	p.JobDef = path.Join(p.Def, "job")
+	p.NodeDef = path.Join(p.Def, "node")
+	p.ConfigDef = path.Join(p.Def, "config")
+	p.JobLog = path.Join(p.Data, "log")
+	p.JobMeta = path.Join(p.Data, "meta")
 
 	isNotGoodDir(p.Home, ENV_HOME_DIR)
 	isNotGoodDir(p.Def, ENV_DEF_DIR)
@@ -72,7 +79,7 @@ func aquirePhflowPath() phflowPath {
 }
 
 func isNotGoodDir(dirname string, name string) {
-	fmt.Println(dirname, name)
+
 	if dirname != "" {
 		st, err := os.Stat(dirname)
 		if os.IsNotExist(err) {
@@ -90,9 +97,12 @@ func isNotGoodDir(dirname string, name string) {
 }
 
 func makeSureDirExists(p phflowPath) {
-	mkdir := func(p string) {
-		if e := os.MkdirAll(p, 0750); e != nil {
-			panic(fmt.Sprintf("mkdir failed %s %e\n", p, e))
+	util.GetLoggerWithSource(myname, "phflowPath")
+
+	mkdir := func(pth string) {
+		if e := os.MkdirAll(pth, 0750); e != nil {
+			log.Err(e).Str("dir", pth).Msgf("mkdir failed")
+			panic(fmt.Sprintf("mkdir failed %s %s\n", pth, e))
 		}
 	}
 

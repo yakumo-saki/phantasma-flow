@@ -2,8 +2,13 @@ package logcollecter
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
+	"os"
+	"path"
 	"time"
 
+	"github.com/yakumo-saki/phantasma-flow/repository"
 	"github.com/yakumo-saki/phantasma-flow/util"
 )
 
@@ -20,7 +25,7 @@ func (m *LogListenerModule) CreateLogListener(runId string, jobId string) <-chan
 	m.logCloseFunc.Store(runId, cancelFunc)
 
 	m.logChannelsWg.Add(1)
-	go m.logListener(ctx, runId, ret)
+	go m.logListener(ctx, runId, jobId, ret)
 
 	return ret
 }
@@ -37,17 +42,63 @@ func (m *LogListenerModule) GetLogListener(runId string) (<-chan LogMessage, boo
 }
 
 // Maybe collect and save jobresult (executed job step result)
-func (m *LogListenerModule) logListener(ctx context.Context, runId string, logInCh <-chan LogMessage) {
+func (m *LogListenerModule) logListener(ctx context.Context, runId string, jobId string, logInCh <-chan LogMessage) {
+	log := util.GetLoggerWithSource(m.GetName(), "logListener")
 
 	defer m.logChannelsWg.Done()
 
-	// open log file if exist
-	// datetimeStr := time.Now().Format("20060102150405")
-	// filename := fmt.Sprintf("%s_%s_%s")
-	// wait loop and receive -> append
-	// close log file
+	datetimeStr := time.Now().Format("20060102150405")
+	filename := fmt.Sprintf("%s_%s_%s", datetimeStr, runId, jobId)
 
-	// return
+	logDir := repository.GetLogDirectory()
+	logfile := path.Join(logDir, filename)
+
+	needClose := true
+	useEmergencyLog := false
+	emLog := util.GetLoggerWithSource(m.GetName(), "emergency")
+
+	f, err := os.OpenFile(logfile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		log.Err(err).Msgf("Open log file failed %s, output to server log", logfile)
+		useEmergencyLog = true
+		needClose = false
+	}
+
+	for {
+		select {
+		case msg := <-logInCh:
+			bytes, err := json.Marshal(msg)
+			logmsg := ""
+			if err != nil {
+				log.Err(err).Msg("JSON Marshal error")
+				logmsg = fmt.Sprint(msg) // fallback
+			} else {
+				logmsg = string(bytes)
+			}
+
+			if !useEmergencyLog {
+				_, err = f.Write([]byte(logmsg + "\n"))
+				if err != nil {
+					log.Err(err).Msg("Log write error, use server log")
+					useEmergencyLog = true
+				}
+			}
+
+			// write log failed or open failed, then server log
+			if useEmergencyLog {
+				emLog.Info().Msg(logmsg)
+			}
+		case <-ctx.Done():
+			goto shutdown
+		}
+	}
+
+shutdown:
+	if needClose {
+		if err := f.Close(); err != nil {
+			log.Err(err).Msgf("Log close error %s", logfile)
+		}
+	}
 }
 
 func (m *LogListenerModule) logListenerCloser(ctx context.Context) {
