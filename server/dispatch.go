@@ -12,7 +12,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/yakumo-saki/phantasma-flow/logcollecter"
 	"github.com/yakumo-saki/phantasma-flow/pkg/server"
 	"github.com/yakumo-saki/phantasma-flow/util"
 )
@@ -24,8 +23,8 @@ func (sv *Server) dispatch(rootctx context.Context, conn net.Conn) {
 
 	log.Debug().Msg("request_dispatcher")
 	scanner := bufio.NewScanner(conn)
-	logchannel := make(chan string, 100)
-	stopChannel := make(chan string, 1)
+	// logchannel := make(chan string, 100)
+	// stopChannel := make(chan string, 1)
 
 	atomic.AddInt32(&sv.connections, 1)
 
@@ -52,7 +51,6 @@ func (sv *Server) dispatch(rootctx context.Context, conn net.Conn) {
 		switch lineStr {
 		case "LISTENER":
 			log.Debug().Msg("Start listener")
-			go logcollecter.PseudoLogSender(nil, stopChannel, logchannel)
 		case "COMMANDER":
 			log.Debug().Msg("Start commander")
 		case "PING":

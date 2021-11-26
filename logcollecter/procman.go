@@ -2,13 +2,18 @@ package logcollecter
 
 import (
 	"context"
+	"sync"
 
 	"github.com/yakumo-saki/phantasma-flow/procman"
 	"github.com/yakumo-saki/phantasma-flow/util"
+	"golang.org/x/sync/syncmap"
 )
 
 type LogListenerModule struct {
 	procman.ProcmanModuleStruct
+	logChannelsWg sync.WaitGroup
+	logChannels   syncmap.Map // [string(runId)] <-chan LogMessage
+	logCloseFunc  syncmap.Map // [string(runId)] context.CancelFunc
 }
 
 func (m *LogListenerModule) IsInitialized() bool {
@@ -20,6 +25,8 @@ func (m *LogListenerModule) Initialize() error {
 	// procman -> PAUSE(prepare for backup) is considered
 	m.Name = "LogListener"
 	m.Initialized = true
+	m.logChannels = syncmap.Map{}
+	m.logChannelsWg = sync.WaitGroup{}
 	m.RootCtx, m.RootCancel = context.WithCancel(context.Background())
 	return nil
 }
@@ -35,6 +42,8 @@ func (m *LogListenerModule) Start(inCh <-chan string, outCh chan<- string) error
 	m.FromProcmanCh = inCh
 	m.ToProcmanCh = outCh
 	log := util.GetLoggerWithSource(m.GetName(), "start")
+
+	go m.logListenerCloser(m.RootCtx)
 
 	log.Info().Msgf("Starting %s server.", m.GetName())
 

@@ -18,22 +18,25 @@ type Repository struct {
 	nodes   []objects.NodeDefinition
 	jobs    []objects.JobDefinition
 	configs []objects.Config
+
+	paths phflowPath
 }
 
-func (r *Repository) Initialize(path string) error {
+func (r *Repository) Initialize() error {
 	log := util.GetLoggerWithSource(myname, "initialize")
 	log.Debug().Msg("Repository initialize")
 
-	dirType := map[objectType][]string{
-		NODE:   {"definitions", "node"},
-		CONFIG: {"definitions", "config"},
-		JOB:    {"definitions", "job"},
+	r.paths = aquirePhflowPath()
+
+	dirType := map[objectType]string{
+		NODE:   r.paths.NodeDef,
+		CONFIG: r.paths.ConfigDef,
+		JOB:    r.paths.JobDef,
 	}
 
-	for typ, pt := range dirType {
-		readDirPath := util.JoinPath(path, pt)
-		log.Debug().Msgf("Reading %s from %s", typ, readDirPath)
-		err := r.readAllYaml(readDirPath, typ)
+	for typ, dirPath := range dirType {
+		log.Debug().Msgf("Reading %s from %s", typ, dirPath)
+		err := r.readAllYaml(dirPath, typ)
 		if err != nil {
 			return err
 		}
