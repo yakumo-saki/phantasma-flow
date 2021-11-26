@@ -8,6 +8,7 @@ security:
   # maybe username/password or apikey
   mode: none
 job:
-  # default log keeping
-  max-result: 60
-  max-logs: 30
+  log:
+    # default log keeping
+    max-result: 60
+    max-logs: 30
