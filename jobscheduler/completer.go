@@ -2,6 +2,7 @@ package jobscheduler
 
 import (
 	"context"
+	"time"
 
 	"github.com/yakumo-saki/phantasma-flow/messagehub"
 	"github.com/yakumo-saki/phantasma-flow/pkg/messagehubObjects"
@@ -18,7 +19,7 @@ func (js *JobScheduler) jobCompleter(ctx context.Context) {
 	log.Debug().Msgf("%s started.", NAME)
 
 	for {
-		// now := time.Now()
+		now := time.Now()
 
 		var exeMsg messagehubObjects.ExecuterMsg
 		select {
@@ -28,20 +29,29 @@ func (js *JobScheduler) jobCompleter(ctx context.Context) {
 		case msg := <-jobReportCh:
 			exeMsg = msg.Body.(messagehubObjects.ExecuterMsg)
 		}
-		if exeMsg.Reason != messagehubObjects.JOB_END {
+
+		switch exeMsg.Reason {
+		case messagehubObjects.JOB_END:
+			// end
+		case messagehubObjects.JOB_START:
+			// start
+		default:
 			continue
 		}
 
 		js.mutex.Lock()
 
-		// complete job, by runId. and set next schedule
-
-		// scan for all schedules
 		for e := js.runnables.Front(); e != nil; e = e.Next() {
-			//schedule := e.Value.(schedule)
-			//js.runnables.Remove(e)
-			// this is mockup, in real some notify from msghub
-			//js.scheduleWithoutLock(schedule.jobId, now)
+			schedule := e.Value.(schedule)
+
+			switch exeMsg.Reason {
+			case messagehubObjects.JOB_START:
+				schedule.runAt = now.Unix()
+			case messagehubObjects.JOB_END:
+				schedule.endAt = now.Unix()
+				js.runnables.Remove(e)
+				js.scheduleWithoutLock(schedule.jobId, now)
+			}
 		}
 
 		js.mutex.Unlock()

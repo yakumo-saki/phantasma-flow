@@ -26,6 +26,9 @@ func (js *JobScheduler) pickRunnable(ctx context.Context) {
 
 				schedule.queuedAt = nowUnix
 				js.runnables.PushBack(schedule)
+				js.schedules.Remove(e)
+
+				// TODO call executer
 			}
 		}
 

@@ -42,7 +42,6 @@ func (js *JobScheduler) Start(inCh <-chan string, outCh chan<- string) error {
 	// subscribe to messagehub
 	jobDefCh := messagehub.Listen(messagehub.TOPIC_JOB_DEFINITION, js.GetName())
 
-	go js.runner(js.RootCtx)
 	go js.pickRunnable(js.RootCtx)
 	go js.jobCompleter(js.RootCtx)
 
