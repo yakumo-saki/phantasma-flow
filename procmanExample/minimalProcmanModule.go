@@ -67,16 +67,16 @@ shutdown:
 func (m *MinimalProcmanModule) loop(ctx context.Context) {
 	time.Sleep(procman.MAIN_LOOP_WAIT)
 	<-ctx.Done()
-	log := util.GetLogger()
+	log := util.GetLoggerWithSource(m.GetName())
 	log.Debug().Msg("loop exit")
 }
 
-func (sv *MinimalProcmanModule) Shutdown() {
+func (m *MinimalProcmanModule) Shutdown() {
 	// When shutdown initiated, procman calls this function.
 	// All modules must send SHUTDOWN_DONE to procman before timeout.
 	// Otherwise procman is not stop or force shutdown.
 
-	log := util.GetLogger()
+	log := util.GetLoggerWithSource(m.GetName())
 	log.Debug().Msg("Shutdown initiated")
-	sv.RootCancel()
+	m.RootCancel()
 }

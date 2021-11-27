@@ -8,27 +8,25 @@ import (
 )
 
 // job runner
-func (js *JobScheduler) runner(ctx context.Context) {
-	const NAME = "runner"
+func (js *JobScheduler) pickRunnable(ctx context.Context) {
+	const NAME = "pickRunnable"
 	log := util.GetLoggerWithSource(js.GetName(), NAME)
 	for {
 		benchTime := time.Now()
 		js.mutex.Lock()
 		now := time.Now()
+		nowUnix := now.Unix()
 
 		// scan for all schedules
-		for e := js.runnables.Front(); e != nil; e = e.Next() {
+		for e := js.schedules.Front(); e != nil; e = e.Next() {
 			schedule := e.Value.(schedule)
-			// this is temporary
-			// check Node queue space and run
-			log.Debug().Int64("scheduled", schedule.time).Str("jobId", schedule.jobId).
-				Str("runId", schedule.runId).Msg("Running (and done)")
+			if schedule.time <= nowUnix {
+				log.Debug().Int64("scheduled", schedule.time).Str("jobId", schedule.jobId).
+					Str("runId", schedule.runId).Msg("Running")
 
-			schedule.runAt = now.Unix()
-			schedule.endAt = now.Unix()
-			js.runnables.Remove(e)
-			// this is mockup, in real some notify from msghub
-			js.scheduleWithoutLock(schedule.jobId, now)
+				schedule.queuedAt = nowUnix
+				js.runnables.PushBack(schedule)
+			}
 		}
 
 		js.mutex.Unlock()

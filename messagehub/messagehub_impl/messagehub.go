@@ -79,7 +79,7 @@ func (hub *MessageHub) Shutdown() {
 
 	// Immediate shutdown, when called shutdown in sender stopped state
 	if hub.senderCtx == nil {
-		log.Warn().Msgf("Shutdown immediate. because of no sender started. Wait queue left: %d", hub.queue.GetLen())
+		log.Warn().Int("queue_len", hub.queue.GetLen()).Msgf("Shutdown immediate. because of no sender started.")
 		return
 	}
 
@@ -98,11 +98,11 @@ func (hub *MessageHub) Shutdown() {
 
 		select {
 		case <-ctx.Done():
-			log.Warn().Msgf("Shutdown timeout. force shutdown. Wait queue left: %d", hub.queue.GetLen())
+			log.Warn().Int("queue_len", hub.queue.GetLen()).Msgf("Shutdown timeout. force shutdown.")
 			stop = true
 		case <-time.After(3 * time.Second):
 			left := hub.queue.GetLen()
-			log.Info().Msgf("Shutdown in progress. Wait queue left: %d", left)
+			log.Info().Int("queue_len", hub.queue.GetLen()).Msgf("Shutdown in progress.")
 			stop = (left == 0)
 		}
 
@@ -197,8 +197,7 @@ func (hub *MessageHub) Listen(topic string, name string) chan *messagehubObjects
 
 	hub.listeners.Store(topic, &ls)
 
-	log.Debug().Msgf("New listener added name:%s topic:%s listeners:%d",
-		name, topic, len(ls))
+	log.Debug().Str("name", name).Str("topic", topic).Int("listeners", len(ls)).Msgf("New listener added.")
 
 	return ch
 }

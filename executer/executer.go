@@ -3,14 +3,8 @@ package executer
 import (
 	"context"
 
-	"github.com/yakumo-saki/phantasma-flow/pkg/objects"
 	"github.com/yakumo-saki/phantasma-flow/util"
 )
-
-type Executer struct {
-	Job  objects.JobDefinition
-	Node objects.NodeDefinition
-}
 
 func (e *Executer) Run(parentCtx context.Context) {
 	log := util.GetLoggerWithSource("Executer " + e.Job.Id)

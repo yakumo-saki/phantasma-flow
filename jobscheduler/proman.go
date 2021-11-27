@@ -22,8 +22,9 @@ func (m *JobScheduler) Initialize() error {
 	m.Initialized = true
 	m.jobs = make(map[string]job)
 	m.schedules = list.New()
+	m.runnables = list.New()
 	m.mutex = sync.Mutex{}
-	m.rootCtx, m.rootCancel = context.WithCancel(context.Background())
+	m.RootCtx, m.RootCancel = context.WithCancel(context.Background())
 	return nil
 }
 
@@ -41,7 +42,9 @@ func (js *JobScheduler) Start(inCh <-chan string, outCh chan<- string) error {
 	// subscribe to messagehub
 	jobDefCh := messagehub.Listen(messagehub.TOPIC_JOB_DEFINITION, js.GetName())
 
-	go js.runner(js.rootCtx)
+	go js.runner(js.RootCtx)
+	go js.pickRunnable(js.RootCtx)
+	go js.jobCompleter(js.RootCtx)
 
 	// start ok
 	js.ToProcmanCh <- procman.RES_STARTUP_DONE
@@ -58,7 +61,7 @@ func (js *JobScheduler) Start(inCh <-chan string, outCh chan<- string) error {
 			jobdef := jobDefMsg.JobDefinition
 			id := js.addJob(jobdef)
 			js.schedule(id, time.Now())
-		case <-js.rootCtx.Done():
+		case <-js.RootCtx.Done():
 			goto shutdown
 		}
 	}
@@ -90,7 +93,7 @@ func (sv *JobScheduler) Shutdown() {
 
 	log := util.GetLogger()
 	log.Debug().Msg("Shutdown initiated")
-	sv.rootCancel()
+	sv.RootCancel()
 }
 
 func (js *JobScheduler) RequestHandler() {

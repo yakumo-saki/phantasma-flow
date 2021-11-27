@@ -42,6 +42,7 @@ func (js *JobScheduler) scheduleWithoutLock(jobId string, now time.Time) {
 	newSchedule := schedule{}
 	newSchedule.runId = randstr.String(8)
 	newSchedule.jobId = jobId
+	newSchedule.scheduledAt = now.Unix()
 
 	newSchedule.time = nextSchedule
 	js.schedules.PushFront(newSchedule)

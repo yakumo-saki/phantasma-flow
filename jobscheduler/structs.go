@@ -2,7 +2,6 @@ package jobscheduler
 
 import (
 	"container/list"
-	"context"
 	"sync"
 
 	"github.com/yakumo-saki/phantasma-flow/pkg/objects"
@@ -12,11 +11,10 @@ import (
 type JobScheduler struct {
 	procman.ProcmanModuleStruct
 
-	rootCtx    context.Context
-	rootCancel context.CancelFunc
-	jobs       map[string]job
-	schedules  *list.List // list of schedule
-	mutex      sync.Mutex
+	jobs      map[string]job
+	runnables *list.List // list of schedule(runnable)
+	schedules *list.List // list of schedule
+	mutex     sync.Mutex
 }
 
 // Create from jobdefinition. Filter out not needed for scheduling.
@@ -31,4 +29,9 @@ type schedule struct {
 	time  int64  // unixtime
 	runId string // sha1 of uuid
 	jobId string // job ID
+
+	scheduledAt int64
+	queuedAt    int64
+	runAt       int64
+	endAt       int64
 }
