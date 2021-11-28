@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/yakumo-saki/phantasma-flow/messagehub"
-	"github.com/yakumo-saki/phantasma-flow/pkg/messagehubObjects"
+	"github.com/yakumo-saki/phantasma-flow/pkg/message"
 	"github.com/yakumo-saki/phantasma-flow/util"
 )
 
@@ -21,19 +21,19 @@ func (js *JobScheduler) jobCompleter(ctx context.Context) {
 	for {
 		now := time.Now()
 
-		var exeMsg messagehubObjects.ExecuterMsg
+		var exeMsg message.ExecuterMsg
 		select {
 		case <-ctx.Done():
 			log.Debug().Msgf("%s/%s stopped.", js.GetName(), NAME)
 			goto shutdown
 		case msg := <-jobReportCh:
-			exeMsg = msg.Body.(messagehubObjects.ExecuterMsg)
+			exeMsg = msg.Body.(message.ExecuterMsg)
 		}
 
 		switch exeMsg.Reason {
-		case messagehubObjects.JOB_END:
+		case message.JOB_END:
 			// end
-		case messagehubObjects.JOB_START:
+		case message.JOB_START:
 			// start
 		default:
 			continue
@@ -45,9 +45,9 @@ func (js *JobScheduler) jobCompleter(ctx context.Context) {
 			schedule := e.Value.(schedule)
 
 			switch exeMsg.Reason {
-			case messagehubObjects.JOB_START:
+			case message.JOB_START:
 				schedule.runAt = now.Unix()
-			case messagehubObjects.JOB_END:
+			case message.JOB_END:
 				schedule.endAt = now.Unix()
 				js.runnables.Remove(e)
 				js.scheduleWithoutLock(schedule.jobId, now)

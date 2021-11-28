@@ -1,4 +1,4 @@
-package messagehubObjects
+package message
 
 import "github.com/yakumo-saki/phantasma-flow/pkg/objects"
 

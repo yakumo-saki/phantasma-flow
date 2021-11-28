@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/yakumo-saki/phantasma-flow/messagehub"
-	"github.com/yakumo-saki/phantasma-flow/pkg/messagehubObjects"
+	"github.com/yakumo-saki/phantasma-flow/pkg/message"
 	"github.com/yakumo-saki/phantasma-flow/pkg/objects"
 	"github.com/yakumo-saki/phantasma-flow/procman"
 	"github.com/yakumo-saki/phantasma-flow/util"
@@ -56,7 +56,7 @@ func (js *JobScheduler) Start(inCh <-chan string, outCh chan<- string) error {
 			log.Debug().Msgf("Got JobDefinitionMsg %s", job)
 
 			// TODO JOBS and re-schedule
-			jobDefMsg := job.Body.(messagehubObjects.JobDefinitionMsg)
+			jobDefMsg := job.Body.(message.JobDefinitionMsg)
 			jobdef := jobDefMsg.JobDefinition
 			id := js.addJob(jobdef)
 			js.schedule(id, time.Now())

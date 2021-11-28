@@ -1,4 +1,4 @@
-package messagehubObjects
+package message
 
 // From repository to all
 

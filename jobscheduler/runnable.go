@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/yakumo-saki/phantasma-flow/messagehub"
 	"github.com/yakumo-saki/phantasma-flow/util"
 )
 
@@ -29,6 +30,7 @@ func (js *JobScheduler) pickRunnable(ctx context.Context) {
 				js.schedules.Remove(e)
 
 				// TODO call executer
+				messagehub.Post(messagehub.TOPIC_JOB_RUN_REQUEST, struct{}{})
 			}
 		}
 

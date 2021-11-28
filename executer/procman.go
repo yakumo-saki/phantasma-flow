@@ -48,6 +48,7 @@ func (ex *Executer) Start(inCh <-chan string, outCh chan<- string) error {
 	jobRunCh := messagehub.Listen(messagehub.TOPIC_JOB_DEFINITION, ex.GetName())
 
 	go ex.runner(ex.RootCtx)
+	go ex.jobRequestHandler(ex.RootCtx)
 
 	// start ok
 	ex.ToProcmanCh <- procman.RES_STARTUP_DONE
@@ -60,7 +61,7 @@ func (ex *Executer) Start(inCh <-chan string, outCh chan<- string) error {
 			log.Debug().Msgf("Got JobDefinitionMsg %s", job)
 
 			// TODO schedule -> get real job
-			// jobDefMsg := job.Body.(messagehubObjects.JobDefinitionMsg)
+			// jobDefMsg := job.Body.(message.JobDefinitionMsg)
 			// jobdef := jobDefMsg.JobDefinition
 		case <-ex.RootCtx.Done():
 			goto shutdown

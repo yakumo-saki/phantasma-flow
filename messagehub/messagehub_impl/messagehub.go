@@ -7,13 +7,13 @@ import (
 	"time"
 
 	"github.com/enriquebris/goconcurrentqueue"
-	"github.com/yakumo-saki/phantasma-flow/pkg/messagehubObjects"
+	"github.com/yakumo-saki/phantasma-flow/pkg/message"
 	"github.com/yakumo-saki/phantasma-flow/util"
 )
 
 type listener struct {
 	name string
-	ch   chan *messagehubObjects.Message
+	ch   chan *message.Message
 }
 
 type MessageHub struct {
@@ -123,7 +123,7 @@ func (hub *MessageHub) Sender(ctxptr *context.Context) {
 
 	ctx := *ctxptr
 	for {
-		var msg *messagehubObjects.Message
+		var msg *message.Message
 		select {
 		case <-ctx.Done():
 			log.Info().Msg("Sender stopped.")
@@ -136,7 +136,7 @@ func (hub *MessageHub) Sender(ctxptr *context.Context) {
 			if err != nil {
 				continue
 			}
-			msg = m.(*messagehubObjects.Message)
+			msg = m.(*message.Message)
 		}
 
 		topic := msg.Topic
@@ -171,15 +171,15 @@ func (hub *MessageHub) GetMessageCount() uint64 {
 // post(msg) is available.
 // async / sync is up to you.
 func (hub *MessageHub) Post(topic string, body interface{}) {
-	hub.PostMsg(&messagehubObjects.Message{Topic: topic, Body: body})
+	hub.PostMsg(&message.Message{Topic: topic, Body: body})
 }
 
-func (hub *MessageHub) PostMsg(msg *messagehubObjects.Message) {
+func (hub *MessageHub) PostMsg(msg *message.Message) {
 	hub.queue.Enqueue(msg)
 	atomic.AddUint64(&hub.messageCount, 1)
 }
 
-func (hub *MessageHub) Listen(topic string, name string) chan *messagehubObjects.Message {
+func (hub *MessageHub) Listen(topic string, name string) chan *message.Message {
 	log := util.GetLogger()
 
 	hub.listenerMutex.Lock()
@@ -191,7 +191,7 @@ func (hub *MessageHub) Listen(topic string, name string) chan *messagehubObjects
 		array = arr.(*[]listener)
 	}
 
-	ch := make(chan *messagehubObjects.Message, 1)
+	ch := make(chan *message.Message, 1)
 	newListener := listener{name: name, ch: ch}
 	ls := append(*array, newListener)
 
