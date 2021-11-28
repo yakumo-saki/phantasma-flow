@@ -4,11 +4,11 @@ import "fmt"
 
 type NodeDefinition struct {
 	ObjectBase
-	Meta            ObjectMetaBase `json:"meta"`
-	Id              string         `json:"id"`              // key
-	Name            string         `json:"name"`            // display name
-	NodeType        string         `json:"nodeType"`        // SSH / WinRM / internal
-	MaxParallelJobs int            `json:"maxParallelJobs"` // max concurrent job
+	Meta        ObjectMetaBase `json:"meta"`
+	Id          string         `json:"id"`          // key
+	Name        string         `json:"name"`        // display name
+	NodeType    string         `json:"nodeType"`    // SSH / WinRM / internal
+	MaxParallel int            `json:"maxParallel"` // max concurrent job point.
 }
 
 func (nd NodeDefinition) String() string {

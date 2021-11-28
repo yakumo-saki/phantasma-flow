@@ -10,7 +10,7 @@ const TOPIC_NODE_DEFINITION = "node-definition"
 const TOPIC_JOB_REPORT = "job-report"
 
 // job run request message from JobScheduler
-const TOPIC_JOB_RUN_REQUEST = "job-report"
+const TOPIC_JOB_RUN_REQUEST = "job-run-request"
 
 // use for backup
 const TOPIC_FREEZE_FILESYSTEM = "freeze-filesystem"

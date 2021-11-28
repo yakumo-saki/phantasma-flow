@@ -4,14 +4,16 @@ import (
 	"context"
 
 	"github.com/yakumo-saki/phantasma-flow/messagehub"
+	"github.com/yakumo-saki/phantasma-flow/pkg/message"
+	"github.com/yakumo-saki/phantasma-flow/pkg/objects"
 	"github.com/yakumo-saki/phantasma-flow/util"
 )
 
 // Add new job
-func (e *Executer) jobRequestHandler(ctx context.Context) {
+func (ex *Executer) jobRequestHandler(ctx context.Context) {
 	NAME := "jobRequest"
-	log := util.GetLoggerWithSource(e.GetName(), NAME)
-	log.Debug().Msgf("%s/%s started.", e.GetName(), NAME)
+	log := util.GetLoggerWithSource(ex.GetName(), NAME)
+	log.Debug().Msgf("%s/%s started.", ex.GetName(), NAME)
 
 	jobReqCh := messagehub.Listen(messagehub.TOPIC_JOB_RUN_REQUEST, NAME)
 
@@ -19,19 +21,32 @@ func (e *Executer) jobRequestHandler(ctx context.Context) {
 		select {
 		case <-ctx.Done():
 			goto shutdown
-		case req := <-jobReqCh:
+		case reqMsg := <-jobReqCh:
 
-			req.Body.(message.)
+			req := reqMsg.Body.(message.JobRequest)
 
-			e.mutex.Lock()
+			job := jobTask{}
+			job.Started = false
+			job.RunId = req.RunId
+			job.JobId = req.JobId
+			job.JobDef = objects.JobDefinition{} // XXX get jobdef from repo
+			job.JobStepTasks = []*jobStepTask{}
+			job.JobStepState = make(map[string]*jobStepStatus)
 
-			log.Debug().Msg("critical section")
-			// TODO: ... ???
+			step := jobStepTask{}
+			step.Name = "step1"
+			job.JobStepTasks = append(job.JobStepTasks, &step)
+			job.JobStepState[step.Name] = &jobStepStatus{Running: false, Done: false}
 
-			e.mutex.Unlock()
+			ex.mutex.Lock()
+
+			// TODO send log. job queued
+			log.Debug().Str("jobId", req.JobId).Str("runId", req.RunId).Msg("Request received.")
+			ex.jobQueue.PushBack(&job)
+			ex.mutex.Unlock()
 		}
 
 	}
 shutdown:
-	log.Debug().Msgf("%s/%s stopped.", e.GetName(), NAME)
+	log.Debug().Msgf("%s/%s stopped.", ex.GetName(), NAME)
 }

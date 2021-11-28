@@ -5,7 +5,6 @@ import (
 	"context"
 	"sync"
 
-	"github.com/yakumo-saki/phantasma-flow/messagehub"
 	"github.com/yakumo-saki/phantasma-flow/pkg/objects"
 	"github.com/yakumo-saki/phantasma-flow/procman"
 	"github.com/yakumo-saki/phantasma-flow/util"
@@ -14,10 +13,10 @@ import (
 type Executer struct {
 	procman.ProcmanModuleStruct
 
-	Job       objects.JobDefinition
-	Node      objects.NodeDefinition
-	mutex     sync.Mutex
-	runnables *list.List
+	Job      objects.JobDefinition
+	Node     objects.NodeDefinition
+	mutex    sync.Mutex
+	jobQueue *list.List
 }
 
 func (m *Executer) IsInitialized() bool {
@@ -27,7 +26,7 @@ func (m *Executer) IsInitialized() bool {
 func (m *Executer) Initialize() error {
 	m.Name = "Executer"
 	m.Initialized = true
-	m.runnables = list.New()
+	m.jobQueue = list.New()
 	m.mutex = sync.Mutex{}
 	m.RootCtx, m.RootCancel = context.WithCancel(context.Background())
 	return nil
@@ -44,9 +43,6 @@ func (ex *Executer) Start(inCh <-chan string, outCh chan<- string) error {
 
 	log.Info().Msgf("Starting %s server.", ex.GetName())
 
-	// subscribe to messagehub
-	jobRunCh := messagehub.Listen(messagehub.TOPIC_JOB_DEFINITION, ex.GetName())
-
 	go ex.runner(ex.RootCtx)
 	go ex.jobRequestHandler(ex.RootCtx)
 
@@ -57,12 +53,12 @@ func (ex *Executer) Start(inCh <-chan string, outCh chan<- string) error {
 		select {
 		case v := <-ex.FromProcmanCh:
 			log.Debug().Msgf("Got request %s", v)
-		case job := <-jobRunCh:
-			log.Debug().Msgf("Got JobDefinitionMsg %s", job)
+		// case job := <-jobRunCh:
+		// 	log.Debug().Msgf("Got JobDefinitionMsg %s", job)
 
-			// TODO schedule -> get real job
-			// jobDefMsg := job.Body.(message.JobDefinitionMsg)
-			// jobdef := jobDefMsg.JobDefinition
+		// TODO schedule -> get real job
+		// jobDefMsg := job.Body.(message.JobDefinitionMsg)
+		// jobdef := jobDefMsg.JobDefinition
 		case <-ex.RootCtx.Done():
 			goto shutdown
 		}

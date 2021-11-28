@@ -1,17 +1,7 @@
 package message
 
-import "github.com/yakumo-saki/phantasma-flow/pkg/objects"
-
-type definition struct {
+type JobRequest struct {
 	Reason string // ADD , CHANGE , INITIAL
-}
-
-type NodeDefinitionMsg struct {
-	definition
-	NodeDefinition objects.NodeDefinition
-}
-
-type JobDefinitionMsg struct {
-	definition
-	JobDefinition objects.JobDefinition
+	JobId  string
+	RunId  string
 }
