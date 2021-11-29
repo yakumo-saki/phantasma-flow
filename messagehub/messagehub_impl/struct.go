@@ -17,15 +17,9 @@ type MessageHub struct {
 	listeners       sync.Map
 	listenerMutex   sync.Mutex // to read listeners TODO: mutex can be per topic basis for performance
 	queue           *goconcurrentqueue.FIFO
-	senderCtxMap    map[string]cancelContext
 	senderWaitGroup sync.WaitGroup
 	senderCtx       *context.Context
 	senderCancel    *context.CancelFunc
 	messageCount    uint64
 	Name            string
-}
-
-type cancelContext struct {
-	ctx    *context.Context
-	cancel *context.CancelFunc
 }

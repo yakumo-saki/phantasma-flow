@@ -48,7 +48,7 @@ func (nm *NodeManager) Start(inCh <-chan string, outCh chan<- string) error {
 
 	log.Info().Msgf("Starting %s.", nm.GetName())
 
-	nodeCh := messagehub.Listen(messagehub.TOPIC_NODE_DEFINITION, nm.GetName())
+	nodeCh := messagehub.Subscribe(messagehub.TOPIC_NODE_DEFINITION, nm.GetName())
 
 	nm.ToProcmanCh <- procman.RES_STARTUP_DONE
 

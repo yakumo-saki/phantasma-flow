@@ -48,7 +48,7 @@ func (hub *MessageHub) Sender(ctxptr *context.Context) {
 
 		listerners := liss.(*[]listener)
 		for _, lis := range *listerners {
-			log.Trace().Str("topic", topic).Str("listener", lis.name).Msgf("Send message: %v", msg)
+			// log.Trace().Str("topic", topic).Str("listener", lis.name).Msgf("Send message: %v", msg)
 			lis.ch <- msg
 		}
 		hub.listenerMutex.Unlock()

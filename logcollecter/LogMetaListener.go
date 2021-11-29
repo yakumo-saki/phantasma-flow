@@ -17,19 +17,22 @@ func (m *LogListenerModule) jobMetaListener(ctx context.Context, runId string, j
 
 	defer m.logChannelsWg.Done()
 
-	messagehub.Listen(messagehub.TOPIC_JOB_REPORT, NAME)
+	messagehub.Subscribe(messagehub.TOPIC_JOB_REPORT, NAME)
 
 	for {
 		select {
 		case msg := <-logInCh:
 			bytes, err := json.Marshal(msg)
-			logmsg := ""
+			var logmsg string
 			if err != nil {
 				log.Err(err).Msg("JSON Marshal error")
 				logmsg = fmt.Sprint(msg) // fallback
 			} else {
 				logmsg = string(bytes)
 			}
+
+			// TODO append to file
+			log.Debug().Msg(logmsg)
 
 		case <-ctx.Done():
 			goto shutdown
@@ -41,6 +44,12 @@ shutdown:
 
 // Check single job
 func (m *LogListenerModule) jobMetaTracer(ctx context.Context, runId string, jobId string, logInCh <-chan LogMessage) {
+	NAME := "jobMetaTracer"
+	log := util.GetLoggerWithSource(m.GetName(), NAME)
+
 	logDir := repository.GetJobMetaDirectory()
+
+	//TODO implement
+	log.Debug().Msg(logDir)
 
 }

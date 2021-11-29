@@ -20,8 +20,9 @@ func TestUnsubscribe(t *testing.T) {
 
 	// add listener
 	wg := sync.WaitGroup{}
-	wg.Add(2)
-	go Listen(&hub, &wg, "topic1", "listner1")
+	wg.Add(3)
+	go Listen(&hub, &wg, "topic1", "listner11")
+	go Listen(&hub, &wg, "topic1", "listner12")
 	go ListenerWithShutdownCh(&hub, &wg, "topic1", "shutdown", "listner2")
 	wg.Wait()
 
@@ -45,7 +46,8 @@ func TestUnsubscribe(t *testing.T) {
 	hub.Shutdown()
 
 	assert := assert.New(t)
-	assert.Equal(count, getCount("listner1"))
+	assert.Equal(count, getCount("listner11"))
+	assert.Equal(count, getCount("listner12"))
 	assert.Equal(count-1, getCount("listner2"))
 }
 

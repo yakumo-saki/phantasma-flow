@@ -40,7 +40,7 @@ func (js *JobScheduler) Start(inCh <-chan string, outCh chan<- string) error {
 	log.Info().Msgf("Starting %s server.", js.GetName())
 
 	// subscribe to messagehub
-	jobDefCh := messagehub.Listen(messagehub.TOPIC_JOB_DEFINITION, js.GetName())
+	jobDefCh := messagehub.Subscribe(messagehub.TOPIC_JOB_DEFINITION, js.GetName())
 
 	go js.pickRunnable(js.RootCtx)
 	go js.jobCompleter(js.RootCtx)

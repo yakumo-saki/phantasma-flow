@@ -14,7 +14,7 @@ func (js *JobScheduler) jobCompleter(ctx context.Context) {
 	const NAME = "jobCompleter"
 	log := util.GetLoggerWithSource(js.GetName(), NAME)
 
-	jobReportCh := messagehub.Listen(messagehub.TOPIC_JOB_REPORT, NAME)
+	jobReportCh := messagehub.Subscribe(messagehub.TOPIC_JOB_REPORT, NAME)
 
 	log.Debug().Msgf("%s started.", NAME)
 

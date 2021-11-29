@@ -17,9 +17,6 @@ func (hub *MessageHub) Initialize() {
 	hub.listenerMutex = sync.Mutex{}
 	hub.queue = goconcurrentqueue.NewFIFO()
 	hub.senderWaitGroup = sync.WaitGroup{}
-	hub.senderCtxMap = make(map[string]cancelContext)
-
-	// go hub.reportQueueLength()
 }
 
 // XXX senderのctxはすべて記録しないとだめ。 unsubscribeできない。
@@ -70,7 +67,7 @@ func (hub *MessageHub) Shutdown() {
 
 	// wait for queue flushed
 	stop := false
-
+	loopcount := 0
 	for {
 
 		select {
@@ -79,15 +76,19 @@ func (hub *MessageHub) Shutdown() {
 			stop = true
 		default:
 			left := hub.queue.GetLen()
-			log.Info().Int("queue_len", hub.queue.GetLen()).Msgf("Shutdown in progress. Wait for all messages sent.")
 			stop = (left == 0)
+			if loopcount > 9 {
+				log.Info().Int("queue_len", hub.queue.GetLen()).Msgf("Shutdown in progress. Wait for all messages sent.")
+				loopcount = 0
+			}
 		}
 
 		if stop {
 			goto shutdown
 		}
 
-		time.Sleep(3 * time.Second)
+		time.Sleep(500 * time.Millisecond)
+		loopcount++
 	}
 
 shutdown:
