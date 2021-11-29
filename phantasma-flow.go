@@ -55,9 +55,9 @@ func main() {
 
 	// Load definitions
 	repo.SendAllNodes() // must send node before job (must exist node, job requires)
-	messagehub.WaitForQueueEmpty(&log, hub)
+	messagehub.WaitForQueueEmpty("Wait for node registration")
 	repo.SendAllJobs()
-	messagehub.WaitForQueueEmpty(&log, hub)
+	messagehub.WaitForQueueEmpty("Wait for job registration")
 
 	// XXX: ノードとかジョブが行き渡ったことを確認する必要がある？
 	// nodeDef とか JobDef を送った数の分のノードができたことをチェックする？

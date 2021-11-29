@@ -15,7 +15,7 @@ func (ex *Executer) jobRequestHandler(ctx context.Context) {
 	log := util.GetLoggerWithSource(ex.GetName(), NAME)
 	log.Debug().Msgf("%s/%s started.", ex.GetName(), NAME)
 
-	jobReqCh := messagehub.Listen(messagehub.TOPIC_JOB_RUN_REQUEST, NAME)
+	jobReqCh := messagehub.Subscribe(messagehub.TOPIC_JOB_RUN_REQUEST, NAME)
 
 	for {
 		select {

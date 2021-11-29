@@ -41,7 +41,7 @@ func (m *LogListenerModule) GetLogListener(runId string) (<-chan LogMessage, boo
 	}
 }
 
-// Maybe collect and save jobresult (executed job step result)
+// Collect and save jobresult (executed job step result)
 func (m *LogListenerModule) logListener(ctx context.Context, runId string, jobId string, logInCh <-chan LogMessage) {
 	log := util.GetLoggerWithSource(m.GetName(), "logListener")
 

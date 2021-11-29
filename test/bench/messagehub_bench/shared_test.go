@@ -11,7 +11,7 @@ const MSG_EXIT = "exit"
 
 func ListenBench(hub *messagehub_impl.MessageHub, wg *sync.WaitGroup, topic, myname string) {
 	count := 0
-	ch := hub.Listen(topic, myname)
+	ch := hub.Subscribe(topic, myname)
 	wg.Done()
 	fmt.Printf("%s listen %s ok\n", myname, topic)
 	for {

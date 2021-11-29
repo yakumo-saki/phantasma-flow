@@ -11,9 +11,14 @@ func SetMessageHub(mhub *messagehub_impl.MessageHub) {
 	hub = mhub
 }
 
-func Listen(topic string, name string) chan *message.Message {
-	return hub.Listen(topic, name)
+func Subscribe(topic string, name string) chan *message.Message {
+	return hub.Subscribe(topic, name)
 }
+
+func Unsubscribe(topic string, name string) {
+	hub.Unsubscribe(topic, name)
+}
+
 func Post(topic string, body interface{}) {
 	hub.Post(topic, body)
 }
@@ -24,4 +29,8 @@ func NewMessage() *message.Message {
 
 func GetQueueLength() int {
 	return hub.GetQueueLength()
+}
+
+func WaitForQueueEmpty(msg string) {
+	hub.WaitForQueueEmpty(msg)
 }

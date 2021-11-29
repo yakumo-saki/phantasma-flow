@@ -1,19 +1,20 @@
-package messagehub
+package messagehub_impl
 
 import (
 	"time"
 
-	"github.com/rs/zerolog"
-	"github.com/yakumo-saki/phantasma-flow/messagehub/messagehub_impl"
+	"github.com/yakumo-saki/phantasma-flow/util"
 )
 
 // Wait for all message is sent.
 // NOTE: This not blocks incoming new message.
-func WaitForQueueEmpty(log *zerolog.Logger, hub *messagehub_impl.MessageHub) {
+func (hub *MessageHub) WaitForQueueEmpty(msg string) {
+	log := util.GetLoggerWithSource(hub.Name, "waitForEmpty").
+		With().Str("message", msg).Logger()
 	for {
 		if hub.GetQueueLength() == 0 {
 			log.Debug().Msg("Wait for message hub done.")
-			break
+			return
 		}
 		time.Sleep(100 * time.Millisecond)
 	}

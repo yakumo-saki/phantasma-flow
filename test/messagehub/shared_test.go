@@ -13,7 +13,7 @@ var listenResult sync.Map
 
 func Listen(hub *messagehub_impl.MessageHub, wg *sync.WaitGroup, topic, myname string) {
 	count := 0
-	ch := hub.Listen(topic, myname)
+	ch := hub.Subscribe(topic, myname)
 	wg.Done()
 	for {
 		v := <-ch
@@ -31,7 +31,7 @@ func Listen(hub *messagehub_impl.MessageHub, wg *sync.WaitGroup, topic, myname s
 
 func ListenBench(hub *messagehub_impl.MessageHub, topic, myname string) {
 	count := 0
-	ch := hub.Listen(topic, myname)
+	ch := hub.Subscribe(topic, myname)
 	fmt.Printf("%s listen %s ok\n", myname, topic)
 	for {
 		v := <-ch

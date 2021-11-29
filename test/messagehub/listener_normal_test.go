@@ -16,6 +16,7 @@ func TestMessageHubSync(t *testing.T) {
 	// null sending
 	hub := messagehub_impl.MessageHub{}
 	hub.Initialize()
+	messagehub.SetMessageHub(&hub)
 
 	msg := messagehub.NewMessage()
 	msg.Topic = "topic1"

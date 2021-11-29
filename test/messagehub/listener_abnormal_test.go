@@ -15,6 +15,7 @@ func TestMessageHubAbnormal(t *testing.T) {
 
 	hub := messagehub_impl.MessageHub{}
 	hub.Initialize()
+	messagehub.SetMessageHub(&hub)
 
 	hub.StopSender() // Stop not started sender is ok
 
