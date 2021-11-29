@@ -20,7 +20,7 @@ func (hub *MessageHub) Sender(ctxptr *context.Context) {
 		var msg *message.Message
 		select {
 		case <-ctx.Done():
-			log.Info().Msg("Sender stopped.")
+			log.Debug().Msg("Sender stopped.")
 			return
 		default:
 			// wait for message
@@ -48,7 +48,7 @@ func (hub *MessageHub) Sender(ctxptr *context.Context) {
 
 		listerners := liss.(*[]listener)
 		for _, lis := range *listerners {
-			log.Trace().Str("topic", topic).Str("listener", lis.name).Msgf("%v", msg)
+			log.Trace().Str("topic", topic).Str("listener", lis.name).Msgf("Send message: %v", msg)
 			lis.ch <- msg
 		}
 		hub.listenerMutex.Unlock()

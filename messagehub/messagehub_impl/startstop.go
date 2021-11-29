@@ -2,6 +2,7 @@ package messagehub_impl
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
@@ -48,7 +49,7 @@ func (hub *MessageHub) StopSender() {
 	cancel()
 
 	hub.senderWaitGroup.Wait()
-	log.Info().Msgf("Shutdown all senders done.")
+	log.Info().Msgf("Stopping all senders done.")
 	hub.senderCancel = nil
 	hub.senderCtx = nil
 }
@@ -69,28 +70,27 @@ func (hub *MessageHub) Shutdown() {
 
 	// wait for queue flushed
 	stop := false
+
 	for {
-		if hub.queue.GetLen() == 0 {
-			log.Info().Msgf("Empty wait queue. continue shutdown")
-			stop = true
-			break
-		}
 
 		select {
 		case <-ctx.Done():
-			log.Warn().Int("queue_len", hub.queue.GetLen()).Msgf("Shutdown timeout. force shutdown.")
+			log.Warn().Int("queue_len", hub.queue.GetLen()).Msgf("Shutdown timeout. Giving up send messages.")
 			stop = true
-		case <-time.After(3 * time.Second):
+		default:
 			left := hub.queue.GetLen()
-			log.Info().Int("queue_len", hub.queue.GetLen()).Msgf("Shutdown in progress.")
+			log.Info().Int("queue_len", hub.queue.GetLen()).Msgf("Shutdown in progress. Wait for all messages sent.")
 			stop = (left == 0)
 		}
 
 		if stop {
-			break
+			goto shutdown
 		}
+
+		time.Sleep(3 * time.Second)
 	}
 
+shutdown:
 	hub.StopSender()
 
 	// dump if message left
@@ -99,9 +99,10 @@ func (hub *MessageHub) Shutdown() {
 			m, err := hub.queue.Dequeue()
 			if err == nil && m != nil {
 				mx := m.(*message.Message)
-				log.Error().Msgf("%v", mx)
+				log.Error().Str("msg", fmt.Sprintf("%v", mx)).Msg("Dump messages can't send.")
 			}
 		}
 	}
 
+	log.Info().Msg("Shutdown done.")
 }
