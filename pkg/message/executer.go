@@ -1,5 +1,7 @@
 package message
 
+import "github.com/yakumo-saki/phantasma-flow/pkg/objects"
+
 // From repository to all
 
 // reason
@@ -12,6 +14,7 @@ type ExecuterMsg struct {
 	Reason    string //
 	JobId     string
 	RunId     string
+	Version   objects.ObjectVersion
 	StepName  string // JOB_STEP_* only
 	JobResult string // JOB_END only
 	ExitCode  int    // JOB_STEP_END only

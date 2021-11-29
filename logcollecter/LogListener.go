@@ -17,8 +17,8 @@ import (
 // Call by jobscheduler
 // TODO: place log of internal jobs (log cleaner etcetc) is normal directory?
 // NOTE: create after shutdown is not care. because jobscheduler is stopped before logcollecter stops
-func (m *LogListenerModule) CreateLogListener(runId string, jobId string) <-chan LogMessage {
-	ret := make(chan LogMessage)
+func (m *LogListenerModule) CreateLogListener(runId string, jobId string) <-chan JobLogMessage {
+	ret := make(chan JobLogMessage)
 	m.logChannels.Store(runId, ret)
 
 	ctx, cancelFunc := context.WithCancel(m.RootCtx)
@@ -31,18 +31,18 @@ func (m *LogListenerModule) CreateLogListener(runId string, jobId string) <-chan
 }
 
 // Get logging chan by runId
-func (m *LogListenerModule) GetLogListener(runId string) (<-chan LogMessage, bool) {
+func (m *LogListenerModule) GetLogListener(runId string) (<-chan JobLogMessage, bool) {
 	cha, found := m.logChannels.Load(runId)
 
 	if !found {
 		return nil, false
 	} else {
-		return cha.(chan LogMessage), true
+		return cha.(chan JobLogMessage), true
 	}
 }
 
 // Collect and save jobresult (executed job step result)
-func (m *LogListenerModule) logListener(ctx context.Context, runId string, jobId string, logInCh <-chan LogMessage) {
+func (m *LogListenerModule) logListener(ctx context.Context, runId string, jobId string, logInCh <-chan JobLogMessage) {
 	log := util.GetLoggerWithSource(m.GetName(), "logListener")
 
 	defer m.logChannelsWg.Done()
@@ -114,6 +114,7 @@ func (m *LogListenerModule) logListenerCloser(ctx context.Context) {
 		// case <-messagehub.msg()
 		// close it
 	}
+
 shutdown:
 	log.Debug().Msg("Stopping all log listerners.")
 	m.logCloseFunc.Range(func(key interface{}, cf interface{}) bool {
@@ -130,7 +131,7 @@ shutdown:
 
 	select {
 	case <-doneCh:
-		log.Warn().Msg("Stopping all log listerners completed")
+		log.Info().Msg("Stopping all log listerners completed")
 	case <-time.After(10 * time.Second):
 		log.Warn().Msg("Stopping all log listerners timeout")
 	}

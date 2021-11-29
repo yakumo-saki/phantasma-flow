@@ -26,7 +26,6 @@ func (m *LogListenerModule) Initialize() error {
 	m.Name = "LogListener"
 	m.Initialized = true
 	m.logChannels = syncmap.Map{}
-	m.logChannelsWg = sync.WaitGroup{}
 	m.RootCtx, m.RootCancel = context.WithCancel(context.Background())
 	return nil
 }
@@ -43,7 +42,10 @@ func (m *LogListenerModule) Start(inCh <-chan string, outCh chan<- string) error
 	m.ToProcmanCh = outCh
 	log := util.GetLoggerWithSource(m.GetName(), "start")
 
+	m.logChannelsWg = sync.WaitGroup{}
+	m.logChannelsWg.Add(2)
 	go m.logListenerCloser(m.RootCtx)
+	go m.LogMetaListener(m.RootCtx)
 
 	log.Info().Msgf("Starting %s server.", m.GetName())
 
@@ -59,6 +61,7 @@ func (m *LogListenerModule) Start(inCh <-chan string, outCh chan<- string) error
 	}
 
 shutdown:
+	m.logChannelsWg.Wait()
 	log.Info().Msgf("%s Stopped.", m.GetName())
 	m.ToProcmanCh <- procman.RES_SHUTDOWN_DONE
 	return nil

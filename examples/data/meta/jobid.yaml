@@ -1,9 +1,8 @@
 kind: job-meta
-# meta is updated by ph-flow.
 meta:
-  nextbuild: 3
+  nextJobNumber: 3
 results:
-  - build: 1
+  - jobNumber: 1
     success: true
     version:
       major: 1
@@ -13,7 +12,7 @@ results:
         success: true
       - stepname: step2
         success: true
-  - build: 2
+  - jobNumber: 2
     success: false
     version:
       major: 1

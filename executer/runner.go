@@ -22,6 +22,8 @@ func (ex *Executer) runner(ctx context.Context) {
 		for e := ex.jobQueue.Front(); e != nil; e = e.Next() {
 			// scan for runnable step
 			job := e.Value.(*jobTask)
+
+			// Send job start message
 			if !job.Started {
 				log.Debug().Str("runId", job.RunId).Str("jobId", job.JobId).
 					Msgf("Job Started")
@@ -33,7 +35,7 @@ func (ex *Executer) runner(ctx context.Context) {
 				state := job.JobStepState[step.Name]
 				if !state.Running {
 					log.Debug().Str("runId", job.RunId).Str("jobId", job.JobId).
-						Msgf("Run (dummy) job: %s step: %v", job.JobDef.Name, step.Name)
+						Msgf("Run (dummy) job step: %s step: %v", job.JobDef.Name, step.Name)
 					state.Running = true
 				}
 				// TODO run, if runnable
@@ -71,6 +73,8 @@ shutdown:
 
 func (ex *Executer) notifyJobReport(jobId, runId, reason string) {
 	msg := message.ExecuterMsg{}
+	msg.JobId = jobId
+	msg.RunId = runId
 	msg.Reason = reason
 	messagehub.Post(messagehub.TOPIC_JOB_REPORT, msg)
 }
