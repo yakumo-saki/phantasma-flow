@@ -6,7 +6,10 @@ const TOPIC_JOB_DEFINITION = "job-definition"
 // node def change message from Repository
 const TOPIC_NODE_DEFINITION = "node-definition"
 
-// job state change message from NodeManager
+// job log from NodeManager
+const TOPIC_JOB_LOG = "job-log"
+
+// job state change (start job, start step, and end) message from NodeManager
 const TOPIC_JOB_REPORT = "job-report"
 
 // job run request message from JobScheduler

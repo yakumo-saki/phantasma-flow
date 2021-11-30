@@ -44,7 +44,7 @@ func (m *LogListenerModule) Start(inCh <-chan string, outCh chan<- string) error
 
 	m.logChannelsWg = sync.WaitGroup{}
 	m.logChannelsWg.Add(2)
-	go m.logListenerCloser(m.RootCtx)
+	go m.LogListener(m.RootCtx)
 	go m.LogMetaListener(m.RootCtx)
 
 	log.Info().Msgf("Starting %s server.", m.GetName())

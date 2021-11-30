@@ -2,115 +2,44 @@ package logcollecter
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
-	"os"
-	"path"
+	"sync"
 	"time"
 
-	"github.com/yakumo-saki/phantasma-flow/repository"
+	"github.com/yakumo-saki/phantasma-flow/logcollecter/logfile"
+	"github.com/yakumo-saki/phantasma-flow/messagehub"
 	"github.com/yakumo-saki/phantasma-flow/util"
 )
 
-// Create log listener thread and channel
-// After created, Other modules can get chan by calling GetLogListener
-// Call by jobscheduler
-// TODO: place log of internal jobs (log cleaner etcetc) is normal directory?
-// NOTE: create after shutdown is not care. because jobscheduler is stopped before logcollecter stops
-func (m *LogListenerModule) CreateLogListener(runId string, jobId string) <-chan JobLogMessage {
-	ret := make(chan JobLogMessage)
-	m.logChannels.Store(runId, ret)
-
-	ctx, cancelFunc := context.WithCancel(m.RootCtx)
-	m.logCloseFunc.Store(runId, cancelFunc)
-
-	m.logChannelsWg.Add(1)
-	go m.logListener(ctx, runId, jobId, ret)
-
-	return ret
-}
-
-// Get logging chan by runId
-func (m *LogListenerModule) GetLogListener(runId string) (<-chan JobLogMessage, bool) {
-	cha, found := m.logChannels.Load(runId)
-
-	if !found {
-		return nil, false
-	} else {
-		return cha.(chan JobLogMessage), true
-	}
-}
-
-// Collect and save jobresult (executed job step result)
-func (m *LogListenerModule) logListener(ctx context.Context, runId string, jobId string, logInCh <-chan JobLogMessage) {
-	log := util.GetLoggerWithSource(m.GetName(), "logListener")
-
+// main method of LogListener
+func (m *LogListenerModule) LogListener(ctx context.Context) {
+	const NAME = "LogListener"
+	log := util.GetLoggerWithSource(m.GetName(), NAME)
 	defer m.logChannelsWg.Done()
 
-	datetimeStr := time.Now().Format("20060102150405")
-	filename := fmt.Sprintf("%s_%s_%s", datetimeStr, runId, jobId)
-
-	logDir := repository.GetLogDirectory()
-	logfile := path.Join(logDir, filename)
-
-	needClose := true
-	useEmergencyLog := false
-	emLog := util.GetLoggerWithSource(m.GetName(), "emergency")
-
-	f, err := os.OpenFile(logfile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		log.Err(err).Msgf("Open log file failed %s, output to server log", logfile)
-		useEmergencyLog = true
-		needClose = false
-	}
-
-	for {
-		select {
-		case msg := <-logInCh:
-			bytes, err := json.Marshal(msg)
-			logmsg := ""
-			if err != nil {
-				log.Err(err).Msg("JSON Marshal error")
-				logmsg = fmt.Sprint(msg) // fallback
-			} else {
-				logmsg = string(bytes)
-			}
-
-			if !useEmergencyLog {
-				_, err = f.Write([]byte(logmsg + "\n"))
-				if err != nil {
-					log.Err(err).Msg("Log write error, use server log")
-					useEmergencyLog = true
-				}
-			}
-
-			// write log failed or open failed, then server log
-			if useEmergencyLog {
-				emLog.Info().Msg(logmsg)
-			}
-		case <-ctx.Done():
-			goto shutdown
-		}
-	}
-
-shutdown:
-	if needClose {
-		if err := f.Close(); err != nil {
-			log.Err(err).Msgf("Log close error %s", logfile)
-		}
-	}
-}
-
-func (m *LogListenerModule) logListenerCloser(ctx context.Context) {
-
-	log := util.GetLoggerWithSource(m.GetName(), "LogListernerCloser")
-
-	// TODO listen messagehub jobscheduling topic.
-	// if end of job -> cancelFunc
+	loggerMap := make(map[string]*logListenerParams) // runid -> loglistener
+	waitGroup := sync.WaitGroup{}
+	logCh := messagehub.Subscribe(messagehub.TOPIC_JOB_LOG, NAME)
 
 	select {
+	case msg := <-logCh:
+		joblogMsg := msg.Body.(logfile.JobLogMessage)
+
+		listener, ok := loggerMap[joblogMsg.RunId] // Job log fileはRunId単位
+		if !ok || !listener.Alive {
+			log.Trace().Msgf("create joblog listener for %s", joblogMsg.RunId)
+			loglis := m.createJobLogListenerParams(joblogMsg)
+			loggerMap[joblogMsg.RunId] = loglis
+
+			waitGroup.Add(1)
+			go m.joblogListener(loglis, &waitGroup)
+			listener = loglis
+		}
+
+		listener.logChan <- joblogMsg
+
 	case <-ctx.Done():
 		goto shutdown
+
 		// case <-messagehub.msg()
 		// close it
 	}
@@ -118,6 +47,7 @@ func (m *LogListenerModule) logListenerCloser(ctx context.Context) {
 shutdown:
 	log.Debug().Msg("Stopping all log listerners.")
 	m.logCloseFunc.Range(func(key interface{}, cf interface{}) bool {
+		log.Trace().Msgf("context stop %v", key)
 		cancelFunc := cf.(context.CancelFunc)
 		cancelFunc()
 		return true
@@ -125,7 +55,8 @@ shutdown:
 
 	doneCh := make(chan struct{}, 1)
 	go func(ch chan struct{}) {
-		m.logChannelsWg.Wait()
+		time.Sleep(100 * time.Millisecond)
+		waitGroup.Wait()
 		close(ch)
 	}(doneCh)
 
@@ -136,4 +67,15 @@ shutdown:
 		log.Warn().Msg("Stopping all log listerners timeout")
 	}
 
+}
+
+func (m *LogListenerModule) createJobLogListenerParams(lm logfile.JobLogMessage) *logListenerParams {
+
+	loglis := logListenerParams{}
+	loglis.RunId = lm.RunId
+	loglis.JobId = lm.JobId
+	ch := make(chan logfile.JobLogMessage, 1)
+	loglis.logChan = ch
+	loglis.Ctx, loglis.Cancel = context.WithCancel(context.Background())
+	return &loglis
 }
