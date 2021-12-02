@@ -7,7 +7,7 @@ import (
 
 	"github.com/goccy/go-yaml"
 	"github.com/yakumo-saki/phantasma-flow/messagehub"
-	"github.com/yakumo-saki/phantasma-flow/pkg/messagehubObjects"
+	"github.com/yakumo-saki/phantasma-flow/pkg/message"
 	"github.com/yakumo-saki/phantasma-flow/pkg/objects"
 	"github.com/yakumo-saki/phantasma-flow/util"
 )
@@ -18,22 +18,25 @@ type Repository struct {
 	nodes   []objects.NodeDefinition
 	jobs    []objects.JobDefinition
 	configs []objects.Config
+
+	paths phflowPath
 }
 
-func (r *Repository) Initialize(path string) error {
+func (r *Repository) Initialize() error {
 	log := util.GetLoggerWithSource(myname, "initialize")
 	log.Debug().Msg("Repository initialize")
 
-	dirType := map[objectType][]string{
-		NODE:   {"definitions", "node"},
-		CONFIG: {"definitions", "config"},
-		JOB:    {"definitions", "job"},
+	r.paths = aquirePhflowPath()
+
+	dirType := map[objectType]string{
+		NODE:   r.paths.NodeDef,
+		CONFIG: r.paths.ConfigDef,
+		JOB:    r.paths.JobDef,
 	}
 
-	for typ, pt := range dirType {
-		readDirPath := util.JoinPath(path, pt)
-		log.Debug().Msgf("Reading %s from %s", typ, readDirPath)
-		err := r.readAllYaml(readDirPath, typ)
+	for typ, dirPath := range dirType {
+		log.Debug().Msgf("Reading %s from %s", typ, dirPath)
+		err := r.readAllYaml(dirPath, typ)
 		if err != nil {
 			return err
 		}
@@ -122,8 +125,8 @@ func (repo *Repository) readAllYaml(path string, objType objectType) error {
 func (repo *Repository) SendAllNodes() int {
 	sent := 0
 	for _, v := range repo.nodes {
-		nodeMsg := messagehubObjects.NodeDefinitionMsg{}
-		nodeMsg.Reason = messagehubObjects.DEF_REASON_INITIAL
+		nodeMsg := message.NodeDefinitionMsg{}
+		nodeMsg.Reason = message.DEF_REASON_INITIAL
 		nodeMsg.NodeDefinition = v
 		messagehub.Post(messagehub.TOPIC_NODE_DEFINITION, nodeMsg)
 		sent++
@@ -134,8 +137,8 @@ func (repo *Repository) SendAllNodes() int {
 func (repo *Repository) SendAllJobs() int {
 	sent := 0
 	for _, v := range repo.jobs {
-		jobMsg := messagehubObjects.JobDefinitionMsg{}
-		jobMsg.Reason = messagehubObjects.DEF_REASON_INITIAL
+		jobMsg := message.JobDefinitionMsg{}
+		jobMsg.Reason = message.DEF_REASON_INITIAL
 		jobMsg.JobDefinition = v
 		messagehub.Post(messagehub.TOPIC_JOB_DEFINITION, jobMsg)
 		sent++

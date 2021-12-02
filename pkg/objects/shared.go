@@ -7,13 +7,13 @@ import (
 )
 
 type ObjectBase struct {
-	Kind string `yaml:"kind"`
+	Kind string `json:"kind"`
 }
 
 type ObjectMetaBase struct {
-	Version   ObjectVersion `yaml:"version"`   // Version
-	Created   string        `yaml:"created"`   // ISO8601 yyyy-mm-dd hh:mm:ssZ
-	CreatedBy string        `yaml:"createdBy"` // Username
+	Version   ObjectVersion `json:"version"`   // Version
+	Created   string        `json:"created"`   // ISO8601 yyyy-mm-dd hh:mm:ssZ
+	CreatedBy string        `json:"createdBy"` // Username
 }
 
 func (omb ObjectMetaBase) String() string {

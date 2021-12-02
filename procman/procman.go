@@ -214,7 +214,7 @@ func (p *ProcessManager) shutdownImpl(typeName string, modmap map[string]*proces
 				p.outputTimeoutLog(typeName, "shutdown", modmap)
 			}
 
-			log.Debug().Msgf("[%s] Shutdown done. cause: %s", typeName, reason)
+			log.Debug().Str("cause", reason).Msgf("[%s] Shutdown done.", typeName)
 			break
 		}
 

@@ -1,14 +1,13 @@
 package main
 
 import (
-	"fmt"
 	"os"
 	"os/signal"
-	"path"
 	"syscall"
 	"time"
 
-	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
+	"github.com/yakumo-saki/phantasma-flow/executer"
 	"github.com/yakumo-saki/phantasma-flow/global"
 	"github.com/yakumo-saki/phantasma-flow/jobscheduler"
 	"github.com/yakumo-saki/phantasma-flow/logcollecter"
@@ -26,84 +25,6 @@ import (
 const DEBUG = false
 const myname = "main"
 
-// Get phantasma-flow home path.
-// ENV or ~/.config/phantasma-flow
-func getHomeDir() string {
-	util.GetLoggerWithSource(myname, "homedir")
-	homeDir := os.Getenv("PHFLOW_HOME")
-	defDir := os.Getenv("PHFLOW_DEF_DIR")
-	dataDir := os.Getenv("PHFLOW_DATA_DIR")
-	tempDir := os.Getenv("PHFLOW_TEMP_DIR")
-	if homeDir == "" {
-		home, err := os.UserHomeDir()
-		if err != nil {
-			panic("Get homedir fail, Please set PHFLOW_HOME environment value.")
-		}
-		homeDir = path.Join(home, ".config", "phantasma-flow")
-	}
-	if defDir == "" {
-		defDir = path.Join(homeDir, "definitions")
-	}
-	if dataDir == "" {
-		dataDir = path.Join(homeDir, "data")
-	}
-	if tempDir == "" {
-		tempDir = path.Join(homeDir, "temp")
-	}
-
-	isNotGoodDir(homeDir, "PHFLOW_HOME_DIR")
-	isNotGoodDir(defDir, "PHFLOW_DEF_DIR")
-	isNotGoodDir(dataDir, "PHFLOW_DATA_DIR")
-	isNotGoodDir(tempDir, "PHFLOW_TEMP_DIR")
-
-	makeSureHomeDirExists(defDir, dataDir, tempDir)
-
-	return homeDir
-
-}
-
-func isNotGoodDir(dirname string, name string) {
-	fmt.Println(dirname, name)
-	if dirname != "" {
-		st, err := os.Stat(dirname)
-		if os.IsNotExist(err) {
-			// not exist is ok. try to create after this
-			return
-		}
-		if st == nil {
-			return
-		}
-		if !st.IsDir() {
-			panic(name + " is defined but it is file. It must be directory:" + dirname)
-		}
-	}
-
-}
-
-func makeSureHomeDirExists(defDir, dataDir, tempDir string) {
-	mkdir := func(p string) {
-		if e := os.MkdirAll(p, 0750); e != nil {
-			panic(fmt.Sprintf("mkdir failed %s %e\n", p, e))
-		}
-	}
-
-	dCfg := path.Join(defDir, "config")
-	dJob := path.Join(defDir, "job")
-	dNode := path.Join(defDir, "node")
-
-	mkdir(dCfg)
-	mkdir(dJob)
-	mkdir(dNode)
-
-	dlog := path.Join(dataDir, "log")
-	dmeta := path.Join(dataDir, "meta")
-
-	mkdir(dlog)
-	mkdir(dmeta)
-
-	mkdir(tempDir)
-}
-
 func main() {
 	log := util.GetLoggerWithSource("main")
 
@@ -111,20 +32,10 @@ func main() {
 		global.VERSION, global.COMMIT, global.URL)
 
 	// at first Initialize repository for all configs
-	repo := repository.Repository{}
-	cfgpath := getHomeDir()
-	err := repo.Initialize(cfgpath)
-	if err != nil {
-		log.Error().Err(err).Msg("Error occured at reading initialize data")
-		log.Error().Msg("Maybe data is corrupted or misseditted.")
-		return
-	}
+	repo := startRepository()
 
 	// Start modules
-	hub := messagehub_impl.MessageHub{}
-	messagehub.SetMessageHub(&hub)
-	hub.Initialize()
-	hub.StartSender()
+	hub := startMessageHub()
 
 	procmanCh := make(chan string, 1) // controller to processManager. signal only
 	processManager := procman.NewProcessManager(procmanCh)
@@ -132,8 +43,9 @@ func main() {
 	processManager.Add(&procmanExample.MinimalProcmanModule{})
 	processManager.Add(&jobscheduler.JobScheduler{})
 	processManager.Add(&metrics.PrometeusExporterModule{})
-	processManager.AddService(&logcollecter.LogListenerModule{})
+	processManager.AddService(&executer.Executer{})
 	processManager.AddService(&node.NodeManager{})
+	processManager.AddService(&logcollecter.LogListenerModule{})
 
 	processManager.Start()
 
@@ -143,14 +55,15 @@ func main() {
 
 	// Load definitions
 	repo.SendAllNodes() // must send node before job (must exist node, job requires)
+	messagehub.WaitForQueueEmpty("Wait for node registration")
 	repo.SendAllJobs()
+	messagehub.WaitForQueueEmpty("Wait for job registration")
 
-	waitForMessageHub(&log, &hub)
 	// XXX: ノードとかジョブが行き渡ったことを確認する必要がある？
 	// nodeDef とか JobDef を送った数の分のノードができたことをチェックする？
 
 	// main loop
-	processManager.AddService(&server.Server{})
+	processManager.Add(&server.Server{})
 	log.Info().Msg("Phantasma-flow started.")
 
 	// for debug
@@ -167,42 +80,47 @@ func main() {
 	}
 
 	// wait for stop signal
-	shutdownFlag := false
 	for {
 		select {
 		case sig := <-signals:
 			log.Info().Str("signal", sig.String()).Msg("Got signal")
-			shutdownFlag = true
-			shutdown(&processManager, &hub)
+			shutdownProcMan(&processManager, hub)
+			goto shutdown
 		case <-debugCh:
 			log.Warn().Msg("Debug shutdown start.")
-			shutdownFlag = true
-			shutdown(&processManager, &hub)
-		default:
+			shutdownProcMan(&processManager, hub)
+			goto shutdown
 		}
-
-		if shutdownFlag {
-			break
-		}
-
-		time.Sleep(procman.MAIN_LOOP_WAIT)
 	}
+
+shutdown:
 	log.Info().Msg("Phantasma-flow stopped.")
 }
 
-func shutdown(pm *procman.ProcessManager, hub *messagehub_impl.MessageHub) {
+func startRepository() *repository.Repository {
+	repo := repository.GetRepository()
+	err := repo.Initialize()
+	if err != nil {
+		log.Error().Err(err).Msg("Error occured at reading initialize data")
+		log.Error().Msg("Maybe data is corrupted or misseditted.")
+		return nil
+	}
+
+	return repo
+}
+
+// StartMessageHub
+func startMessageHub() *messagehub_impl.MessageHub {
+	hub := messagehub_impl.MessageHub{}
+	messagehub.SetMessageHub(&hub)
+	hub.Initialize()
+	hub.StartSender()
+	return &hub
+}
+
+func shutdownProcMan(pm *procman.ProcessManager, hub *messagehub_impl.MessageHub) {
 	log := util.GetLoggerWithSource("shutdown")
 	hub.Shutdown()
 	r1, r2 := pm.Shutdown()
 	log.Info().Str("modules", r1).Str("services", r2).Msg("Threads shutdown done.")
-}
-
-func waitForMessageHub(log *zerolog.Logger, hub *messagehub_impl.MessageHub) {
-	for {
-		if hub.GetQueueLength() == 0 {
-			log.Debug().Msg("Wait for message hub done.")
-			break
-		}
-		time.Sleep(100 * time.Millisecond)
-	}
 }

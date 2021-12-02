@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/yakumo-saki/phantasma-flow/messagehub"
-	"github.com/yakumo-saki/phantasma-flow/pkg/messagehubObjects"
+	"github.com/yakumo-saki/phantasma-flow/pkg/message"
 	"github.com/yakumo-saki/phantasma-flow/pkg/objects"
 	"github.com/yakumo-saki/phantasma-flow/procman"
 	"github.com/yakumo-saki/phantasma-flow/util"
@@ -22,8 +22,9 @@ func (m *JobScheduler) Initialize() error {
 	m.Initialized = true
 	m.jobs = make(map[string]job)
 	m.schedules = list.New()
+	m.runnables = list.New()
 	m.mutex = sync.Mutex{}
-	m.rootCtx, m.rootCancel = context.WithCancel(context.Background())
+	m.RootCtx, m.RootCancel = context.WithCancel(context.Background())
 	return nil
 }
 
@@ -39,9 +40,10 @@ func (js *JobScheduler) Start(inCh <-chan string, outCh chan<- string) error {
 	log.Info().Msgf("Starting %s server.", js.GetName())
 
 	// subscribe to messagehub
-	jobDefCh := messagehub.Listen(messagehub.TOPIC_JOB_DEFINITION, js.GetName())
+	jobDefCh := messagehub.Subscribe(messagehub.TOPIC_JOB_DEFINITION, js.GetName())
 
-	go js.runner(js.rootCtx)
+	go js.pickRunnable(js.RootCtx)
+	go js.jobCompleter(js.RootCtx)
 
 	// start ok
 	js.ToProcmanCh <- procman.RES_STARTUP_DONE
@@ -54,11 +56,11 @@ func (js *JobScheduler) Start(inCh <-chan string, outCh chan<- string) error {
 			log.Debug().Msgf("Got JobDefinitionMsg %s", job)
 
 			// TODO JOBS and re-schedule
-			jobDefMsg := job.Body.(messagehubObjects.JobDefinitionMsg)
+			jobDefMsg := job.Body.(message.JobDefinitionMsg)
 			jobdef := jobDefMsg.JobDefinition
 			id := js.addJob(jobdef)
 			js.schedule(id, time.Now())
-		case <-js.rootCtx.Done():
+		case <-js.RootCtx.Done():
 			goto shutdown
 		}
 	}
@@ -90,7 +92,7 @@ func (sv *JobScheduler) Shutdown() {
 
 	log := util.GetLogger()
 	log.Debug().Msg("Shutdown initiated")
-	sv.rootCancel()
+	sv.RootCancel()
 }
 
 func (js *JobScheduler) RequestHandler() {

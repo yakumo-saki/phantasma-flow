@@ -30,25 +30,26 @@ func (js *JobScheduler) scheduleWithoutLock(jobId string, now time.Time) {
 	job := js.jobs[jobId]
 
 	// Check and calc next schedule or no schedule
-	nextSchedule := js.getNextSchedule(now, job.jobMeta.Schedules)
+	nextSchedule := js.calcNextSchedule(now, job.jobMeta.Schedules)
 	if nextSchedule == -1 {
 		// it is valid, running from run immediate feature or disabled job
 		log.Debug().Str("JobId", jobId).Msg("Has no schedule. only register.")
 	} else {
-		log.Debug().Str("JobId", jobId).Int64("Next", nextSchedule).Msgf("")
+		log.Debug().Str("JobId", jobId).Int64("Next", nextSchedule).Msg("New schedule")
 	}
 
 	// push next run schedule
 	newSchedule := schedule{}
-	newSchedule.runId = randstr.String(16)
+	newSchedule.runId = randstr.String(8)
 	newSchedule.jobId = jobId
+	newSchedule.scheduledAt = now.Unix()
 
 	newSchedule.time = nextSchedule
 	js.schedules.PushFront(newSchedule)
 }
 
 // return unixtime
-func (js *JobScheduler) getNextSchedule(now time.Time, schedules []objects.JobSchedule) int64 {
+func (js *JobScheduler) calcNextSchedule(now time.Time, schedules []objects.JobSchedule) int64 {
 	log := util.GetLoggerWithSource(js.GetName(), "schedule")
 	nextRun := []int64{}
 
@@ -69,11 +70,11 @@ func (js *JobScheduler) getNextSchedule(now time.Time, schedules []objects.JobSc
 		now := time.Now()
 		ret := sc.Next(now)
 
-		log.Debug().Str("next", ret.String()).Int64("nextunix", ret.Unix()).Msg("Next schedule")
+		// log.Debug().Str("next", ret.Format("2006-01-02 15:04:05")).Int64("nextunix", ret.Unix()).Msg("Next schedule")
 		nextRun = append(nextRun, ret.Unix())
 	}
 
-	return util.MaxInt64(nextRun...)
+	return util.MinInt64(nextRun...)
 }
 
 func (js *JobScheduler) getCronParser() cron.Parser {

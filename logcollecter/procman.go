@@ -2,13 +2,18 @@ package logcollecter
 
 import (
 	"context"
+	"sync"
 
 	"github.com/yakumo-saki/phantasma-flow/procman"
 	"github.com/yakumo-saki/phantasma-flow/util"
+	"golang.org/x/sync/syncmap"
 )
 
 type LogListenerModule struct {
 	procman.ProcmanModuleStruct
+	logChannelsWg sync.WaitGroup
+	logChannels   syncmap.Map // [string(runId)] <-chan LogMessage
+	logCloseFunc  syncmap.Map // [string(runId)] context.CancelFunc
 }
 
 func (m *LogListenerModule) IsInitialized() bool {
@@ -20,6 +25,7 @@ func (m *LogListenerModule) Initialize() error {
 	// procman -> PAUSE(prepare for backup) is considered
 	m.Name = "LogListener"
 	m.Initialized = true
+	m.logChannels = syncmap.Map{}
 	m.RootCtx, m.RootCancel = context.WithCancel(context.Background())
 	return nil
 }
@@ -36,6 +42,11 @@ func (m *LogListenerModule) Start(inCh <-chan string, outCh chan<- string) error
 	m.ToProcmanCh = outCh
 	log := util.GetLoggerWithSource(m.GetName(), "start")
 
+	m.logChannelsWg = sync.WaitGroup{}
+	m.logChannelsWg.Add(2)
+	go m.LogListener(m.RootCtx)
+	go m.LogMetaListener(m.RootCtx)
+
 	log.Info().Msgf("Starting %s server.", m.GetName())
 
 	m.ToProcmanCh <- procman.RES_STARTUP_DONE
@@ -50,6 +61,7 @@ func (m *LogListenerModule) Start(inCh <-chan string, outCh chan<- string) error
 	}
 
 shutdown:
+	m.logChannelsWg.Wait()
 	log.Info().Msgf("%s Stopped.", m.GetName())
 	m.ToProcmanCh <- procman.RES_SHUTDOWN_DONE
 	return nil
