@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/goccy/go-yaml"
-	"github.com/yakumo-saki/phantasma-flow/global"
 	"github.com/yakumo-saki/phantasma-flow/logcollecter/logfile"
 	"github.com/yakumo-saki/phantasma-flow/pkg/message"
 	"github.com/yakumo-saki/phantasma-flow/pkg/objects"
@@ -17,7 +16,7 @@ import (
 )
 
 // Trace single job
-// ログファイルの競合を避けるために1 runId = 1goroutineとして走らせることにした
+// ログファイルの競合を避けるために1 JobID = 1goroutineとして走らせることにした
 func (m *LogListenerModule) jobLogMetaListener(params *logMetaListenerParams, wg *sync.WaitGroup) {
 	NAME := "jobLogMetaListener"
 	log := util.GetLoggerWithSource(m.GetName(), NAME).
@@ -27,7 +26,7 @@ func (m *LogListenerModule) jobLogMetaListener(params *logMetaListenerParams, wg
 
 	// 既存ログファイルオープン
 	logDir := repository.GetJobMetaDirectory()
-	filename := fmt.Sprintf("%s.yaml", time.Now().Format(global.DATETIME_FORMAT))
+	filename := fmt.Sprintf("%s.yaml", params.JobId)
 	logpath := path.Join(logDir, filename)
 
 	// TODO load already existed
