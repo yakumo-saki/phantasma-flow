@@ -1,4 +1,4 @@
-package jobscheduler
+package scheduler
 
 import (
 	"container/list"

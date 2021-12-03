@@ -1,4 +1,4 @@
-package loglistener
+package logfileexporter
 
 import (
 	"context"
@@ -9,18 +9,18 @@ import (
 	"golang.org/x/sync/syncmap"
 )
 
-type LogListener struct {
+type LogFileExporter struct {
 	procman.ProcmanModuleStruct
 	logChannelsWg sync.WaitGroup
 	logChannels   syncmap.Map // [string(runId)] <-chan LogMessage
 	logCloseFunc  syncmap.Map // [string(runId)] context.CancelFunc
 }
 
-func (m *LogListener) IsInitialized() bool {
+func (m *LogFileExporter) IsInitialized() bool {
 	return m.Initialized
 }
 
-func (m *LogListener) Initialize() error {
+func (m *LogFileExporter) Initialize() error {
 	// used for procman <-> module communication
 	// procman -> PAUSE(prepare for backup) is considered
 	m.Name = "LogListener"
@@ -30,14 +30,14 @@ func (m *LogListener) Initialize() error {
 	return nil
 }
 
-func (m *LogListener) GetName() string {
+func (m *LogFileExporter) GetName() string {
 	// Name of module. must be unique.
 	// return fix value indicates this module must be singleton.
 	// add secondary instance of this module can cause panic by procman.Add
 	return m.Name
 }
 
-func (m *LogListener) Start(inCh <-chan string, outCh chan<- string) error {
+func (m *LogFileExporter) Start(inCh <-chan string, outCh chan<- string) error {
 	m.FromProcmanCh = inCh
 	m.ToProcmanCh = outCh
 	log := util.GetLoggerWithSource(m.GetName(), "start")
@@ -66,7 +66,7 @@ shutdown:
 	return nil
 }
 
-func (sv *LogListener) Shutdown() {
+func (sv *LogFileExporter) Shutdown() {
 	log := util.GetLoggerWithSource(sv.GetName(), "shutdown")
 	log.Debug().Msg("Shutdown initiated")
 	sv.RootCancel()

@@ -1,4 +1,4 @@
-package loglistener
+package logfileexporter
 
 import (
 	"context"
@@ -11,7 +11,7 @@ import (
 )
 
 // main method of LogListener
-func (m *LogListener) LogListener(ctx context.Context) {
+func (m *LogFileExporter) LogListener(ctx context.Context) {
 	const NAME = "LogListener"
 	log := util.GetLoggerWithSource(m.GetName(), NAME)
 	defer m.logChannelsWg.Done()
@@ -69,7 +69,7 @@ shutdown:
 
 }
 
-func (m *LogListener) createJobLogListenerParams(lm logfile.JobLogMessage) *logListenerParams {
+func (m *LogFileExporter) createJobLogListenerParams(lm logfile.JobLogMessage) *logListenerParams {
 
 	loglis := logListenerParams{}
 	loglis.RunId = lm.RunId

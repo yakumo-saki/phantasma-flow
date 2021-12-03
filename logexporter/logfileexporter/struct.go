@@ -1,4 +1,4 @@
-package loglistener
+package logfileexporter
 
 import (
 	"context"

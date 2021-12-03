@@ -1,4 +1,4 @@
-package jobscheduler
+package scheduler
 
 import (
 	"context"
@@ -30,7 +30,7 @@ func (js *JobScheduler) pickRunnable(ctx context.Context) {
 				js.runnables.PushBack(schedule)
 				js.schedules.Remove(e)
 
-				// TODO call executer
+				// call executer
 				req := message.JobRequest{}
 				req.JobId = schedule.jobId
 				req.RunId = schedule.runId
