@@ -17,7 +17,6 @@ type LogListener struct {
 }
 
 func (m *LogListener) IsInitialized() bool {
-	Z
 	return m.Initialized
 }
 
