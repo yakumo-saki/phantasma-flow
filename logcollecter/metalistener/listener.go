@@ -1,4 +1,4 @@
-package logcollecter
+package metalistener
 
 import (
 	"context"
@@ -12,13 +12,13 @@ import (
 
 // This handles executer.ExecuterMsg
 // Collect and save jobresult (executed job step result)
-func (m *LogListenerModule) LogMetaListener(ctx context.Context) {
+func (m *MetaListener) LogMetaListener(ctx context.Context) {
 	const NAME = "LogMetaListener"
 	log := util.GetLoggerWithSource(m.GetName(), NAME)
 
 	defer m.logChannelsWg.Done()
 
-	loggerMap := make(map[string]*logMetaListenerParams) // runid -> loglistener
+	loggerMap := make(map[string]*logMetaListenerParams) // JobId
 	waitGroup := sync.WaitGroup{}
 	jobRepoCh := messagehub.Subscribe(messagehub.TOPIC_JOB_REPORT, NAME)
 
@@ -28,7 +28,7 @@ func (m *LogListenerModule) LogMetaListener(ctx context.Context) {
 			execMsg := msg.Body.(message.ExecuterMsg)
 
 			listener, ok := loggerMap[execMsg.JobId] // JobIDで見ているのは、JobMeta fileがJobId単位だから
-			if !ok || !listener.Alive {
+			if !ok {
 				log.Trace().Msgf("create meta listener for %s", execMsg.RunId)
 				loglis := m.createJobLogMetaListenerParams(execMsg)
 				loggerMap[execMsg.RunId] = loglis
@@ -36,6 +36,10 @@ func (m *LogListenerModule) LogMetaListener(ctx context.Context) {
 				waitGroup.Add(1)
 				go m.jobLogMetaListener(loglis, &waitGroup)
 				listener = loglis
+			} else if !listener.Alive {
+				loglis := loggerMap[execMsg.RunId]
+				waitGroup.Add(1)
+				go m.jobLogMetaListener(loglis, &waitGroup)
 			}
 
 			listener.execChan <- execMsg
@@ -66,11 +70,12 @@ shutdown:
 	log.Info().Msgf("%s/%s stopped.", m.GetName(), NAME)
 }
 
-func (m *LogListenerModule) createJobLogMetaListenerParams(lm message.ExecuterMsg) *logMetaListenerParams {
+func (m *MetaListener) createJobLogMetaListenerParams(lm message.ExecuterMsg) *logMetaListenerParams {
 
 	loglis := logMetaListenerParams{}
 	loglis.RunId = lm.RunId
 	loglis.JobId = lm.JobId
+	loglis.Alive = false
 	ch := make(chan message.ExecuterMsg, 1)
 	loglis.execChan = ch
 	loglis.Ctx, loglis.Cancel = context.WithCancel(context.Background())

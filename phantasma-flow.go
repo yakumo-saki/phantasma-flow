@@ -10,7 +10,8 @@ import (
 	"github.com/yakumo-saki/phantasma-flow/executer"
 	"github.com/yakumo-saki/phantasma-flow/global"
 	"github.com/yakumo-saki/phantasma-flow/jobscheduler"
-	"github.com/yakumo-saki/phantasma-flow/logcollecter"
+	"github.com/yakumo-saki/phantasma-flow/logcollecter/loglistener"
+	"github.com/yakumo-saki/phantasma-flow/logcollecter/metalistener"
 	"github.com/yakumo-saki/phantasma-flow/messagehub"
 	"github.com/yakumo-saki/phantasma-flow/messagehub/messagehub_impl"
 	"github.com/yakumo-saki/phantasma-flow/metrics"
@@ -45,7 +46,8 @@ func main() {
 	processManager.Add(&metrics.PrometeusExporterModule{})
 	processManager.AddService(&executer.Executer{})
 	processManager.AddService(&node.NodeManager{})
-	processManager.AddService(&logcollecter.LogListenerModule{})
+	processManager.AddService(&loglistener.LogListener{})
+	processManager.AddService(&metalistener.MetaListener{})
 
 	processManager.Start()
 

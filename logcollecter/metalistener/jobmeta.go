@@ -1,6 +1,10 @@
-package logfile
+package metalistener
 
-import "github.com/yakumo-saki/phantasma-flow/pkg/objects"
+import (
+	"github.com/yakumo-saki/phantasma-flow/logcollecter"
+	"github.com/yakumo-saki/phantasma-flow/pkg/message"
+	"github.com/yakumo-saki/phantasma-flow/pkg/objects"
+)
 
 /*
 kind: job-meta
@@ -63,4 +67,9 @@ type JobMetaStepResult struct {
 	EndDateTime   string `json:"endDateTime"`   // RFC3306
 	ExitCode      int    `json:"exitCode"`
 	Success       bool   `json:"success"`
+}
+
+type logMetaListenerParams struct {
+	logcollecter.LogCollecterParamsBase
+	execChan chan message.ExecuterMsg
 }

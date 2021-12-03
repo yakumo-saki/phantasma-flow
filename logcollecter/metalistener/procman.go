@@ -1,4 +1,4 @@
-package logcollecter
+package metalistener
 
 import (
 	"context"
@@ -9,42 +9,41 @@ import (
 	"golang.org/x/sync/syncmap"
 )
 
-type LogListenerModule struct {
+type MetaListener struct {
 	procman.ProcmanModuleStruct
 	logChannelsWg sync.WaitGroup
 	logChannels   syncmap.Map // [string(runId)] <-chan LogMessage
 	logCloseFunc  syncmap.Map // [string(runId)] context.CancelFunc
 }
 
-func (m *LogListenerModule) IsInitialized() bool {
+func (m *MetaListener) IsInitialized() bool {
 	return m.Initialized
 }
 
-func (m *LogListenerModule) Initialize() error {
+func (m *MetaListener) Initialize() error {
 	// used for procman <-> module communication
 	// procman -> PAUSE(prepare for backup) is considered
-	m.Name = "LogListener"
+	m.Name = "MetaListener"
 	m.Initialized = true
 	m.logChannels = syncmap.Map{}
 	m.RootCtx, m.RootCancel = context.WithCancel(context.Background())
 	return nil
 }
 
-func (m *LogListenerModule) GetName() string {
+func (m *MetaListener) GetName() string {
 	// Name of module. must be unique.
 	// return fix value indicates this module must be singleton.
 	// add secondary instance of this module can cause panic by procman.Add
 	return m.Name
 }
 
-func (m *LogListenerModule) Start(inCh <-chan string, outCh chan<- string) error {
+func (m *MetaListener) Start(inCh <-chan string, outCh chan<- string) error {
 	m.FromProcmanCh = inCh
 	m.ToProcmanCh = outCh
 	log := util.GetLoggerWithSource(m.GetName(), "start")
 
 	m.logChannelsWg = sync.WaitGroup{}
 	m.logChannelsWg.Add(2)
-	go m.LogListener(m.RootCtx)
 	go m.LogMetaListener(m.RootCtx)
 
 	log.Info().Msgf("Starting %s server.", m.GetName())
@@ -67,7 +66,7 @@ shutdown:
 	return nil
 }
 
-func (sv *LogListenerModule) Shutdown() {
+func (sv *MetaListener) Shutdown() {
 	log := util.GetLoggerWithSource(sv.GetName(), "shutdown")
 	log.Debug().Msg("Shutdown initiated")
 	sv.RootCancel()
