@@ -41,7 +41,7 @@ func (ex *Executer) jobRequestHandler(ctx context.Context) {
 			ex.mutex.Lock()
 
 			// TODO send log. job queued
-			log.Debug().Str("jobId", req.JobId).Str("runId", req.RunId).Msg("Request received.")
+			log.Debug().Str("jobId", req.JobId).Str("runId", req.RunId).Msg("Push to job queue")
 			ex.jobQueue.PushBack(&job)
 			ex.mutex.Unlock()
 		}

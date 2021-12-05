@@ -118,15 +118,17 @@ func (p *ProcessManager) Start() {
 
 func (p *ProcessManager) startImpl(typeName string, modmap map[string]*process) string {
 	log := util.GetLoggerWithSource(myname, "start")
+
+	if len(modmap) == 0 {
+		return REASON_COMPLETE
+	}
+
 	for _, proc := range modmap {
 		if !proc.started {
 			go proc.module.Start(proc.toModCh, proc.fromModCh)
 			log.Debug().Msgf("[%s] Request starting %s.", typeName, proc.module.GetName())
 		}
 	}
-
-	timeoutCh := make(chan string, 1)
-	go util.Timeout(timeoutCh, 10)
 
 	reason := "UNKNOWN"
 	for {
@@ -143,7 +145,7 @@ func (p *ProcessManager) startImpl(typeName string, modmap map[string]*process) 
 				} else {
 					log.Warn().Str("module", name).Str("message", v).Msg("Unexpected response")
 				}
-			case <-timeoutCh:
+			case <-time.After(10 * time.Second):
 				reason = REASON_TIMEOUT
 				p.outputTimeoutLog(typeName, "startup", p.workerModules)
 				log.Debug().Msgf("[%s] Startup timeout reached", typeName)

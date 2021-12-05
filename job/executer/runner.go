@@ -37,6 +37,15 @@ func (ex *Executer) runner(ctx context.Context) {
 					log.Debug().Str("runId", job.RunId).Str("jobId", job.JobId).
 						Msgf("Run (dummy) job step: %s step: %v", job.JobDef.Name, step.Name)
 					state.Running = true
+					msg := ex.createExecuterMsg(job)
+					msg.Reason = message.JOB_STEP_START
+					msg.StepName = step.Name
+					messagehub.Post(messagehub.TOPIC_JOB_REPORT, *msg)
+
+					msg2 := *msg
+					msg2.Reason = message.JOB_STEP_END
+					msg2.ExitCode = 0
+					messagehub.Post(messagehub.TOPIC_JOB_REPORT, msg2)
 				}
 				// TODO run, if runnable
 			}
@@ -77,6 +86,14 @@ func (ex *Executer) notifyJobReport(jobId, runId, reason string) {
 	msg.RunId = runId
 	msg.Reason = reason
 	messagehub.Post(messagehub.TOPIC_JOB_REPORT, msg)
+}
+
+func (ex *Executer) createExecuterMsg(task *jobTask) *message.ExecuterMsg {
+	msg := message.ExecuterMsg{}
+	msg.JobId = task.JobId
+	msg.RunId = task.RunId
+	msg.ExitCode = -1
+	return &msg
 }
 
 func IsJobDone(stepStats map[string]*jobStepStatus) bool {

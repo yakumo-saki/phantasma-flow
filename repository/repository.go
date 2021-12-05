@@ -15,9 +15,10 @@ import (
 const myname = "Repository"
 
 type Repository struct {
-	nodes   []objects.NodeDefinition
-	jobs    []objects.JobDefinition
-	configs []objects.Config
+	Initialized bool
+	nodes       []objects.NodeDefinition
+	jobs        []objects.JobDefinition
+	configs     []objects.Config
 
 	paths phflowPath
 }
@@ -47,6 +48,7 @@ func (r *Repository) Initialize() error {
 		return errors.New("not impremented")
 	}
 
+	r.Initialized = true
 	return nil
 }
 

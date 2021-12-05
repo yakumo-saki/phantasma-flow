@@ -43,7 +43,7 @@ func (m *MetaListener) Start(inCh <-chan string, outCh chan<- string) error {
 	log := util.GetLoggerWithSource(m.GetName(), "start")
 
 	m.logChannelsWg = sync.WaitGroup{}
-	m.logChannelsWg.Add(2)
+	m.logChannelsWg.Add(1)
 	go m.LogMetaListener(m.RootCtx)
 
 	log.Info().Msgf("Starting %s server.", m.GetName())

@@ -1,0 +1,14 @@
+kind: controller-config
+# meta is updated by ph-flow.
+meta:
+  version:
+    major: 1
+    minor: 0
+security:
+  # maybe username/password or apikey
+  mode: none
+job:
+  log:
+    # default log keeping
+    max-result: 60
+    max-logs: 30

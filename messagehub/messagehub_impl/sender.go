@@ -29,6 +29,7 @@ func (hub *MessageHub) Sender(ctxptr *context.Context) {
 			cancel()
 
 			if err != nil {
+				msg = nil
 				continue // nothing in queue
 			}
 			msg = m.(*message.Message)
@@ -46,9 +47,10 @@ func (hub *MessageHub) Sender(ctxptr *context.Context) {
 			continue
 		}
 
-		listerners := liss.(*[]listener)
-		for _, lis := range *listerners {
-			// log.Trace().Str("topic", topic).Str("listener", lis.name).Msgf("Send message: %v", msg)
+		listeners := liss.(*[]listener)
+		log.Trace().Msgf("listeners for topic %s is %v", topic, len(*listeners))
+		for _, lis := range *listeners {
+			log.Trace().Str("topic", topic).Str("listener", lis.name).Msgf("Send message: %v", msg)
 			lis.ch <- msg
 		}
 		hub.listenerMutex.Unlock()

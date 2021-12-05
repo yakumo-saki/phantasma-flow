@@ -52,7 +52,7 @@ func (m *MetaListener) jobLogMetaListener(params *logMetaListenerParams, wg *syn
 	//
 	findOrCreateMetaStep := func(jobResult *logfile.JobMetaResult, stepName string) (*logfile.JobMetaStepResult, bool) {
 		// find for JobMetaResults
-		sr := m.findStepResultByStepName(jobResult.Results, stepName)
+		sr := m.findStepResultByStepName(jobResult.StepResults, stepName)
 		if sr != nil {
 			return sr, false
 		}
@@ -92,12 +92,16 @@ func (m *MetaListener) jobLogMetaListener(params *logMetaListenerParams, wg *syn
 				case message.JOB_STEP_START:
 					stepResult := m.createJobStepMetaResult(msg.StepName)
 					stepResult.StartDateTime = util.GetDateTimeString()
-					jobResult.Results = append(jobResult.Results, *stepResult)
+					jobResult.StepResults = append(jobResult.StepResults, *stepResult)
 				case message.JOB_STEP_END:
 					stepResult, created := findOrCreateMetaStep(jobResult, msg.StepName)
 					if created {
-						l.Warn().Str("stepName", msg.StepName).Msg("JOB_STEP_END received but JobMetaStepResult not found")
-						jobResult.Results = append(jobResult.Results, *stepResult)
+						l.Warn().Str("stepName", msg.StepName).
+							Msgf("JOB_STEP_END received but JobMetaStepResult not found")
+						jobResult.StepResults = append(jobResult.StepResults, *stepResult)
+						for s := range jobResult.StepResults {
+							log.Trace().Msgf("found step %s", s)
+						}
 					}
 					stepResult.EndDateTime = util.GetDateTimeString()
 				}
@@ -161,7 +165,7 @@ func (m *MetaListener) createNewJobLogMetaResult(runId string, ver objects.Objec
 	result.Success = false
 	result.RunId = runId
 	result.Version = ver
-	result.Results = []logfile.JobMetaStepResult{}
+	result.StepResults = []logfile.JobMetaStepResult{}
 
 	return &result
 

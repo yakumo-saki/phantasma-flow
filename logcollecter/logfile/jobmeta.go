@@ -51,7 +51,7 @@ type JobMetaResult struct {
 	Success       bool                  `json:"success"`
 	Version       objects.ObjectVersion `json:"version"`
 	RunId         string                `json:"runId"`
-	Results       []JobMetaStepResult   `json:"results"`
+	StepResults   []JobMetaStepResult   `json:"results"`
 	StartDateTime string                `json:"startDateTime"` // RFC3306
 	EndDateTime   string                `json:"endDateTime"`   // RFC3306
 }

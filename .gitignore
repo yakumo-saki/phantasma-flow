@@ -1,10 +1,13 @@
+# build directory
 build/
+
+# unit test output
+test/phantasma-flow/data
 
 #
 __debug_bin
 
 # Binaries for programs and plugins
-phantasma-flow
 *.exe
 *.exe~
 *.dll

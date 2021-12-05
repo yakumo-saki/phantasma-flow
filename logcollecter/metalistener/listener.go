@@ -24,20 +24,25 @@ func (m *MetaListener) LogMetaListener(ctx context.Context) {
 
 	for {
 		select {
-		case msg := <-jobRepoCh:
+		case msg, msgok := <-jobRepoCh:
+			if !msgok {
+				goto shutdown
+			}
+			log.Debug().Msgf("received %v", msg)
 			execMsg := msg.Body.(message.ExecuterMsg)
 
 			listener, ok := loggerMap[execMsg.JobId] // JobIDで見ているのは、JobMeta fileがJobId単位だから
 			if !ok {
-				log.Trace().Msgf("create meta listener for %s", execMsg.RunId)
+				log.Trace().Msgf("create meta listener for %s %s", execMsg.JobId, execMsg.RunId)
 				loglis := m.createJobLogMetaListenerParams(execMsg)
-				loggerMap[execMsg.RunId] = loglis
+				loggerMap[execMsg.JobId] = loglis
 
 				waitGroup.Add(1)
 				go m.jobLogMetaListener(loglis, &waitGroup)
 				listener = loglis
 			} else if !listener.Alive {
-				loglis := loggerMap[execMsg.RunId]
+				log.Trace().Msgf("Restart meta listener for %s %s", execMsg.JobId, execMsg.RunId)
+				loglis := loggerMap[execMsg.JobId]
 				waitGroup.Add(1)
 				go m.jobLogMetaListener(loglis, &waitGroup)
 			}
