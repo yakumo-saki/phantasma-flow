@@ -2,6 +2,8 @@ package testutil
 
 import (
 	"fmt"
+	"os"
+	"path"
 	"runtime"
 
 	"github.com/rs/zerolog/log"
@@ -9,9 +11,19 @@ import (
 )
 
 func StartRepository() *repository.Repository {
+	_, file, _, _ := runtime.Caller(0)
 
-	fmt.Println(runtime.Caller(0))
-	return nil
+	dir := path.Dir(file)
+	for {
+		if path.Base(dir) == "test" {
+			break
+		}
+		dir, _ = path.Split(dir)
+	}
+
+	home := path.Join(dir, "phantasma-flow")
+	fmt.Printf("SET PHFLOW_HOME = %s\n", home)
+	os.Setenv("PHFLOW_HOME", home)
 
 	repo := repository.GetRepository()
 	err := repo.Initialize()
@@ -22,4 +34,5 @@ func StartRepository() *repository.Repository {
 	}
 
 	return repo
+
 }
