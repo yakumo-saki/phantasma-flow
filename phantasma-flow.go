@@ -7,10 +7,11 @@ import (
 	"time"
 
 	"github.com/rs/zerolog/log"
-	"github.com/yakumo-saki/phantasma-flow/executer"
 	"github.com/yakumo-saki/phantasma-flow/global"
-	"github.com/yakumo-saki/phantasma-flow/jobscheduler"
-	"github.com/yakumo-saki/phantasma-flow/logcollecter"
+	"github.com/yakumo-saki/phantasma-flow/job/executer"
+	"github.com/yakumo-saki/phantasma-flow/job/scheduler"
+	"github.com/yakumo-saki/phantasma-flow/logcollecter/metalistener"
+	"github.com/yakumo-saki/phantasma-flow/logexporter/logfileexporter"
 	"github.com/yakumo-saki/phantasma-flow/messagehub"
 	"github.com/yakumo-saki/phantasma-flow/messagehub/messagehub_impl"
 	"github.com/yakumo-saki/phantasma-flow/metrics"
@@ -41,11 +42,12 @@ func main() {
 	processManager := procman.NewProcessManager(procmanCh)
 
 	processManager.Add(&procmanExample.MinimalProcmanModule{})
-	processManager.Add(&jobscheduler.JobScheduler{})
+	processManager.Add(&scheduler.JobScheduler{})
 	processManager.Add(&metrics.PrometeusExporterModule{})
 	processManager.AddService(&executer.Executer{})
 	processManager.AddService(&node.NodeManager{})
-	processManager.AddService(&logcollecter.LogListenerModule{})
+	processManager.AddService(&logfileexporter.LogFileExporter{})
+	processManager.AddService(&metalistener.MetaListener{})
 
 	processManager.Start()
 

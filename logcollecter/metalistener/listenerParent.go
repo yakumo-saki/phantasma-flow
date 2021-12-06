@@ -1,4 +1,4 @@
-package logcollecter
+package metalistener
 
 import (
 	"context"
@@ -12,30 +12,41 @@ import (
 
 // This handles executer.ExecuterMsg
 // Collect and save jobresult (executed job step result)
-func (m *LogListenerModule) LogMetaListener(ctx context.Context) {
+func (m *MetaListener) LogMetaListener(ctx context.Context) {
 	const NAME = "LogMetaListener"
 	log := util.GetLoggerWithSource(m.GetName(), NAME)
 
 	defer m.logChannelsWg.Done()
 
-	loggerMap := make(map[string]*logMetaListenerParams) // runid -> loglistener
+	loggerMap := make(map[string]*logMetaListenerParams) // JobId
 	waitGroup := sync.WaitGroup{}
 	jobRepoCh := messagehub.Subscribe(messagehub.TOPIC_JOB_REPORT, NAME)
 
 	for {
 		select {
-		case msg := <-jobRepoCh:
+		case msg, msgok := <-jobRepoCh:
+			if !msgok {
+				goto shutdown
+			}
 			execMsg := msg.Body.(message.ExecuterMsg)
 
 			listener, ok := loggerMap[execMsg.JobId] // JobIDで見ているのは、JobMeta fileがJobId単位だから
-			if !ok || !listener.Alive {
-				log.Trace().Msgf("create meta listener for %s", execMsg.RunId)
-				loglis := m.createJobLogMetaListenerParams(execMsg)
-				loggerMap[execMsg.RunId] = loglis
+			if !ok {
+				log.Trace().Msgf("create meta listener for %s %s", execMsg.JobId, execMsg.RunId)
+				logmetaParams := m.createJobLogMetaListenerParams(execMsg)
+				logmetaParams.instance = jobLogMetaListener{}
+				loggerMap[execMsg.JobId] = logmetaParams
 
 				waitGroup.Add(1)
-				go m.jobLogMetaListener(loglis, &waitGroup)
-				listener = loglis
+				go logmetaParams.instance.Start(logmetaParams, &waitGroup)
+				logmetaParams.Alive = true
+
+				listener = logmetaParams
+			} else if !listener.Alive {
+				log.Debug().Msgf("Restart meta listener for %s %s", execMsg.JobId, execMsg.RunId)
+				waitGroup.Add(1)
+				go listener.instance.Start(listener, &waitGroup)
+				listener.Alive = true
 			}
 
 			listener.execChan <- execMsg
@@ -66,11 +77,12 @@ shutdown:
 	log.Info().Msgf("%s/%s stopped.", m.GetName(), NAME)
 }
 
-func (m *LogListenerModule) createJobLogMetaListenerParams(lm message.ExecuterMsg) *logMetaListenerParams {
+func (m *MetaListener) createJobLogMetaListenerParams(lm message.ExecuterMsg) *logMetaListenerParams {
 
 	loglis := logMetaListenerParams{}
 	loglis.RunId = lm.RunId
 	loglis.JobId = lm.JobId
+	loglis.Alive = false
 	ch := make(chan message.ExecuterMsg, 1)
 	loglis.execChan = ch
 	loglis.Ctx, loglis.Cancel = context.WithCancel(context.Background())

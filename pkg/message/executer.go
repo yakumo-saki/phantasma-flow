@@ -11,11 +11,12 @@ const JOB_END = "JOB-END"               // reason: JOB END
 const JOB_START = "JOB-START"           // reason: JOB START
 
 type ExecuterMsg struct {
-	Reason    string //
-	JobId     string
-	RunId     string
-	Version   objects.ObjectVersion
-	StepName  string // JOB_STEP_* only
-	JobResult string // JOB_END only
-	ExitCode  int    // JOB_STEP_END only
+	Subject  string // notification type.
+	JobId    string
+	RunId    string
+	Version  objects.ObjectVersion
+	StepName string // JOB_STEP_* only
+	Success  bool   // JOB_END or JOB_STEP_END
+	Reason   string // why success = true / false
+	ExitCode int    // JOB_STEP_END only
 }

@@ -13,7 +13,9 @@ func (hub *MessageHub) WaitForQueueEmpty(msg string) {
 		With().Str("message", msg).Logger()
 	for {
 		if hub.GetQueueLength() == 0 {
-			log.Debug().Msg("Wait for message hub done.")
+			if msg != "" {
+				log.Debug().Msg("Wait for message hub done.")
+			}
 			return
 		}
 		time.Sleep(100 * time.Millisecond)

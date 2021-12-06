@@ -1,4 +1,4 @@
-package logcollecter
+package logfileexporter
 
 import (
 	"encoding/json"
@@ -13,7 +13,7 @@ import (
 )
 
 // Collect and save jobresult (executed job step result)
-func (m *LogListenerModule) joblogListener(params *logListenerParams, wg *sync.WaitGroup) {
+func (m *LogFileExporter) joblogListener(params *logListenerParams, wg *sync.WaitGroup) {
 	log := util.GetLoggerWithSource(m.GetName(), "logListener")
 
 	defer wg.Done()

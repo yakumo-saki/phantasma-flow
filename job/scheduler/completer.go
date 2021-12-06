@@ -1,4 +1,4 @@
-package jobscheduler
+package scheduler
 
 import (
 	"context"
@@ -30,7 +30,7 @@ func (js *JobScheduler) jobCompleter(ctx context.Context) {
 			exeMsg = msg.Body.(message.ExecuterMsg)
 		}
 
-		switch exeMsg.Reason {
+		switch exeMsg.Subject {
 		case message.JOB_END:
 			// end
 		case message.JOB_START:
@@ -44,7 +44,7 @@ func (js *JobScheduler) jobCompleter(ctx context.Context) {
 		for e := js.runnables.Front(); e != nil; e = e.Next() {
 			schedule := e.Value.(schedule)
 
-			switch exeMsg.Reason {
+			switch exeMsg.Subject {
 			case message.JOB_START:
 				schedule.runAt = now.Unix()
 			case message.JOB_END:

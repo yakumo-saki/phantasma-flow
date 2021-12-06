@@ -19,6 +19,6 @@ type JobLogMessage struct {
 }
 
 type JobLogData struct {
-	DateTime string `json:"dateTime", comment:"ISO8601"`
+	DateTime string `json:"dateTime" comment:"RFC3339"`
 	Message  string `json:"message"`
 }

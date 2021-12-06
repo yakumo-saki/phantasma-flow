@@ -1,6 +1,10 @@
-package logfile
+package metalistener
 
-import "github.com/yakumo-saki/phantasma-flow/pkg/objects"
+import (
+	"github.com/yakumo-saki/phantasma-flow/logcollecter"
+	"github.com/yakumo-saki/phantasma-flow/pkg/message"
+	"github.com/yakumo-saki/phantasma-flow/pkg/objects"
+)
 
 /*
 kind: job-meta
@@ -35,10 +39,10 @@ results:
 */
 
 type JobMetaLog struct {
-	objects.ObjectBase                  // "job-meta"
-	Meta               JobMetaMeta      `json:"meta"`
-	JobId              string           `json:"jobId"`
-	Results            []*JobMetaResult `json:"results"`
+	objects.ObjectBase                 // "job-meta"
+	Meta               JobMetaMeta     `json:"meta"`
+	JobId              string          `json:"jobId"`
+	Results            []JobMetaResult `json:"results"`
 }
 
 type JobMetaMeta struct {
@@ -49,10 +53,9 @@ type JobMetaMeta struct {
 type JobMetaResult struct {
 	JobNumber     int                   `json:"jobNumber"`
 	Success       bool                  `json:"success"`
-	Reason        string                `json:"reason"` // reason why job success is true or false
 	Version       objects.ObjectVersion `json:"version"`
 	RunId         string                `json:"runId"`
-	StepResults   []*JobMetaStepResult  `json:"stepResults"`
+	Results       []JobMetaStepResult   `json:"results"`
 	StartDateTime string                `json:"startDateTime"` // RFC3306
 	EndDateTime   string                `json:"endDateTime"`   // RFC3306
 }
@@ -64,5 +67,10 @@ type JobMetaStepResult struct {
 	EndDateTime   string `json:"endDateTime"`   // RFC3306
 	ExitCode      int    `json:"exitCode"`
 	Success       bool   `json:"success"`
-	Reason        string `json:"reason"` // reason why success is true / false
+}
+
+type logMetaListenerParams struct {
+	logcollecter.LogCollecterParamsBase
+	instance jobLogMetaListener
+	execChan chan message.ExecuterMsg
 }
