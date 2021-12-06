@@ -16,6 +16,6 @@ type ExecuterMsg struct {
 	RunId     string
 	Version   objects.ObjectVersion
 	StepName  string // JOB_STEP_* only
-	JobResult string // JOB_END only
+	JobResult string // JOB_END only  // success , failure
 	ExitCode  int    // JOB_STEP_END only
 }

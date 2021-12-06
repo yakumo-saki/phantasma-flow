@@ -35,10 +35,10 @@ results:
 */
 
 type JobMetaLog struct {
-	objects.ObjectBase                 // "job-meta"
-	Meta               JobMetaMeta     `json:"meta"`
-	JobId              string          `json:"jobId"`
-	Results            []JobMetaResult `json:"results"`
+	objects.ObjectBase                  // "job-meta"
+	Meta               JobMetaMeta      `json:"meta"`
+	JobId              string           `json:"jobId"`
+	Results            []*JobMetaResult `json:"results"`
 }
 
 type JobMetaMeta struct {
@@ -51,7 +51,7 @@ type JobMetaResult struct {
 	Success       bool                  `json:"success"`
 	Version       objects.ObjectVersion `json:"version"`
 	RunId         string                `json:"runId"`
-	StepResults   []JobMetaStepResult   `json:"results"`
+	StepResults   []*JobMetaStepResult  `json:"stepResults"`
 	StartDateTime string                `json:"startDateTime"` // RFC3306
 	EndDateTime   string                `json:"endDateTime"`   // RFC3306
 }

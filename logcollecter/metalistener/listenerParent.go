@@ -28,23 +28,25 @@ func (m *MetaListener) LogMetaListener(ctx context.Context) {
 			if !msgok {
 				goto shutdown
 			}
-			log.Debug().Msgf("received %v", msg)
 			execMsg := msg.Body.(message.ExecuterMsg)
 
 			listener, ok := loggerMap[execMsg.JobId] // JobIDで見ているのは、JobMeta fileがJobId単位だから
 			if !ok {
 				log.Trace().Msgf("create meta listener for %s %s", execMsg.JobId, execMsg.RunId)
-				loglis := m.createJobLogMetaListenerParams(execMsg)
-				loggerMap[execMsg.JobId] = loglis
+				logmetaParams := m.createJobLogMetaListenerParams(execMsg)
+				logmetaParams.instance = jobLogMetaListener{}
+				loggerMap[execMsg.JobId] = logmetaParams
 
 				waitGroup.Add(1)
-				go m.jobLogMetaListener(loglis, &waitGroup)
-				listener = loglis
+				go logmetaParams.instance.Start(logmetaParams, &waitGroup)
+				logmetaParams.Alive = true
+
+				listener = logmetaParams
 			} else if !listener.Alive {
-				log.Trace().Msgf("Restart meta listener for %s %s", execMsg.JobId, execMsg.RunId)
-				loglis := loggerMap[execMsg.JobId]
+				log.Debug().Msgf("Restart meta listener for %s %s", execMsg.JobId, execMsg.RunId)
 				waitGroup.Add(1)
-				go m.jobLogMetaListener(loglis, &waitGroup)
+				go listener.instance.Start(listener, &waitGroup)
+				listener.Alive = true
 			}
 
 			listener.execChan <- execMsg

@@ -15,6 +15,7 @@ func GetLogger() zerolog.Logger {
 	}
 	log := zerolog.New(output).
 		With().Timestamp().
+		Caller().
 		Logger()
 	return log
 }

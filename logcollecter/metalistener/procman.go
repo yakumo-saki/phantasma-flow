@@ -40,7 +40,7 @@ func (m *MetaListener) GetName() string {
 func (m *MetaListener) Start(inCh <-chan string, outCh chan<- string) error {
 	m.FromProcmanCh = inCh
 	m.ToProcmanCh = outCh
-	log := util.GetLoggerWithSource(m.GetName(), "start")
+	log := util.GetLoggerWithSource(m.GetName(), "main")
 
 	m.logChannelsWg = sync.WaitGroup{}
 	m.logChannelsWg.Add(1)

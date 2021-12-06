@@ -71,5 +71,6 @@ type JobMetaStepResult struct {
 
 type logMetaListenerParams struct {
 	logcollecter.LogCollecterParamsBase
+	instance jobLogMetaListener
 	execChan chan message.ExecuterMsg
 }
