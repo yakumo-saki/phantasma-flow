@@ -55,11 +55,9 @@ func TestBasicMetaListener(t *testing.T) {
 
 	{
 		jobend := createExecuterMsg(jobId, runId, message.JOB_END)
-		jobend.JobResult = "success"
+		jobend.Reason = "success"
 		messagehub.Post(messagehub.TOPIC_JOB_REPORT, *jobend)
 	}
-
-	time.Sleep(time.Hour)
 
 	messagehub.WaitForQueueEmpty("")
 	fmt.Println("end")
@@ -78,7 +76,7 @@ func createExecuterMsg(jobId, runId, reason string) *message.ExecuterMsg {
 	msg := message.ExecuterMsg{}
 	msg.JobId = jobId
 	msg.RunId = runId
-	msg.Reason = reason
+	msg.Subject = reason
 
 	return &msg
 

@@ -38,12 +38,12 @@ func (ex *Executer) runner(ctx context.Context) {
 						Msgf("Run (dummy) job step: %s step: %v", job.JobDef.Name, step.Name)
 					state.Running = true
 					msg := ex.createExecuterMsg(job)
-					msg.Reason = message.JOB_STEP_START
+					msg.Subject = message.JOB_STEP_START
 					msg.StepName = step.Name
 					messagehub.Post(messagehub.TOPIC_JOB_REPORT, *msg)
 
 					msg2 := *msg
-					msg2.Reason = message.JOB_STEP_END
+					msg2.Subject = message.JOB_STEP_END
 					msg2.ExitCode = 0
 					messagehub.Post(messagehub.TOPIC_JOB_REPORT, msg2)
 				}
@@ -84,7 +84,7 @@ func (ex *Executer) notifyJobReport(jobId, runId, reason string) {
 	msg := message.ExecuterMsg{}
 	msg.JobId = jobId
 	msg.RunId = runId
-	msg.Reason = reason
+	msg.Subject = reason
 	messagehub.Post(messagehub.TOPIC_JOB_REPORT, msg)
 }
 

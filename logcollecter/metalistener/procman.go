@@ -3,6 +3,7 @@ package metalistener
 import (
 	"context"
 	"sync"
+	"time"
 
 	"github.com/yakumo-saki/phantasma-flow/procman"
 	"github.com/yakumo-saki/phantasma-flow/util"
@@ -47,6 +48,8 @@ func (m *MetaListener) Start(inCh <-chan string, outCh chan<- string) error {
 	go m.LogMetaListener(m.RootCtx)
 
 	log.Info().Msgf("Starting %s server.", m.GetName())
+
+	time.Sleep(100 * time.Millisecond) // wait for LogMetaListener start
 
 	m.ToProcmanCh <- procman.RES_STARTUP_DONE
 

@@ -49,6 +49,7 @@ type JobMetaMeta struct {
 type JobMetaResult struct {
 	JobNumber     int                   `json:"jobNumber"`
 	Success       bool                  `json:"success"`
+	Reason        string                `json:"reason"` // reason why job success is true or false
 	Version       objects.ObjectVersion `json:"version"`
 	RunId         string                `json:"runId"`
 	StepResults   []*JobMetaStepResult  `json:"stepResults"`
@@ -63,4 +64,5 @@ type JobMetaStepResult struct {
 	EndDateTime   string `json:"endDateTime"`   // RFC3306
 	ExitCode      int    `json:"exitCode"`
 	Success       bool   `json:"success"`
+	Reason        string `json:"reason"` // reason why success is true / false
 }

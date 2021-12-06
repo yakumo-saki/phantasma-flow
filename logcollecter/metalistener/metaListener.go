@@ -42,9 +42,10 @@ func (m *jobLogMetaListener) Start(params *logMetaListenerParams, wg *sync.WaitG
 	for {
 		select {
 		case msg, ok := <-params.execChan:
-			if ok {
-				l := log.With().Str("reason", msg.Reason).Str("runId", msg.RunId).Logger()
-
+			if !ok {
+				log.Debug().Msg("Shutdown request received via channel close")
+				goto shutdown
+			} else {
 				// find for JobMetaResults
 				jresult := m.findMetaResultByRunId(m.MetaLog.Results, msg.RunId)
 				if jresult != nil {
@@ -52,48 +53,26 @@ func (m *jobLogMetaListener) Start(params *logMetaListenerParams, wg *sync.WaitG
 				} else {
 					m.JobMetaLog = m.createNewJobLogMetaResult(msg.RunId, msg.Version)
 					m.MetaLog.Results = m.appendMetaResult(m.MetaLog.Results, m.JobMetaLog)
-					log.Trace().Msgf("create JobLog Meta Result %p", m.JobMetaLog)
 				}
 
-				switch msg.Reason {
+				switch msg.Subject {
 				case message.JOB_START:
-					// no need to create job meta result. because already created above.
-					m.JobMetaLog.JobNumber = m.MetaLog.Meta.NextJobNumber
-					m.JobMetaLog.StartDateTime = util.GetDateTimeString()
-					m.JobMetaLog.EndDateTime = ""
-					m.MetaLog.Meta.NextJobNumber++
-				case message.JOB_END:
-					m.JobMetaLog.EndDateTime = util.GetDateTimeString()
+					m.handleJobStart(msg)
 				case message.JOB_STEP_START:
-					l.Debug().Msg("JOB_STEP_START")
-					stepResult := m.createJobStepMetaResult(msg.StepName)
-					stepResult.StartDateTime = util.GetDateTimeString()
-					stepResults := append(m.JobMetaLog.StepResults, stepResult)
-					m.JobMetaLog.StepResults = stepResults
-					// l.Trace().Msgf("Added jobstepresult new len -> %v", len(m.JobMetaLog.StepResults))
+					m.handleJobStepStart(msg)
 				case message.JOB_STEP_END:
-					stepResult := m.findStepResultByStepName(m.JobMetaLog.StepResults, msg.StepName)
-					if stepResult == nil {
-						stepResult = m.createJobStepMetaResult(msg.StepName)
-						l.Warn().Str("stepName", msg.StepName).
-							Msgf("JOB_STEP_END received but JobMetaStepResult not found")
-						m.JobMetaLog.StepResults = append(m.JobMetaLog.StepResults, stepResult)
-
-						for _, s := range m.JobMetaLog.StepResults {
-							log.Trace().Msgf("found step %v", s)
-						}
-					}
-					stepResult.EndDateTime = util.GetDateTimeString()
+					m.handleJobStepEnd(msg)
+				case message.JOB_END:
+					m.handleJobEnd(msg)
+					log.Debug().Msg("Shutdown because job is ended.")
+					goto shutdown
 				}
 
 				// log.Debug().Msgf("%v", msg)
-			} else {
-				log.Debug().Msg("Shutdown request received via channel close")
-				goto shutdown
 			}
 
 		case <-time.After(15 * time.Second):
-			log.Debug().Msg("timeout, auto close")
+			log.Debug().Msg("Metalog timeout, automatic shutdown.")
 			goto shutdown
 		case <-params.Ctx.Done():
 			log.Debug().Msg("Shutdown request received.")
@@ -107,7 +86,45 @@ shutdown:
 	m.MetaLogFilePath = ""
 	m.MetaLog = nil
 	m.JobMetaLog = nil
-	log.Debug().Msgf("Stopped jobLogMetaListener for %s", params.JobId)
+	log.Debug().Msgf("Stopped %s for jobId %s", m.GetName(), params.JobId)
+}
+
+func (m *jobLogMetaListener) handleJobStart(msg message.ExecuterMsg) {
+	m.JobMetaLog.JobNumber = m.MetaLog.Meta.NextJobNumber
+	m.JobMetaLog.StartDateTime = util.GetDateTimeString()
+	m.JobMetaLog.EndDateTime = ""
+	m.MetaLog.Meta.NextJobNumber++
+}
+
+func (m *jobLogMetaListener) handleJobEnd(msg message.ExecuterMsg) {
+	m.JobMetaLog.EndDateTime = util.GetDateTimeString()
+	m.JobMetaLog.Reason = msg.Reason
+}
+
+func (m *jobLogMetaListener) handleJobStepStart(msg message.ExecuterMsg) {
+	stepResult := m.createJobStepMetaResult(msg.StepName)
+	stepResult.StartDateTime = util.GetDateTimeString()
+	stepResults := append(m.JobMetaLog.StepResults, stepResult)
+	m.JobMetaLog.StepResults = stepResults
+}
+func (m *jobLogMetaListener) handleJobStepEnd(msg message.ExecuterMsg) {
+	l := log.With().Str("reason", msg.Subject).Str("runId", msg.RunId).Logger()
+
+	stepResult := m.findStepResultByStepName(m.JobMetaLog.StepResults, msg.StepName)
+	if stepResult == nil {
+		stepResult = m.createJobStepMetaResult(msg.StepName)
+		l.Warn().Str("stepName", msg.StepName).
+			Msgf("JOB_STEP_END received but JobMetaStepResult not found")
+		m.JobMetaLog.StepResults = append(m.JobMetaLog.StepResults, stepResult)
+
+		for _, s := range m.JobMetaLog.StepResults {
+			log.Trace().Msgf("found step %v", s)
+		}
+	}
+	stepResult.EndDateTime = util.GetDateTimeString()
+	stepResult.ExitCode = msg.ExitCode
+	stepResult.Reason = msg.Reason
+
 }
 
 func (m *jobLogMetaListener) ReadOrCreateMetaLog(jobId string) {
