@@ -17,6 +17,6 @@ type LogCollecterParamsBase struct {
 
 type logListenerParams struct {
 	logcollecter.LogCollecterParamsBase
-
-	logChan chan logfile.JobLogMessage // XXX: JOB Log
+	instance logFileExporter
+	logChan  chan logfile.JobLogMessage // XXX: JOB Log
 }
