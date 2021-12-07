@@ -1,7 +1,9 @@
 package node
 
 import (
+	"container/list"
 	"context"
+	"sync"
 
 	"github.com/yakumo-saki/phantasma-flow/messagehub"
 	"github.com/yakumo-saki/phantasma-flow/procman"
@@ -11,8 +13,9 @@ import (
 type NodeManager struct {
 	procman.ProcmanModuleStruct
 
-	// runQueue []objects.JobDefinition
-	// nodes    []objects.NodeDefinition
+	mutex     sync.Mutex
+	pool      nodePool
+	execQueue list.List
 }
 
 // returns this instance is initialized or not.

@@ -15,7 +15,6 @@ import (
 	"github.com/yakumo-saki/phantasma-flow/messagehub"
 	"github.com/yakumo-saki/phantasma-flow/messagehub/messagehub_impl"
 	"github.com/yakumo-saki/phantasma-flow/metrics"
-	"github.com/yakumo-saki/phantasma-flow/node"
 	"github.com/yakumo-saki/phantasma-flow/procman"
 	"github.com/yakumo-saki/phantasma-flow/procmanExample"
 	"github.com/yakumo-saki/phantasma-flow/repository"
@@ -45,7 +44,6 @@ func main() {
 	processManager.Add(&scheduler.JobScheduler{})
 	processManager.Add(&metrics.PrometeusExporterModule{})
 	processManager.AddService(&executer.Executer{})
-	processManager.AddService(&node.NodeManager{})
 	processManager.AddService(&logfileexporter.LogFileExporter{})
 	processManager.AddService(&metalistener.MetaListener{})
 
