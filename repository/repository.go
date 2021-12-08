@@ -24,7 +24,7 @@ type Repository struct {
 
 func (r *Repository) Initialize() error {
 	log := util.GetLoggerWithSource(myname, "initialize")
-	log.Debug().Msg("Repository initialize")
+	log.Debug().Msg("Repository initialize start")
 
 	r.paths = aquirePhflowPath()
 
@@ -35,7 +35,7 @@ func (r *Repository) Initialize() error {
 	}
 
 	for typ, dirPath := range dirType {
-		log.Debug().Msgf("Reading %s from %s", typ, dirPath)
+		// log.Debug().Msgf("Reading %s from %s", typ, dirPath)
 		err := r.readAllYaml(dirPath, typ)
 		if err != nil {
 			return err
@@ -48,6 +48,8 @@ func (r *Repository) Initialize() error {
 	// }
 
 	r.Initialized = true
+	log.Info().Msg("Repository initialized")
+
 	return nil
 }
 
@@ -92,7 +94,7 @@ func (repo *Repository) readAllYaml(path string, objType objectType) error {
 			return err
 		}
 
-		log.Debug().Msgf("Reading %s", fp)
+		// log.Debug().Msgf("Reading %s", fp)
 
 		switch objType {
 		case NODE:
