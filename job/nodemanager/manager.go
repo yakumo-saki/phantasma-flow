@@ -1,7 +1,6 @@
 package nodemanager
 
 import (
-	"container/list"
 	"context"
 	"fmt"
 
@@ -9,12 +8,29 @@ import (
 	"github.com/yakumo-saki/phantasma-flow/global"
 	"github.com/yakumo-saki/phantasma-flow/job/jobparser"
 	"github.com/yakumo-saki/phantasma-flow/job/nodemanager/node"
-	"github.com/yakumo-saki/phantasma-flow/pkg/objects"
 	"github.com/yakumo-saki/phantasma-flow/util"
 )
 
 func (nm *NodeManager) GetCapacity(name string) int {
-	return 1
+	const ERRVAL = -1
+	log := util.GetLoggerWithSource(nm.GetName(), "GetCapacity")
+
+	nm.mutex.Lock()
+	defer nm.mutex.Unlock()
+
+	pool, ok := nm.nodePool[name]
+
+	if !ok {
+		log.Warn().Msgf("No node registered for %s", name)
+		return ERRVAL
+	} else if pool.Len() == 0 {
+		log.Warn().Msgf("No node is available for %s", name)
+		return ERRVAL
+	}
+
+	meta := pool.Front().Value.(nodeMeta)
+
+	return meta.Capacity
 }
 
 // Exec job step.
@@ -24,9 +40,14 @@ func (nm *NodeManager) ExecJobStep(ctx context.Context, step jobparser.Executabl
 	defer nm.mutex.Unlock()
 
 	// fetch first node from nodePool
-	nd := nm.nodePool[step.Node]
+	nd, ok := nm.nodePool[step.Node]
+	if !ok {
+		// XXX JOB FAIL
+		log.Error().Msgf("Node '%s' is not found in NodeManager.", step.Node)
+		return
+	}
 	nodeMeta := nd.Front().Value.(nodeMeta)
-	nm.HasEnoughCapacity(nodeMeta, step)
+	nm.HasEnoughCapacity(nodeMeta, step) // check but not stop.
 
 	// new Node instance
 	nodeInst := nodeInstance{}
@@ -48,34 +69,5 @@ func (nm *NodeManager) HasEnoughCapacity(nodeMeta nodeMeta, step jobparser.Execu
 		} else {
 			log.Error().Msg(msg + ", continue anyway")
 		}
-	}
-}
-
-// Add or Change Node defintiion
-// Before call, must get mutex lock
-func (nm *NodeManager) nodeDefToPool(nodeDef objects.NodeDefinition) {
-	log := util.GetLoggerWithSource(nm.GetName(), "NodeDefToPool")
-
-	nd := nodeMeta{}
-	nd.Def = nodeDef
-	nd.Capacity = nodeDef.Capacity
-	nd.Deprecated = false
-	nd.RunningInstances = map[string]nodeInstance{}
-
-	ls, ok := nm.nodePool[nodeDef.Name]
-	if !ok {
-		ls = list.New()
-		ls.PushBack(nd)
-		nm.nodePool[nd.Def.Name] = ls
-		log.Debug().Msgf("New node added. %s", nd.Def.Name)
-	} else {
-		if ls.Len() > 0 {
-			for e := ls.Front(); e != nil; e = e.Next() {
-				n := e.Value.(nodeMeta)
-				n.Deprecated = true
-				log.Debug().Msgf("Changed node definition. %s", nd.Def.Name)
-			}
-		}
-		ls.PushBack(nd)
 	}
 }

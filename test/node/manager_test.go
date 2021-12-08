@@ -3,6 +3,7 @@ package node
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/yakumo-saki/phantasma-flow/job/jobparser"
@@ -42,9 +43,12 @@ func TestBasicNodeManager(t *testing.T) {
 	js.ExecType = objects.JOB_EXEC_TYPE_COMMAND
 	js.JobId = JOBID
 	js.RunId = RUNID
+	js.Node = "local"
 	js.Name = "Step1"
-	js.Command = "date"
+	js.Command = "echo \"`hostname` today is `date`\" && sleep 3 && LANG=C date"
 	nodeMan.ExecJobStep(ctx, js)
+
+	time.Sleep(5 * time.Second)
 
 	testutils.EndTest()
 	pman.Shutdown()

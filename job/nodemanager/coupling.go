@@ -7,8 +7,13 @@ import (
 	"github.com/yakumo-saki/phantasma-flow/util"
 )
 
+// This file' objective
+// Provide direct access to nodeManager instance only for JobScheduler.
+
 var nodeManager *NodeManager
 
+// This function is only for main and JobScheduler
+//
 func GetInstance() *NodeManager {
 
 	if nodeManager == nil {

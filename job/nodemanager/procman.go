@@ -15,7 +15,7 @@ type NodeManager struct {
 	procman.ProcmanModuleStruct
 
 	mutex    sync.Mutex
-	nodePool map[string]*list.List
+	nodePool map[string]*list.List // map[nodename] list.List<nodeMeta>
 }
 
 // returns this instance is initialized or not.
@@ -53,6 +53,7 @@ func (nm *NodeManager) Start(inCh <-chan string, outCh chan<- string) error {
 	log.Info().Msgf("Starting %s.", nm.GetName())
 
 	nodeCh := messagehub.Subscribe(messagehub.TOPIC_NODE_DEFINITION, nm.GetName())
+	jobRepoCh := messagehub.Subscribe(messagehub.TOPIC_JOB_REPORT, nm.GetName())
 
 	nm.ToProcmanCh <- procman.RES_STARTUP_DONE
 
@@ -64,8 +65,15 @@ func (nm *NodeManager) Start(inCh <-chan string, outCh chan<- string) error {
 		case msg := <-nodeCh:
 			nodeDefMsg := msg.Body.(message.NodeDefinitionMsg)
 			nm.mutex.Lock()
-			nm.nodeDefToPool(nodeDefMsg.NodeDefinition)
+			nm.nodeDefHandler(nodeDefMsg.NodeDefinition)
 			nm.mutex.Unlock()
+		case msg := <-jobRepoCh:
+			exeMsg := msg.Body.(message.ExecuterMsg)
+			if exeMsg.Subject == message.JOB_STEP_END {
+				nm.mutex.Lock()
+				nm.cleanUpNodePool(exeMsg)
+				nm.mutex.Unlock()
+			}
 		case <-nm.RootCtx.Done():
 			goto shutdown
 		}

@@ -33,7 +33,7 @@ func (n *localExecNode) Run(ctx context.Context, jobStep jobparser.ExecutableJob
 	log := util.GetLoggerWithSource(n.GetName(), "run").With().
 		Str("jobId", jobStep.JobId).Str("runId", jobStep.RunId).Str("step", jobStep.Name).Logger()
 
-	log.Debug().Msgf("Run %v", jobStep.Command)
+	log.Debug().Msgf("Run %s", jobStep)
 
 	var err error
 	cmd := exec.CommandContext(ctx, "sh", "-c", jobStep.Command)
