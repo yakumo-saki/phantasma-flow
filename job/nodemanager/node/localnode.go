@@ -8,12 +8,14 @@ import (
 	"sync/atomic"
 
 	"github.com/yakumo-saki/phantasma-flow/job/jobparser"
+	"github.com/yakumo-saki/phantasma-flow/messagehub"
 	"github.com/yakumo-saki/phantasma-flow/pkg/objects"
 	"github.com/yakumo-saki/phantasma-flow/util"
 )
 
 type localExecNode struct {
 	nodeDef objects.NodeDefinition
+	jobStep jobparser.ExecutableJobStep
 	seqNo   uint64
 }
 
@@ -62,8 +64,14 @@ func (n *localExecNode) PipeToLog(ctx context.Context, name string, pipe io.Read
 
 	scanner := bufio.NewScanner(pipe)
 	for scanner.Scan() {
-		atomic.AddUint64(&n.seqNo, 1)
-		log.Info().Str("name", name).Msg(scanner.Text())
+		seq := atomic.AddUint64(&n.seqNo, 1)
+		logmsg := scanner.Text()
+		log.Info().Str("name", name).Uint64("seqNo", seq).Msg(logmsg)
+
+		msg := createJobLogMsg(n.jobStep)
+		msg.Source = name
+		msg.Message = logmsg
+		messagehub.Post(messagehub.TOPIC_JOB_LOG, msg)
 	}
 
 }
