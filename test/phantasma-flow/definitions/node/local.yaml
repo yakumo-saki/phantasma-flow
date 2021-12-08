@@ -1,0 +1,11 @@
+kind: node
+# meta is updated by ph-flow.
+meta:
+  version:
+    major: 1
+    minor: 0
+  created: 2021-11-13 01:02:03Z
+  createdBy: SYSTEM
+id: local
+nodeType: local
+capacity: 2

@@ -1,7 +1,6 @@
 package repository
 
 import (
-	"errors"
 	"io/ioutil"
 	"path/filepath"
 
@@ -43,10 +42,10 @@ func (r *Repository) Initialize() error {
 		}
 	}
 
-	if r.Dump() {
-		log.Debug().Msg("Repository initialized")
-		return errors.New("not impremented")
-	}
+	// if r.Dump() {
+	// 	log.Debug().Msg("Repository initialized")
+	// 	return errors.New("not impremented")
+	// }
 
 	r.Initialized = true
 	return nil

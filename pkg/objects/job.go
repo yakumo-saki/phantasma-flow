@@ -21,11 +21,15 @@ type JobSchedule struct {
 	Param        string `json:"param"`
 }
 
+const JOB_EXEC_TYPE_COMMAND = "command"
+const JOB_EXEC_TYPE_SCRIPT = "script"
+
 type JobStepDefinition struct {
-	Name     string `json:"name"`
-	ExecType string `json:"execType"` // normal , internal
-	Command  string `json:"command"`
-	Script   string `json:"script"`
+	Name        string `json:"name"`        // JobStep Name
+	UseCapacity int    `json:"useCapacity"` // number how many capacity this step use. default 1
+	ExecType    string `json:"execType"`    // JOB_EXEC_TYPE_*. internal, command, script
+	Command     string `json:"command"`     // JOB_EXEC_TYPE_COMMAND only
+	Script      string `json:"script"`      // JOB_EXEC_TYPE_SCRIPT only
 }
 
 func (nd JobDefinition) String() string {

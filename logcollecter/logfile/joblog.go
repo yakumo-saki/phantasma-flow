@@ -9,8 +9,8 @@ const LM_STAGE_POST = "postrun"
 type JobLogMessage struct {
 	JobId       string                `json:"jobId"`
 	RunId       string                `json:"runId"`
-	Version     objects.ObjectVersion `json:"version"`
-	Stage       string                `json:"stage"`       // prerun, job, postrun
+	Version     objects.ObjectVersion `json:"version"`     // Version of job definition
+	Stage       string                `json:"stage"`       // LM_STAGE_* prerun, job, postrun
 	JobStep     string                `json:"jobStep"`     // Stage=job only
 	Source      string                `json:"source"`      // log from where
 	LogDateTime string                `json:"logDateTime"` // RFC3339 yyyy-mm-ddTHH:MM:SS.nnnn+TZ

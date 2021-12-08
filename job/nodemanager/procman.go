@@ -1,4 +1,4 @@
-package node
+package nodemanager
 
 import (
 	"container/list"
@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"github.com/yakumo-saki/phantasma-flow/messagehub"
+	"github.com/yakumo-saki/phantasma-flow/pkg/message"
 	"github.com/yakumo-saki/phantasma-flow/procman"
 	"github.com/yakumo-saki/phantasma-flow/util"
 )
@@ -13,9 +14,8 @@ import (
 type NodeManager struct {
 	procman.ProcmanModuleStruct
 
-	mutex     sync.Mutex
-	pool      nodePool
-	execQueue list.List
+	mutex    sync.Mutex
+	nodePool map[string]*list.List
 }
 
 // returns this instance is initialized or not.
@@ -33,6 +33,7 @@ func (m *NodeManager) Initialize() error {
 	m.Name = "NodeManager" // if you want to multiple instance, change name here
 	m.Initialized = true
 	m.RootCtx, m.RootCancel = context.WithCancel(context.Background())
+	m.nodePool = map[string]*list.List{}
 	return nil
 }
 
@@ -60,8 +61,11 @@ func (nm *NodeManager) Start(inCh <-chan string, outCh chan<- string) error {
 		select {
 		case v := <-nm.FromProcmanCh:
 			log.Debug().Msgf("Got request %s", v)
-		case node := <-nodeCh:
-			log.Info().Msgf("%s", node)
+		case msg := <-nodeCh:
+			nodeDefMsg := msg.Body.(message.NodeDefinitionMsg)
+			nm.mutex.Lock()
+			nm.nodeDefToPool(nodeDefMsg.NodeDefinition)
+			nm.mutex.Unlock()
 		case <-nm.RootCtx.Done():
 			goto shutdown
 		}

@@ -8,7 +8,7 @@ import (
 
 	"github.com/rs/zerolog/log"
 	"github.com/yakumo-saki/phantasma-flow/global"
-	"github.com/yakumo-saki/phantasma-flow/job/executer"
+	"github.com/yakumo-saki/phantasma-flow/job/nodemanager"
 	"github.com/yakumo-saki/phantasma-flow/job/scheduler"
 	"github.com/yakumo-saki/phantasma-flow/logcollecter/metalistener"
 	"github.com/yakumo-saki/phantasma-flow/logexporter/logfileexporter"
@@ -43,7 +43,7 @@ func main() {
 	processManager.Add(&procmanExample.MinimalProcmanModule{})
 	processManager.Add(&scheduler.JobScheduler{})
 	processManager.Add(&metrics.PrometeusExporterModule{})
-	processManager.AddService(&executer.Executer{})
+	processManager.AddService(nodemanager.GetInstance())
 	processManager.AddService(&logfileexporter.LogFileExporter{})
 	processManager.AddService(&metalistener.MetaListener{})
 

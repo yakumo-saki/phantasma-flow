@@ -11,26 +11,22 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/yakumo-saki/phantasma-flow/logcollecter/metalistener"
 	"github.com/yakumo-saki/phantasma-flow/messagehub"
-	"github.com/yakumo-saki/phantasma-flow/messagehub/messagehub_impl"
 	"github.com/yakumo-saki/phantasma-flow/pkg/message"
-	"github.com/yakumo-saki/phantasma-flow/procman"
 	"github.com/yakumo-saki/phantasma-flow/repository"
+	"github.com/yakumo-saki/phantasma-flow/test/internal/testutils"
 )
 
 func TestBasicMetaListener(t *testing.T) {
 	jobId := "basic_test"
 
-	startRepository()
+	hub, pman := testutils.StartBaseModules()
 
-	hub := messagehub_impl.MessageHub{}
-	hub.Initialize()
-	messagehub.SetMessageHub(&hub)
-
-	processManager := procman.NewProcessManager(make(chan string, 1))
-	processManager.AddService(&metalistener.MetaListener{})
-	processManager.Start()
+	pman.AddService(&metalistener.MetaListener{})
+	pman.Start()
 
 	hub.StartSender()
+
+	testutils.StartTest()
 
 	runId := time.Now().Format("basic_test_2006-01-02_150405")
 
@@ -60,8 +56,10 @@ func TestBasicMetaListener(t *testing.T) {
 	}
 
 	messagehub.WaitForQueueEmpty("")
-	fmt.Println("end")
-	processManager.Shutdown()
+
+	testutils.EndTest()
+
+	pman.Shutdown()
 
 }
 
