@@ -1,21 +1,23 @@
-package node
+package nodemanager
 
 import (
 	"container/list"
 	"context"
 	"sync"
+	"time"
 
 	"github.com/yakumo-saki/phantasma-flow/messagehub"
+	"github.com/yakumo-saki/phantasma-flow/pkg/message"
 	"github.com/yakumo-saki/phantasma-flow/procman"
 	"github.com/yakumo-saki/phantasma-flow/util"
 )
 
 type NodeManager struct {
 	procman.ProcmanModuleStruct
-
-	mutex     sync.Mutex
-	pool      nodePool
-	execQueue list.List
+	inShutdown bool // NodeManager in shutdown state
+	mutex      sync.Mutex
+	wg         sync.WaitGroup
+	nodePool   map[string]*list.List // map[nodename] list.List<nodeMeta>
 }
 
 // returns this instance is initialized or not.
@@ -28,11 +30,12 @@ func (m *NodeManager) IsInitialized() bool {
 // Between Initialize and Start, no shutdown is called when error occures.
 // so, dont initialize something needs shutdown sequence.
 func (m *NodeManager) Initialize() error {
-	// used for procman <-> module communication
-	// procman -> PAUSE(prepare for backup) is considered
 	m.Name = "NodeManager" // if you want to multiple instance, change name here
-	m.Initialized = true
+	m.wg = sync.WaitGroup{}
 	m.RootCtx, m.RootCancel = context.WithCancel(context.Background())
+	m.nodePool = map[string]*list.List{}
+	m.Initialized = true
+	m.inShutdown = false
 	return nil
 }
 
@@ -52,6 +55,7 @@ func (nm *NodeManager) Start(inCh <-chan string, outCh chan<- string) error {
 	log.Info().Msgf("Starting %s.", nm.GetName())
 
 	nodeCh := messagehub.Subscribe(messagehub.TOPIC_NODE_DEFINITION, nm.GetName())
+	jobRepoCh := messagehub.Subscribe(messagehub.TOPIC_JOB_REPORT, nm.GetName())
 
 	nm.ToProcmanCh <- procman.RES_STARTUP_DONE
 
@@ -60,8 +64,18 @@ func (nm *NodeManager) Start(inCh <-chan string, outCh chan<- string) error {
 		select {
 		case v := <-nm.FromProcmanCh:
 			log.Debug().Msgf("Got request %s", v)
-		case node := <-nodeCh:
-			log.Info().Msgf("%s", node)
+		case msg := <-nodeCh:
+			nodeDefMsg := msg.Body.(message.NodeDefinitionMsg)
+			nm.mutex.Lock()
+			nm.nodeDefHandler(nodeDefMsg.NodeDefinition)
+			nm.mutex.Unlock()
+		case msg := <-jobRepoCh:
+			exeMsg := msg.Body.(message.ExecuterMsg)
+			if exeMsg.Subject == message.JOB_STEP_END {
+				nm.mutex.Lock()
+				nm.cleanUpNodePool(exeMsg)
+				nm.mutex.Unlock()
+			}
 		case <-nm.RootCtx.Done():
 			goto shutdown
 		}
@@ -69,6 +83,8 @@ func (nm *NodeManager) Start(inCh <-chan string, outCh chan<- string) error {
 
 shutdown:
 	// stop all node
+	log.Info().Msg("Wait for cancel all jobs...")
+	nm.waitForAllJobsStopped()
 
 	log.Info().Msgf("%s Stopped.", nm.GetName())
 	nm.ToProcmanCh <- procman.RES_SHUTDOWN_DONE
@@ -82,5 +98,26 @@ func (nm *NodeManager) Shutdown() {
 
 	log := util.GetLoggerWithSource(nm.GetName(), "shutdown")
 	log.Debug().Msg("Shutdown initiated")
+	nm.inShutdown = true
 	nm.RootCancel()
+}
+
+// cleanup nodeInstance and Restore capacity
+func (nm *NodeManager) waitForAllJobsStopped() {
+	const NAME = "waitForAllJobsStopped"
+	log := util.GetLoggerWithSource(nm.GetName(), NAME)
+
+	doneCh := make(chan struct{})
+	go func() {
+		nm.wg.Wait()
+		close(doneCh)
+	}()
+
+	select {
+	case <-time.After(1 * time.Minute):
+		log.Warn().Msgf("Cancel running jobs time out")
+	case <-doneCh:
+		log.Debug().Msgf("Cancel running jobs done")
+	}
+
 }

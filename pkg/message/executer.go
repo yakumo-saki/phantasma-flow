@@ -11,7 +11,7 @@ const JOB_END = "JOB-END"               // reason: JOB END
 const JOB_START = "JOB-START"           // reason: JOB START
 
 type ExecuterMsg struct {
-	Subject  string // notification type.
+	Subject  string // notification type. JOB_[STEP_]_(START|END)
 	JobId    string
 	RunId    string
 	Version  objects.ObjectVersion
