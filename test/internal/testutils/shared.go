@@ -21,6 +21,7 @@ func StartBaseModules() (*messagehub_impl.MessageHub, *procman.ProcessManager) {
 	messagehub.SetMessageHub(&hub)
 
 	pman := procman.NewProcessManager(make(chan string, 1))
+	pman.Add(&TestLogListener{})
 
 	return &hub, &pman
 

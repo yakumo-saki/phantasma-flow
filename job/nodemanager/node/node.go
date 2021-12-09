@@ -3,6 +3,7 @@ package node
 import (
 	"context"
 	"fmt"
+	"sync"
 
 	"github.com/yakumo-saki/phantasma-flow/job/jobparser"
 	"github.com/yakumo-saki/phantasma-flow/pkg/objects"
@@ -11,6 +12,7 @@ import (
 type ExecNode struct {
 	nodeDef objects.NodeDefinition
 	node    execNodeImpl
+	Running bool
 }
 
 func (n *ExecNode) GetName() string {
@@ -36,6 +38,9 @@ func (n *ExecNode) Initialize(def objects.NodeDefinition) error {
 	return err
 }
 
-func (n *ExecNode) Run(ctx context.Context, jobStep jobparser.ExecutableJobStep) {
+func (n *ExecNode) Run(ctx context.Context, wg *sync.WaitGroup, jobStep jobparser.ExecutableJobStep) {
+	n.Running = true
 	n.node.Run(ctx, jobStep)
+	n.Running = false
+	wg.Done()
 }

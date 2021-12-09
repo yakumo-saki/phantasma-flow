@@ -14,6 +14,7 @@ type JobLogMessage struct {
 	JobStep     string                `json:"jobStep"`     // Stage=job only
 	Source      string                `json:"source"`      // log from where. STAGE_JOB => stdout/stderr, others=>modulename
 	LogDateTime string                `json:"logDateTime"` // RFC3339 yyyy-mm-ddTHH:MM:SS.nnnn+TZ
+	SeqNo       uint64                `json:"seqNo"`       // log sequence number (optional)
 	Message     string                `json:"message"`     // log message
 }
 

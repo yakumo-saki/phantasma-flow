@@ -15,6 +15,11 @@ func (nm *NodeManager) GetCapacity(name string) int {
 	const ERRVAL = -1
 	log := util.GetLoggerWithSource(nm.GetName(), "GetCapacity")
 
+	if nm.inShutdown {
+		log.Warn().Msgf("NodeManager is in shutdown state. No jobs acceptable %s", name)
+		return ERRVAL
+	}
+
 	nm.mutex.Lock()
 	defer nm.mutex.Unlock()
 
@@ -54,9 +59,11 @@ func (nm *NodeManager) ExecJobStep(ctx context.Context, step jobparser.Executabl
 	ctx, cancel := context.WithCancel(ctx)
 	nodeInst.Cancel = cancel
 
+	nm.wg.Add(1)
+
 	execNode := node.ExecNode{}
 	execNode.Initialize(nodeMeta.Def)
-	go execNode.Run(ctx, step)
+	go execNode.Run(ctx, &nm.wg, step)
 	nodeMeta.RunningInstances[step.GetId()] = nodeInst
 }
 

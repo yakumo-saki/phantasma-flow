@@ -4,6 +4,7 @@ import (
 	"container/list"
 	"context"
 	"sync"
+	"time"
 
 	"github.com/yakumo-saki/phantasma-flow/messagehub"
 	"github.com/yakumo-saki/phantasma-flow/pkg/message"
@@ -13,9 +14,10 @@ import (
 
 type NodeManager struct {
 	procman.ProcmanModuleStruct
-
-	mutex    sync.Mutex
-	nodePool map[string]*list.List // map[nodename] list.List<nodeMeta>
+	inShutdown bool // NodeManager in shutdown state
+	mutex      sync.Mutex
+	wg         sync.WaitGroup
+	nodePool   map[string]*list.List // map[nodename] list.List<nodeMeta>
 }
 
 // returns this instance is initialized or not.
@@ -28,12 +30,12 @@ func (m *NodeManager) IsInitialized() bool {
 // Between Initialize and Start, no shutdown is called when error occures.
 // so, dont initialize something needs shutdown sequence.
 func (m *NodeManager) Initialize() error {
-	// used for procman <-> module communication
-	// procman -> PAUSE(prepare for backup) is considered
 	m.Name = "NodeManager" // if you want to multiple instance, change name here
-	m.Initialized = true
+	m.wg = sync.WaitGroup{}
 	m.RootCtx, m.RootCancel = context.WithCancel(context.Background())
 	m.nodePool = map[string]*list.List{}
+	m.Initialized = true
+	m.inShutdown = false
 	return nil
 }
 
@@ -81,6 +83,8 @@ func (nm *NodeManager) Start(inCh <-chan string, outCh chan<- string) error {
 
 shutdown:
 	// stop all node
+	log.Info().Msg("Wait for cancel all jobs...")
+	nm.waitForAllJobsStopped()
 
 	log.Info().Msgf("%s Stopped.", nm.GetName())
 	nm.ToProcmanCh <- procman.RES_SHUTDOWN_DONE
@@ -94,5 +98,26 @@ func (nm *NodeManager) Shutdown() {
 
 	log := util.GetLoggerWithSource(nm.GetName(), "shutdown")
 	log.Debug().Msg("Shutdown initiated")
+	nm.inShutdown = true
 	nm.RootCancel()
+}
+
+// cleanup nodeInstance and Restore capacity
+func (nm *NodeManager) waitForAllJobsStopped() {
+	const NAME = "waitForAllJobsStopped"
+	log := util.GetLoggerWithSource(nm.GetName(), NAME)
+
+	doneCh := make(chan struct{})
+	go func() {
+		nm.wg.Wait()
+		close(doneCh)
+	}()
+
+	select {
+	case <-time.After(1 * time.Minute):
+		log.Warn().Msgf("Cancel running jobs time out")
+	case <-doneCh:
+		log.Debug().Msgf("Cancel running jobs done")
+	}
+
 }

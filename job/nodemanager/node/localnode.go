@@ -30,6 +30,7 @@ func (n *localExecNode) Initialize(def objects.NodeDefinition) error {
 }
 
 func (n *localExecNode) Run(ctx context.Context, jobStep jobparser.ExecutableJobStep) {
+
 	log := util.GetLoggerWithSource(n.GetName(), "run").With().
 		Str("jobId", jobStep.JobId).Str("runId", jobStep.RunId).Str("step", jobStep.Name).Logger()
 
@@ -60,15 +61,15 @@ func (n *localExecNode) Run(ctx context.Context, jobStep jobparser.ExecutableJob
 }
 
 func (n *localExecNode) PipeToLog(ctx context.Context, name string, pipe io.Reader) {
-	log := util.GetLoggerWithSource(n.GetName(), "run", name)
+	// log := util.GetLoggerWithSource(n.GetName(), "run", name)
 
 	scanner := bufio.NewScanner(pipe)
 	for scanner.Scan() {
 		seq := atomic.AddUint64(&n.seqNo, 1)
 		logmsg := scanner.Text()
-		log.Info().Str("name", name).Uint64("seqNo", seq).Msg(logmsg)
+		// log.Info().Str("name", name).Uint64("seqNo", seq).Msg(logmsg)
 
-		msg := createJobLogMsg(n.jobStep)
+		msg := createJobLogMsg(seq, n.jobStep)
 		msg.Source = name
 		msg.Message = logmsg
 		messagehub.Post(messagehub.TOPIC_JOB_LOG, msg)
