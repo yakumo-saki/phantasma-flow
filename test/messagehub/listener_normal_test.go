@@ -5,7 +5,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/huandu/go-assert"
 	"github.com/yakumo-saki/phantasma-flow/messagehub"
 	"github.com/yakumo-saki/phantasma-flow/messagehub/messagehub_impl"
 )
@@ -42,8 +42,8 @@ func TestMessageHubSync(t *testing.T) {
 	hub.StartSender()
 	hub.Shutdown()
 
-	assert := assert.New(t)
-	assert.Equal(count, getCount("listner1"))
-	assert.Equal(count, getCount("listner2"))
-	assert.Equal(count, getCount("listner3"))
+	a := assert.New(t)
+	a.Equal(count, getCount("listner1"))
+	a.Equal(count, getCount("listner2"))
+	a.Equal(count, getCount("listner3"))
 }

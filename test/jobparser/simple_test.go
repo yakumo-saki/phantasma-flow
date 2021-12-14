@@ -4,14 +4,16 @@ import (
 	"path"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/goccy/go-yaml"
+	"github.com/huandu/go-assert"
 	"github.com/yakumo-saki/phantasma-flow/job/jobparser"
 	"github.com/yakumo-saki/phantasma-flow/pkg/objects"
 	"github.com/yakumo-saki/phantasma-flow/test/internal/testutils"
-	"gopkg.in/yaml.v3"
 )
 
 func TestJobParserSimple(t *testing.T) {
+	a := assert.New(t)
+
 	fp := path.Join(testutils.GetTestJobDefDir(), "jobparser_simple.yaml")
 	yamlStr := testutils.GetYamlBytes(fp)
 
@@ -25,16 +27,16 @@ func TestJobParserSimple(t *testing.T) {
 
 	// asserts
 	elem := execJobs.Front()
-	assert.NotNil(t, elem, "step1")
+	a.NotEqual(elem, nil)
 	step := elem.Value.(jobparser.ExecutableJobStep)
 	step1 := step
-	assert.Equal(t, "step1", step1.Name, "step1")
+	a.Equal("step1", step1.Name)
 
 	elem = elem.Next()
-	assert.NotNil(t, elem)
+	a.NotEqual(elem, nil)
 	step = elem.Value.(jobparser.ExecutableJobStep)
 	step2 := step
-	assert.Equal(t, "step2", step2.Name, "step2")
+	a.Equal("step2", step2.Name)
 
-	t.Log("ok")
+	t.Log(step1.UseCapacity)
 }

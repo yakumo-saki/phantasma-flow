@@ -1,4 +1,4 @@
-package node
+package executer
 
 import (
 	"context"
@@ -14,7 +14,8 @@ import (
 )
 
 func TestBasicNodeManager(t *testing.T) {
-	JOBID := "manager_test"
+	a := assert.New(t)
+	JOBID := "executer_test"
 	RUNID := "run123"
 	hub, pman := testutils.StartBaseModules()
 
@@ -50,5 +51,5 @@ func TestBasicNodeManager(t *testing.T) {
 	testutils.EndTest()
 	pman.Shutdown()
 
-	assert.Equal(t, 2, localCap)
+	a.Equal(2, localCap)
 }
