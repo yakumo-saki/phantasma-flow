@@ -26,15 +26,11 @@ func (js *JobScheduler) pickRunnable(ctx context.Context) {
 				log.Debug().Int64("scheduled", schedule.time).Str("jobId", schedule.jobId).
 					Str("runId", schedule.runId).Msg("Running")
 
-				schedule.queuedAt = nowUnix
-				js.runnables.PushBack(schedule)
+				schedule.reason = SC_TYPE_SCHEDULE
+				schedule.runAt = nowUnix
 				js.schedules.Remove(e)
 
-				// call executer
-				// req := message.JobRequest{}
-				// req.JobId = schedule.jobId
-				// req.RunId = schedule.runId
-				// messagehub.Post(messagehub.TOPIC_JOB_RUN_REQUEST, req)
+				// JobId -> ExecutableJobSteps
 				execJobs, err := jobparser.BuildExecutableJob(schedule.jobId, schedule.runId)
 				if err != nil {
 					// job fail.
@@ -62,4 +58,29 @@ func (js *JobScheduler) pickRunnable(ctx context.Context) {
 			// nothing to do
 		}
 	}
+}
+
+//ExecImmediate Exec job by jobId. returns runId
+func (js *JobScheduler) ExecImmediate(jobId string) string {
+	const NAME = "ExecImmediate"
+	log := util.GetLoggerWithSource(js.GetName(), NAME)
+
+	now := time.Now()
+	nowUnix := now.Unix()
+
+	schedule := schedule{}
+	schedule.time = nowUnix
+	schedule.jobId = jobId
+	schedule.runId = js.generateRunId()
+	schedule.reason = SC_TYPE_IMMEDIATE
+	schedule.scheduledAt = nowUnix
+	js.schedules.PushBack(schedule)
+
+	log.Debug().Int64("scheduled", schedule.time).Str("jobId", schedule.jobId).
+		Str("runId", schedule.runId).Msg("Scheduled immediate")
+
+	js.mutex.Lock()
+	defer js.mutex.Unlock()
+
+	return schedule.runId
 }
