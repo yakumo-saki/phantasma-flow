@@ -18,17 +18,15 @@ func (m *TestLogListener) IsInitialized() bool {
 }
 
 func (m *TestLogListener) Initialize() error {
-	m.Name = "TestLogListener" // if you want to multiple instance, change name here
 	m.Initialized = true
 	m.RootCtx, m.RootCancel = context.WithCancel(context.Background())
 	return nil
 }
 
 func (m *TestLogListener) GetName() string {
-	return m.Name
+	return "TestLogListener"
 }
 
-// lets roll! Do not forget to save procmanCh from parameter.
 func (m *TestLogListener) Start(inCh <-chan string, outCh chan<- string) error {
 	m.FromProcmanCh = inCh
 	m.ToProcmanCh = outCh
@@ -45,7 +43,7 @@ func (m *TestLogListener) Start(inCh <-chan string, outCh chan<- string) error {
 		case v := <-m.FromProcmanCh:
 			log.Debug().Msgf("Got request %s", v)
 		case jobLogMsg := <-ch:
-			lm := jobLogMsg.Body.(logfile.JobLogMessage)
+			lm := jobLogMsg.Body.(*logfile.JobLogMessage)
 			log.Info().Msgf("%s", lm)
 		case <-m.RootCtx.Done():
 			goto shutdown

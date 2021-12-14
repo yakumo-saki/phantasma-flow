@@ -2,9 +2,9 @@ package scheduler
 
 import (
 	"context"
-	"fmt"
 	"time"
 
+	"github.com/yakumo-saki/phantasma-flow/job/executer"
 	"github.com/yakumo-saki/phantasma-flow/job/jobparser"
 	"github.com/yakumo-saki/phantasma-flow/util"
 )
@@ -37,7 +37,7 @@ func (js *JobScheduler) pickRunnable(ctx context.Context) {
 					// error to reason
 				} else {
 					// exec it
-					fmt.Printf("%v", execJobs)
+					executer.GetInstance().AddToRunQueue(&execJobs)
 				}
 			}
 		}

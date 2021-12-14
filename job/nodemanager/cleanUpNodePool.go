@@ -6,7 +6,7 @@ import (
 )
 
 // cleanup nodeInstance and Restore capacity
-func (nm *NodeManager) cleanUpNodePool(message.ExecuterMsg) {
+func (nm *NodeManager) cleanUpNodePool(exeMsg *message.ExecuterMsg) {
 	const NAME = "cleanUpNodePool"
 	log := util.GetLoggerWithSource(nm.GetName(), NAME)
 

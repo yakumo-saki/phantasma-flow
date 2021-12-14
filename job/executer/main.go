@@ -25,33 +25,61 @@ func (ex *Executer) GetName() string {
 	return "Executer"
 }
 
-func (ex *Executer) Initialize() {
-	ex.mutex = sync.Mutex{}
-	ex.jobQueue = make(map[string][]jobparser.ExecutableJobStep)
-	ex.nodeQueue = make(map[string]list.List)
+func (ex *Executer) IsInitialized() bool {
+	return ex.Initialized
 }
 
-func (ex *Executer) Start(ctx context.Context) {
-	log := util.GetLoggerWithSource(ex.GetName(), "main")
+func (ex *Executer) Initialize() error {
+	ex.mutex = sync.Mutex{}
+	ex.RootCtx, ex.RootCancel = context.WithCancel(context.Background())
+	ex.jobQueue = make(map[string][]jobparser.ExecutableJobStep)
+	ex.nodeQueue = make(map[string]list.List)
+	ex.Initialized = true
+	return nil
+}
 
-	jobStepCh := messagehub.Subscribe(messagehub.TOPIC_JOB_REPORT, ex.GetName())
+func (ex *Executer) Start(inCh <-chan string, outCh chan<- string) error {
+	ex.FromProcmanCh = inCh
+	ex.ToProcmanCh = outCh
+
+	log := util.GetLoggerWithSource(ex.GetName(), "main")
+	log.Info().Msgf("Starting %s.", ex.GetName())
+
+	jobEndCh := messagehub.Subscribe(messagehub.TOPIC_JOB_REPORT, ex.GetName())
+
+	ex.ToProcmanCh <- procman.RES_STARTUP_DONE
 
 	for {
 		select {
-		case <-ctx.Done():
+		case <-ex.RootCtx.Done():
 			goto shutdown
-		case msg := <-jobStepCh:
-			exeMsg := msg.Body.(message.ExecuterMsg)
+		case msg, ok := <-jobEndCh:
+			if !ok {
+				continue
+			}
+
+			exeMsg := msg.Body.(*message.ExecuterMsg)
 			fmt.Println(exeMsg)
-			// job complete then delete from queue
-			// step_end then store job result.
-			// step_end then exec next step or job abort
+
+			switch exeMsg.Subject {
+			case message.JOB_END:
+				// job complete then delete from queue
+			case message.JOB_STEP_END:
+				// step_end then store job result.
+				// step_end then exec next step or job abort
+			default:
+				continue
+			}
 
 		}
 	}
 
 shutdown:
+	messagehub.Unsubscribe(messagehub.TOPIC_JOB_REPORT, ex.GetName())
 	log.Debug().Msgf("%s stopped.", ex.GetName())
+
+	ex.ToProcmanCh <- procman.RES_SHUTDOWN_DONE
+	return nil
 }
 
 func (ex *Executer) Shutdown() {
