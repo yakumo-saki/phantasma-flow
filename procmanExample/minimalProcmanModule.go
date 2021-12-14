@@ -24,7 +24,6 @@ func (m *MinimalProcmanModule) IsInitialized() bool {
 func (m *MinimalProcmanModule) Initialize() error {
 	// used for procman <-> module communication
 	// procman -> PAUSE(prepare for backup) is considered
-	m.Name = "MinimalProcmanModule" // if you want to multiple instance, change name here
 	m.Initialized = true
 	m.RootCtx, m.RootCancel = context.WithCancel(context.Background())
 	return nil
@@ -34,7 +33,7 @@ func (m *MinimalProcmanModule) GetName() string {
 	// Name of module. must be unique.
 	// return fix value indicates this module must be singleton.
 	// add secondary instance of this module can cause panic by procman.Add
-	return m.Name
+	return "MinimalProcmanModule"
 }
 
 // lets roll! Do not forget to save procmanCh from parameter.

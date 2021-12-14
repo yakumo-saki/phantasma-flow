@@ -26,7 +26,6 @@ func (m *JobScheduler) IsInitialized() bool {
 }
 
 func (m *JobScheduler) Initialize() error {
-	m.Name = "JobScheduler"
 	m.Initialized = true
 	m.jobs = make(map[string]job)
 	m.schedules = list.New()
@@ -36,7 +35,7 @@ func (m *JobScheduler) Initialize() error {
 }
 
 func (m *JobScheduler) GetName() string {
-	return m.Name
+	return "JobScheduler"
 }
 
 func (js *JobScheduler) Start(inCh <-chan string, outCh chan<- string) error {

@@ -24,7 +24,6 @@ func (m *MetaListener) IsInitialized() bool {
 func (m *MetaListener) Initialize() error {
 	// used for procman <-> module communication
 	// procman -> PAUSE(prepare for backup) is considered
-	m.Name = "MetaListener"
 	m.Initialized = true
 	m.logChannels = syncmap.Map{}
 	m.RootCtx, m.RootCancel = context.WithCancel(context.Background())
@@ -32,10 +31,7 @@ func (m *MetaListener) Initialize() error {
 }
 
 func (m *MetaListener) GetName() string {
-	// Name of module. must be unique.
-	// return fix value indicates this module must be singleton.
-	// add secondary instance of this module can cause panic by procman.Add
-	return m.Name
+	return "MetaListener"
 }
 
 func (m *MetaListener) Start(inCh <-chan string, outCh chan<- string) error {

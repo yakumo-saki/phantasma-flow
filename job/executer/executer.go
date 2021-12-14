@@ -9,10 +9,13 @@ import (
 	"github.com/yakumo-saki/phantasma-flow/job/jobparser"
 	"github.com/yakumo-saki/phantasma-flow/messagehub"
 	"github.com/yakumo-saki/phantasma-flow/pkg/message"
+	"github.com/yakumo-saki/phantasma-flow/procman"
 	"github.com/yakumo-saki/phantasma-flow/util"
 )
 
 type Executer struct {
+	procman.ProcmanModuleStruct
+
 	mutex     sync.Mutex
 	jobQueue  map[string][]jobparser.ExecutableJobStep // map[runId] -> []ExecutableJobStep
 	nodeQueue map[string]list.List                     // map[nodeId] -> list.List<ExecutableJobStep>
@@ -51,6 +54,8 @@ shutdown:
 	log.Debug().Msgf("%s stopped.", ex.GetName())
 }
 
-func (ex *Executer) ExecuteJob(list.List) {
-
+func (ex *Executer) Shutdown() {
+	log := util.GetLogger()
+	log.Debug().Msg("Shutdown initiated")
+	ex.RootCancel()
 }

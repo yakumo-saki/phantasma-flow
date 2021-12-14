@@ -20,17 +20,11 @@ type NodeManager struct {
 	nodePool   map[string]*list.List // map[nodename] list.List<nodeMeta>
 }
 
-// returns this instance is initialized or not.
-// When procman.Add, Procman calls Initialize() if not initialized.
 func (m *NodeManager) IsInitialized() bool {
 	return m.Initialized
 }
 
-// initialize this instance.
-// Between Initialize and Start, no shutdown is called when error occures.
-// so, dont initialize something needs shutdown sequence.
 func (m *NodeManager) Initialize() error {
-	m.Name = "NodeManager" // if you want to multiple instance, change name here
 	m.wg = sync.WaitGroup{}
 	m.RootCtx, m.RootCancel = context.WithCancel(context.Background())
 	m.nodePool = map[string]*list.List{}
@@ -40,10 +34,7 @@ func (m *NodeManager) Initialize() error {
 }
 
 func (m *NodeManager) GetName() string {
-	// Name of module. must be unique.
-	// return fix value indicates this module must be singleton.
-	// add secondary instance of this module can cause panic by procman.Add
-	return m.Name
+	return "NodeManager"
 }
 
 // lets roll! Do not forget to save procmanCh from parameter.
