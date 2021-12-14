@@ -9,7 +9,7 @@ type JobDefinition struct {
 	JobMeta JobMetaInfo         `json:"jobmeta"`
 	Steps   []JobStepDefinition `json:"steps"`
 	Name    string              `json:"name"`
-	Id      string              `json:"id"` // sha1sum Name. it is used for filename of job related.
+	Id      string              `json:"id"` // string-ID. it is used for filename of job related.
 }
 
 type JobMetaInfo struct {

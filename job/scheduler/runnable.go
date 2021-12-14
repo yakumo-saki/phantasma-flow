@@ -2,10 +2,10 @@ package scheduler
 
 import (
 	"context"
+	"fmt"
 	"time"
 
-	"github.com/yakumo-saki/phantasma-flow/messagehub"
-	"github.com/yakumo-saki/phantasma-flow/pkg/message"
+	"github.com/yakumo-saki/phantasma-flow/job/jobparser"
 	"github.com/yakumo-saki/phantasma-flow/util"
 )
 
@@ -31,10 +31,18 @@ func (js *JobScheduler) pickRunnable(ctx context.Context) {
 				js.schedules.Remove(e)
 
 				// call executer
-				req := message.JobRequest{}
-				req.JobId = schedule.jobId
-				req.RunId = schedule.runId
-				messagehub.Post(messagehub.TOPIC_JOB_RUN_REQUEST, req)
+				// req := message.JobRequest{}
+				// req.JobId = schedule.jobId
+				// req.RunId = schedule.runId
+				// messagehub.Post(messagehub.TOPIC_JOB_RUN_REQUEST, req)
+				execJobs, err := jobparser.BuildExecutableJob(schedule.jobId, schedule.runId)
+				if err != nil {
+					// job fail.
+					// error to reason
+				} else {
+					// exec it
+					fmt.Printf("%v", execJobs)
+				}
 			}
 		}
 

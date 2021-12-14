@@ -10,6 +10,7 @@ const JOB_STEP_END = "JOB-STEP-END"     // reason: JOB STEP END
 const JOB_END = "JOB-END"               // reason: JOB END
 const JOB_START = "JOB-START"           // reason: JOB START
 
+// Type = JOB_REPORT
 type ExecuterMsg struct {
 	Subject  string // notification type. JOB_[STEP_]_(START|END)
 	JobId    string

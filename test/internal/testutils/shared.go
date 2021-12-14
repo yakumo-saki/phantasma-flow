@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"os"
 	"path"
-	"runtime"
-	"strings"
 
 	"github.com/rs/zerolog/log"
 	"github.com/yakumo-saki/phantasma-flow/messagehub"
@@ -28,17 +26,8 @@ func StartBaseModules() (*messagehub_impl.MessageHub, *procman.ProcessManager) {
 }
 
 func StartRepository() *repository.Repository {
-	_, file, _, _ := runtime.Caller(0)
 
-	dir := path.Dir(file)
-	for {
-		if path.Base(dir) == "test" {
-			break
-		}
-		dir = strings.TrimRight(dir, "/") // if path ends with "/" path.Split return itself
-		dir, _ = path.Split(dir)
-	}
-
+	dir := GetTestBaseDir()
 	home := path.Join(dir, "phantasma-flow")
 	fmt.Printf("SET PHFLOW_HOME = %s\n", home)
 	os.Setenv("PHFLOW_HOME", home)

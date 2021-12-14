@@ -3,6 +3,7 @@ package repository
 import (
 	"io/ioutil"
 	"path/filepath"
+	"sync"
 
 	"github.com/goccy/go-yaml"
 	"github.com/yakumo-saki/phantasma-flow/messagehub"
@@ -15,9 +16,11 @@ const myname = "Repository"
 
 type Repository struct {
 	Initialized bool
-	nodes       []objects.NodeDefinition
-	jobs        []objects.JobDefinition
-	configs     []objects.Config
+
+	mutex   sync.Mutex
+	nodes   []objects.NodeDefinition
+	jobs    []objects.JobDefinition
+	configs []objects.Config
 
 	paths phflowPath
 }
@@ -125,7 +128,23 @@ func (repo *Repository) readAllYaml(path string, objType objectType) error {
 	return nil
 }
 
+func (repo *Repository) GetJobById(jobId string) *objects.JobDefinition {
+	repo.mutex.Lock()
+	defer repo.mutex.Unlock()
+
+	for _, j := range repo.jobs {
+		if j.Id == jobId {
+			jCopy := &j
+			return jCopy
+		}
+	}
+
+	return nil
+}
+
 func (repo *Repository) SendAllNodes() int {
+	repo.mutex.Lock()
+	defer repo.mutex.Unlock()
 	sent := 0
 	for _, v := range repo.nodes {
 		nodeMsg := message.NodeDefinitionMsg{}
@@ -138,6 +157,8 @@ func (repo *Repository) SendAllNodes() int {
 }
 
 func (repo *Repository) SendAllJobs() int {
+	repo.mutex.Lock()
+	defer repo.mutex.Unlock()
 	sent := 0
 	for _, v := range repo.jobs {
 		jobMsg := message.JobDefinitionMsg{}
