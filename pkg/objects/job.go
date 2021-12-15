@@ -6,14 +6,18 @@ import "fmt"
 type JobDefinition struct {
 	ObjectBase
 	Meta    ObjectMetaBase      `json:"meta"`
-	JobMeta JobMetaInfo         `json:"jobmeta"`
-	Steps   []JobStepDefinition `json:"steps"`
-	Name    string              `json:"name"`
-	Id      string              `json:"id"` // string-ID. it is used for filename of job related.
+	JobMeta JobMetaInfo         `json:"jobmeta"` // Job meta informations (schedules)
+	Steps   []JobStepDefinition `json:"steps"`   // Jobstep definitions
+	Name    string              `json:"name"`    // display name of this job
+	Id      string              `json:"id"`      // string-ID. it is used for filename of job related.
 }
 
+const JOB_TYPE_SEQ = "sequential"
+const JOB_TYPE_PARA = "parallel"
+
 type JobMetaInfo struct {
-	Schedules []JobSchedule `json:"schedules"`
+	Schedules []JobSchedule `json:"schedules"` // Run schedules (empty ok)
+	ExecType  string        `json:"execType"`  // Type of running jobsteps. JOB_TYPE_* default=sequential.
 }
 
 type JobSchedule struct {
@@ -25,7 +29,7 @@ const JOB_EXEC_TYPE_COMMAND = "command"
 const JOB_EXEC_TYPE_SCRIPT = "script"
 
 type JobStepDefinition struct {
-	Name        string `json:"name"`                     // JobStep Name
+	Name        string `json:"name"`                     // JobStep Name (optional on sequential job)
 	UseCapacity int    `json:"useCapacity" default:"-1"` // number how many capacity this step use. default 1
 	ExecType    string `json:"execType"`                 // JOB_EXEC_TYPE_*. internal, command, script
 	Command     string `json:"command"`                  // JOB_EXEC_TYPE_COMMAND only

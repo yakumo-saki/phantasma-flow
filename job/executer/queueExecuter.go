@@ -18,13 +18,23 @@ func (ex *Executer) queueExecuter(startWg, stopWg *sync.WaitGroup) {
 	for {
 		select {
 		case <-ex.RootCtx.Done():
+			// XXX need for wait all jobs in running state
 			goto shutdown
 		case <-time.After(1 * time.Second):
 			ex.mutex.Lock()
+			ex.executeRunnable()
 			ex.mutex.Unlock()
 		}
 	}
 
 shutdown:
 	log.Debug().Msgf("%s/%s stopped.", ex.GetName(), NAME)
+}
+
+func (ex *Executer) executeRunnable() {
+	log := util.GetLoggerWithSource(ex.GetName(), "executeRunnable")
+
+	for k, v := range ex.jobQueue {
+		log.Debug().Msgf("%s %v", k, v)
+	}
 }

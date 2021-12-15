@@ -31,12 +31,15 @@ func TestJobParserSimple(t *testing.T) {
 	step := elem.Value.(jobparser.ExecutableJobStep)
 	step1 := step
 	a.Equal("step1", step1.Name)
+	a.Equal(0, len(step1.PreSteps))
 
 	elem = elem.Next()
 	a.NotEqual(elem, nil)
 	step = elem.Value.(jobparser.ExecutableJobStep)
 	step2 := step
 	a.Equal("step2", step2.Name)
+	a.Equal(1, len(step2.PreSteps))
+	a.Equal("step1", step2.PreSteps[0]) // step2 is after step1
 
 	t.Log(step1.UseCapacity)
 }

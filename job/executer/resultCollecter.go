@@ -8,6 +8,18 @@ import (
 	"github.com/yakumo-saki/phantasma-flow/util"
 )
 
+type execJobResult struct {
+	JobId       string
+	RunId       string
+	StepResults map[string]execJobStepResult
+}
+
+type execJobStepResult struct {
+	Started bool // job step is started
+	Ended   bool // job step is ended, regardless success or not
+	Success bool // job step is success
+}
+
 func (ex *Executer) resultCollecter(startWg, stopWg *sync.WaitGroup) {
 	const NAME = "resultCollecter"
 	log := util.GetLoggerWithSource(ex.GetName(), NAME)

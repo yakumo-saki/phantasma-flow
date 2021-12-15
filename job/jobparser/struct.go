@@ -8,10 +8,11 @@ import (
 
 type ExecutableJobStep struct {
 	objects.JobStepDefinition
-	Version objects.ObjectVersion
-	JobId   string
-	RunId   string
-	Node    string
+	Version  objects.ObjectVersion
+	JobId    string
+	RunId    string
+	Node     string
+	PreSteps []string // Stepnames they must be completed before this job step run.
 }
 
 func (step ExecutableJobStep) String() string {
