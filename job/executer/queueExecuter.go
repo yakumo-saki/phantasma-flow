@@ -67,9 +67,10 @@ func (ex *Executer) executeRunnable(runId string, job *queuedJob) {
 	runIt:
 		log.Debug().Msgf("Jobstep start %s/%s", step.JobId, step.Name)
 		nodemanager.GetInstance().ExecJobStep(job.Context, step)
-		stat.Started = true
+		stat.Started = true // prevent double exec, change started flag here (not wait for job_step_start msg)
 
 	next:
+		// next job step
 	}
 
 }

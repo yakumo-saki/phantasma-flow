@@ -14,15 +14,17 @@ type Executer struct {
 	procman.ProcmanModuleStruct
 
 	mutex     sync.Mutex
-	jobQueue  map[string]*queuedJob
-	nodeQueue map[string]list.List // map[nodeId] -> list.List<ExecutableJobStep>
+	jobQueue  map[string]*queuedJob // map[runId] -> queuedJob
+	nodeQueue map[string]list.List  // map[nodeId] -> list.List<ExecutableJobStep>
 }
 
+// queuedJob represents a single job.
+// Must call Cancel() when job is ended.
 type queuedJob struct {
-	Steps       []jobparser.ExecutableJobStep
-	StepResults map[string]*execJobStepResult
-	Context     context.Context
-	Cancel      context.CancelFunc
+	Steps       []jobparser.ExecutableJobStep // All job steps
+	StepResults map[string]*execJobStepResult // map[stepname] -> Job step results
+	Context     context.Context               // job step context
+	Cancel      context.CancelFunc            // job step context cancel
 }
 
 func (ex *Executer) GetName() string {
