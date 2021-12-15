@@ -13,12 +13,10 @@ order: sequential
 steps:
   - name: step1
     node: local
-    script: |-
-      echo "`hostname` today is `date`"
+    command: echo "step1 `hostname` today is `date`"
 
   - name: step2
-    node: worker1
-    script: |-
-      echo "`hostname` today is `date`"
+    node: local
+    command: echo "step2 `hostname` today is `date`"
 
     

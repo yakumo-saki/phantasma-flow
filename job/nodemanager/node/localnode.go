@@ -52,7 +52,7 @@ func (n *localExecNode) Run(ctx context.Context, jobStep jobparser.ExecutableJob
 		log.Err(err)
 	}
 
-	err = cmd.Run()
+	err = cmd.Run() // block until process exit
 	if err != nil {
 		log.Err(err)
 	}

@@ -13,10 +13,16 @@ import (
 type Executer struct {
 	procman.ProcmanModuleStruct
 
-	mutex      sync.Mutex
-	jobQueue   map[string][]jobparser.ExecutableJobStep // map[runId] -> []ExecutableJobStep
-	jobResults map[string]execJobResult                 // map[runId] -> execJobResult result of jobsteps
-	nodeQueue  map[string]list.List                     // map[nodeId] -> list.List<ExecutableJobStep>
+	mutex     sync.Mutex
+	jobQueue  map[string]*queuedJob
+	nodeQueue map[string]list.List // map[nodeId] -> list.List<ExecutableJobStep>
+}
+
+type queuedJob struct {
+	Steps       []jobparser.ExecutableJobStep
+	StepResults map[string]*execJobStepResult
+	Context     context.Context
+	Cancel      context.CancelFunc
 }
 
 func (ex *Executer) GetName() string {
@@ -30,8 +36,7 @@ func (ex *Executer) IsInitialized() bool {
 func (ex *Executer) Initialize() error {
 	ex.mutex = sync.Mutex{}
 	ex.RootCtx, ex.RootCancel = context.WithCancel(context.Background())
-	ex.jobQueue = make(map[string][]jobparser.ExecutableJobStep)
-	ex.jobResults = make(map[string]execJobResult)
+	ex.jobQueue = make(map[string]*queuedJob)
 	ex.nodeQueue = make(map[string]list.List)
 	ex.Initialized = true
 	return nil

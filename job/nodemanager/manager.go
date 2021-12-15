@@ -41,6 +41,8 @@ func (nm *NodeManager) GetCapacity(name string) int {
 // Exec job step.
 // Logs and Results can be listen via messagehub
 func (nm *NodeManager) ExecJobStep(ctx context.Context, step jobparser.ExecutableJobStep) {
+	const NAME = "ExecJobStep"
+	log := util.GetLoggerWithSource(nm.GetName(), NAME)
 	nm.mutex.Lock()
 	defer nm.mutex.Unlock()
 

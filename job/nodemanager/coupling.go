@@ -4,6 +4,7 @@ import (
 	"path"
 	"runtime"
 
+	"github.com/yakumo-saki/phantasma-flow/global"
 	"github.com/yakumo-saki/phantasma-flow/util"
 )
 
@@ -21,7 +22,9 @@ func GetInstance() *NodeManager {
 		return nodeManager // without log first time
 	}
 
-	traceCaller()
+	if global.DEBUG {
+		traceCaller()
+	}
 	return nodeManager
 }
 

@@ -16,10 +16,10 @@ type ExecutableJobStep struct {
 }
 
 func (step ExecutableJobStep) String() string {
-	msg := fmt.Sprintf("JobId:%s(v%v.%v) RunId:%s StepName:%s Cap: %v CMD:'%s' SCRIPT:'%s'",
+	msg := fmt.Sprintf("JobId:%s(v%v.%v) RunId:%s StepName:%s Cap: %v Pre:%v CMD:'%s' SCRIPT:'%s'",
 		step.JobId, step.Version.Major, step.Version.Minor,
 		step.RunId, step.Name,
-		step.UseCapacity,
+		step.UseCapacity, step.PreSteps,
 		step.Command, step.Script)
 	return msg
 }

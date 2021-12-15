@@ -33,8 +33,8 @@ func TestBasicNodeManager(t *testing.T) {
 	hub.WaitForQueueEmpty("")
 
 	testutils.StartTest()
-	jobdef := repo.GetJobById("Test_job")
-	execJobs, err := jobparser.BuildFromJobDefinition(jobdef, "jobId", "runId")
+	jobdef := repo.GetJobById("jobparser_simple")
+	execJobs, err := jobparser.BuildFromJobDefinition(jobdef, "executerTestRun")
 	a.NilError(err)
 
 	exec.AddToRunQueue(execJobs)

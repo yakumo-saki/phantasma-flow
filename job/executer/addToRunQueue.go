@@ -2,6 +2,7 @@ package executer
 
 import (
 	"container/list"
+	"context"
 
 	"github.com/yakumo-saki/phantasma-flow/job/jobparser"
 	"github.com/yakumo-saki/phantasma-flow/logcollecter/logfile"
@@ -29,7 +30,11 @@ func (ex *Executer) AddToRunQueue(execJobs *list.List) {
 
 	ex.mutex.Lock()
 	defer ex.mutex.Unlock()
-	ex.jobQueue[jobstep.RunId] = ex.listToSlice(execJobs)
+	job := queuedJob{}
+	job.StepResults = ex.createStepResults(execJobs)
+	job.Context, job.Cancel = context.WithCancel(context.Background())
+	job.Steps = ex.listToSlice(execJobs)
+	ex.jobQueue[jobstep.RunId] = &job
 }
 
 // create slice from list.List
@@ -40,6 +45,15 @@ func (ex *Executer) listToSlice(execJobs *list.List) []jobparser.ExecutableJobSt
 		slice = append(slice, job)
 	}
 	return slice
+}
+
+func (ex *Executer) createStepResults(execJobs *list.List) map[string]*execJobStepResult {
+	result := make(map[string]*execJobStepResult)
+	for e := execJobs.Front(); e != nil; e = e.Next() {
+		job := e.Value.(jobparser.ExecutableJobStep)
+		result[job.Name] = &execJobStepResult{}
+	}
+	return result
 }
 
 func (ex *Executer) createExecuterMsg(jobstep jobparser.ExecutableJobStep, subject string) *message.ExecuterMsg {

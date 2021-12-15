@@ -14,6 +14,9 @@ func (nm *NodeManager) cleanUpNodePool(exeMsg *message.ExecuterMsg) {
 		for e := v.Front(); e != nil; e = e.Next() {
 			meta := e.Value.(nodeMeta)
 			for _, instance := range meta.RunningInstances {
+				// XXX need these
+				// instance.Cancel()
+				// meta.Capacity = restore
 				log.Debug().Msg(instance.Id)
 			}
 		}

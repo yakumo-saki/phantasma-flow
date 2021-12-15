@@ -8,12 +8,6 @@ import (
 	"github.com/yakumo-saki/phantasma-flow/util"
 )
 
-type execJobResult struct {
-	JobId       string
-	RunId       string
-	StepResults map[string]execJobStepResult
-}
-
 type execJobStepResult struct {
 	Started bool // job step is started
 	Ended   bool // job step is ended, regardless success or not
