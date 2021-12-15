@@ -37,7 +37,7 @@ func (js *JobScheduler) pickRunnable(ctx context.Context) {
 					// error to reason
 				} else {
 					// exec it
-					executer.GetInstance().AddToRunQueue(&execJobs)
+					executer.GetInstance().AddToRunQueue(execJobs)
 				}
 			}
 		}

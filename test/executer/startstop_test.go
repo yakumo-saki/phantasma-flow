@@ -36,7 +36,7 @@ func TestBasicNodeManager(t *testing.T) {
 	execJobs, err := jobparser.BuildFromJobDefinition(jobdef, "jobId", "runId")
 	a.NilError(err)
 
-	exec.AddToRunQueue(&execJobs)
+	exec.AddToRunQueue(execJobs)
 
 	// for {
 	// 	if executer.GetJobQueueLength() == 0 {
