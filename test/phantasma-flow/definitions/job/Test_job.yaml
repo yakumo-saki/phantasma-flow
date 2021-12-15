@@ -6,7 +6,7 @@ meta:
     minor: 0
   created: 2021-11-13 01:02:03Z
   created-by: someuser
-# id is [a-z A-Z 0-9 _].*
+# id is [a-z A-Z 0-9 _ - ! $#].*
 id: Test_job
 name: Test Job
 order: sequential

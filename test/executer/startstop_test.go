@@ -2,6 +2,7 @@ package executer
 
 import (
 	"testing"
+	"time"
 
 	"github.com/huandu/go-assert"
 	"github.com/yakumo-saki/phantasma-flow/job/executer"
@@ -37,18 +38,23 @@ func TestBasicNodeManager(t *testing.T) {
 	a.NilError(err)
 
 	exec.AddToRunQueue(execJobs)
-
-	// for {
-	// 	if executer.GetJobQueueLength() == 0 {
-	// 		break
-	// 	}
-	// 	time.Sleep(time.Second)
-	// 	log.Debug().Msg("Wait for job complete")
-	// }
+	WaitForJobQueueEmpty()
 
 	testutils.EndTest()
 	pman.Shutdown()
 
 	a.Equal(2, 2)
 	log.Info().Msg("OK")
+}
+
+func WaitForJobQueueEmpty() {
+	log := util.GetLogger()
+
+	for {
+		if executer.GetJobQueueLength() == 0 {
+			break
+		}
+		time.Sleep(time.Second)
+		log.Debug().Msg("Wait for job complete")
+	}
 }

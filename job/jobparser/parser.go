@@ -85,6 +85,7 @@ func buildFromSequentialJobDef(jobDef *objects.JobDefinition, jobId, runId strin
 
 		result.PushBack(execStep)
 		lastStep = &execStep
+		fmt.Println(execStep)
 	}
 
 	return result, nil
@@ -96,6 +97,10 @@ func setDefaultValues(index int, execStep *ExecutableJobStep) {
 	execStep.Name = ifEmpty(execStep.Name, fmt.Sprintf("step%v", index+1))
 
 	execStep.Node = ifEmpty(execStep.Name, "local")
+
+	if execStep.UseCapacity == -1 {
+		execStep.UseCapacity = 1
+	}
 
 }
 
