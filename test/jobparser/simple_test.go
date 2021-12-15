@@ -20,7 +20,7 @@ func TestJobParserSimple(t *testing.T) {
 	jobDef := objects.JobDefinition{}
 	yaml.Unmarshal(yamlStr, &jobDef)
 
-	execJobs, err := jobparser.BuildFromJobDefinition(&jobDef, "jobId", "runId")
+	execJobs, err := jobparser.BuildFromJobDefinition(&jobDef, "testJobId", "testRunId")
 	if err != nil {
 		panic(err)
 	}
@@ -32,6 +32,8 @@ func TestJobParserSimple(t *testing.T) {
 	step1 := step
 	a.Equal("step1", step1.Name)
 	a.Equal(0, len(step1.PreSteps))
+	a.Equal(uint(2), step.Version.Major)
+	a.Equal(uint(3), step.Version.Minor)
 
 	elem = elem.Next()
 	a.NotEqual(elem, nil)
@@ -40,6 +42,8 @@ func TestJobParserSimple(t *testing.T) {
 	a.Equal("step2", step2.Name)
 	a.Equal(1, len(step2.PreSteps))
 	a.Equal("step1", step2.PreSteps[0]) // step2 is after step1
+	a.Equal(uint(2), step.Version.Major)
+	a.Equal(uint(3), step.Version.Minor)
 
 	t.Log(step1.UseCapacity)
 }

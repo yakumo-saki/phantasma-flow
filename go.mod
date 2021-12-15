@@ -6,11 +6,11 @@ require github.com/robfig/cron/v3 v3.0.1
 
 require github.com/thanhpk/randstr v1.0.4
 
-require github.com/jinzhu/copier v0.3.4
-
 require github.com/rs/zerolog v1.26.0
 
-require github.com/huandu/go-assert v1.1.5 
+require github.com/huandu/go-assert v1.1.5
+
+require github.com/ulule/deepcopier v0.0.0-20200430083143-45decc6639b6
 
 require (
 	github.com/beorn7/perks v1.0.1 // indirect

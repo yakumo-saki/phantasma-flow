@@ -32,10 +32,12 @@ func (ex *Executer) AddToRunQueue(execJobs *list.List) {
 	ex.jobQueue[jobstep.RunId] = ex.listToSlice(execJobs)
 }
 
+// create slice from list.List
 func (ex *Executer) listToSlice(execJobs *list.List) []jobparser.ExecutableJobStep {
-	slice := make([]jobparser.ExecutableJobStep, execJobs.Len())
+	slice := []jobparser.ExecutableJobStep{}
 	for e := execJobs.Front(); e != nil; e = e.Next() {
-		slice = append(slice, e.Value.(jobparser.ExecutableJobStep))
+		job := e.Value.(jobparser.ExecutableJobStep)
+		slice = append(slice, job)
 	}
 	return slice
 }

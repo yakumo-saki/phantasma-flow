@@ -35,6 +35,6 @@ func (ex *Executer) executeRunnable() {
 	log := util.GetLoggerWithSource(ex.GetName(), "executeRunnable")
 
 	for k, v := range ex.jobQueue {
-		log.Debug().Msgf("%s %v", k, v)
+		log.Debug().Msgf("KEY=%s VAL=%v", k, v)
 	}
 }

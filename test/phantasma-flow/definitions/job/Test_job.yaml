@@ -2,14 +2,14 @@ kind: job
 # meta is updated by ph-flow so you dont have to write it.
 meta:
   version:
-    major: 1
-    minor: 0
+    major: 3
+    minor: 7
   created: 2021-11-13 01:02:03Z
   created-by: someuser
+  ExecType: sequential
 # id is [a-z A-Z 0-9 _ - ! $#].*
 id: Test_job
 name: Test Job
-order: sequential
 steps:
   - name: step1
     node: local

@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/jinzhu/copier"
 	"github.com/yakumo-saki/phantasma-flow/pkg/objects"
 	"github.com/yakumo-saki/phantasma-flow/repository"
 	"github.com/yakumo-saki/phantasma-flow/util"
@@ -63,14 +62,10 @@ func buildFromSequentialJobDef(jobDef *objects.JobDefinition, jobId, runId strin
 
 	for idx, step := range jobDef.Steps {
 		execStep := ExecutableJobStep{}
-		err := copier.Copy(&execStep, &jobDef)
-		if err != nil {
-			return &list.List{}, err
-		}
-		err = copier.Copy(&execStep, &step)
-		if err != nil {
-			return &list.List{}, err
-		}
+		util.DeepCopy(jobDef, &execStep)
+		util.DeepCopy(&step, &execStep)
+		util.DeepCopy(jobDef.Meta.Version, &execStep.Version)
+
 		execStep.RunId = runId
 		execStep.JobId = jobId
 		setDefaultValues(idx, &execStep)

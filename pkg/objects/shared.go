@@ -26,8 +26,8 @@ func (omb ObjectMetaBase) String() string {
 
 // Version of Objects
 type ObjectVersion struct {
-	Major uint
-	Minor uint
+	Major uint `json:"major"`
+	Minor uint `json:"minor"`
 }
 
 func (ov ObjectVersion) String() string {
