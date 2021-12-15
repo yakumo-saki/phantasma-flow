@@ -38,6 +38,14 @@ func TestBasicNodeManager(t *testing.T) {
 
 	exec.AddToRunQueue(&execJobs)
 
+	// for {
+	// 	if executer.GetJobQueueLength() == 0 {
+	// 		break
+	// 	}
+	// 	time.Sleep(time.Second)
+	// 	log.Debug().Msg("Wait for job complete")
+	// }
+
 	testutils.EndTest()
 	pman.Shutdown()
 

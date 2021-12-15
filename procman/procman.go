@@ -148,9 +148,8 @@ func (p *ProcessManager) startImpl(typeName string, modmap map[string]*process) 
 			case <-time.After(10 * time.Second):
 				reason = REASON_TIMEOUT
 				p.outputTimeoutLog(typeName, "startup", p.workerModules)
-				log.Debug().Msgf("[%s] Startup timeout reached", typeName)
+				log.Fatal().Msgf("[%s] Startup timeout reached. '%s' is not started.", typeName, name)
 				return reason
-			default:
 			}
 		}
 	}

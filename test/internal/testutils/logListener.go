@@ -44,7 +44,7 @@ func (m *TestLogListener) Start(inCh <-chan string, outCh chan<- string) error {
 			log.Debug().Msgf("Got request %s", v)
 		case jobLogMsg := <-ch:
 			lm := jobLogMsg.Body.(*logfile.JobLogMessage)
-			log.Info().Msgf("%s", lm)
+			log.Info().Msgf("%v", lm)
 		case <-m.RootCtx.Done():
 			goto shutdown
 		}

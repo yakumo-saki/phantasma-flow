@@ -3,12 +3,9 @@ package executer
 import (
 	"container/list"
 	"context"
-	"fmt"
 	"sync"
 
 	"github.com/yakumo-saki/phantasma-flow/job/jobparser"
-	"github.com/yakumo-saki/phantasma-flow/messagehub"
-	"github.com/yakumo-saki/phantasma-flow/pkg/message"
 	"github.com/yakumo-saki/phantasma-flow/procman"
 	"github.com/yakumo-saki/phantasma-flow/util"
 )
@@ -45,40 +42,24 @@ func (ex *Executer) Start(inCh <-chan string, outCh chan<- string) error {
 	log := util.GetLoggerWithSource(ex.GetName(), "main")
 	log.Info().Msgf("Starting %s.", ex.GetName())
 
-	jobEndCh := messagehub.Subscribe(messagehub.TOPIC_JOB_REPORT, ex.GetName())
+	startWg := sync.WaitGroup{}
+	stopWg := sync.WaitGroup{}
 
+	startWg.Add(2)
+	stopWg.Add(2)
+	go ex.resultCollecter(&startWg, &stopWg)
+	go ex.queueExecuter(&startWg, &stopWg)
+
+	startWg.Wait()
 	ex.ToProcmanCh <- procman.RES_STARTUP_DONE
 
-	for {
-		select {
-		case <-ex.RootCtx.Done():
-			goto shutdown
-		case msg, ok := <-jobEndCh:
-			if !ok {
-				continue
-			}
+	<-ex.RootCtx.Done()
 
-			exeMsg := msg.Body.(*message.ExecuterMsg)
-			fmt.Println(exeMsg)
-
-			switch exeMsg.Subject {
-			case message.JOB_END:
-				// job complete then delete from queue
-			case message.JOB_STEP_END:
-				// step_end then store job result.
-				// step_end then exec next step or job abort
-			default:
-				continue
-			}
-
-		}
-	}
-
-shutdown:
-	messagehub.Unsubscribe(messagehub.TOPIC_JOB_REPORT, ex.GetName())
+	stopWg.Wait()
 	log.Debug().Msgf("%s stopped.", ex.GetName())
 
 	ex.ToProcmanCh <- procman.RES_SHUTDOWN_DONE
+
 	return nil
 }
 

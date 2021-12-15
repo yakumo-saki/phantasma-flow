@@ -9,3 +9,9 @@ func GetInstance() *Executer {
 
 	return executer
 }
+
+// GetJobQueueLength returns running jobs.
+// note this cause mutex lock.
+func GetJobQueueLength() int {
+	return GetInstance().getJobQueueLength()
+}
