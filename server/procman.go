@@ -25,13 +25,12 @@ func (sv *Server) IsInitialized() bool {
 }
 
 func (sv *Server) Initialize() error {
-	sv.Name = "Server"
 	sv.rootCtx, sv.rootCancel = context.WithCancel(context.Background())
 	return nil
 }
 
 func (sv *Server) GetName() string {
-	return sv.Name
+	return "Server"
 }
 
 func (sv *Server) startListen() error {

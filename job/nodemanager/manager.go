@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/rs/zerolog/log"
 	"github.com/yakumo-saki/phantasma-flow/global"
 	"github.com/yakumo-saki/phantasma-flow/job/jobparser"
 	"github.com/yakumo-saki/phantasma-flow/job/nodemanager/node"
@@ -41,6 +40,8 @@ func (nm *NodeManager) GetCapacity(name string) int {
 // Exec job step.
 // Logs and Results can be listen via messagehub
 func (nm *NodeManager) ExecJobStep(ctx context.Context, step jobparser.ExecutableJobStep) {
+	const NAME = "ExecJobStep"
+	log := util.GetLoggerWithSource(nm.GetName(), NAME)
 	nm.mutex.Lock()
 	defer nm.mutex.Unlock()
 
@@ -52,7 +53,7 @@ func (nm *NodeManager) ExecJobStep(ctx context.Context, step jobparser.Executabl
 		return
 	}
 	nodeMeta := nd.Front().Value.(nodeMeta)
-	nm.HasEnoughCapacity(nodeMeta, step) // check but not stop.
+	nm.HasEnoughCapacity(nodeMeta, step) // check but not stop. TODO: return job start fail to caller
 
 	// new Node instance
 	nodeInst := nodeInstance{}
@@ -62,14 +63,20 @@ func (nm *NodeManager) ExecJobStep(ctx context.Context, step jobparser.Executabl
 	nm.wg.Add(1)
 
 	execNode := node.ExecNode{}
-	execNode.Initialize(nodeMeta.Def)
+	err := execNode.Initialize(nodeMeta.Def)
+	if err != nil {
+		// XXX job fail ? job hold ?
+	}
+
 	go execNode.Run(ctx, &nm.wg, step)
 	nodeMeta.RunningInstances[step.GetId()] = nodeInst
 }
 
 func (nm *NodeManager) HasEnoughCapacity(nodeMeta nodeMeta, step jobparser.ExecutableJobStep) {
+	log := util.GetLoggerWithSource(nm.GetName(), "HasEnoughCapacity")
+
 	if nodeMeta.Capacity < step.JobStepDefinition.UseCapacity {
-		msg := fmt.Sprintf("Insufficient node capacity req: %v, node: %v node_is_deprecated: %v",
+		msg := fmt.Sprintf("Insufficient node capacity node: %v, job-required: %v node_is_deprecated: %v",
 			nodeMeta.Capacity, step.JobStepDefinition.UseCapacity, nodeMeta.Deprecated)
 		if global.DEBUG {
 			panic(msg)

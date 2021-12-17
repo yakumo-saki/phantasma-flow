@@ -35,6 +35,7 @@ func (n *localExecNode) Run(ctx context.Context, jobStep jobparser.ExecutableJob
 		Str("jobId", jobStep.JobId).Str("runId", jobStep.RunId).Str("step", jobStep.Name).Logger()
 
 	log.Debug().Msgf("Run %s", jobStep)
+	n.jobStep = jobStep
 
 	var err error
 	cmd := exec.CommandContext(ctx, "sh", "-c", jobStep.Command)
@@ -52,7 +53,7 @@ func (n *localExecNode) Run(ctx context.Context, jobStep jobparser.ExecutableJob
 		log.Err(err)
 	}
 
-	err = cmd.Run()
+	err = cmd.Run() // block until process exit
 	if err != nil {
 		log.Err(err)
 	}

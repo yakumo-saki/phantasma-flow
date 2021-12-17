@@ -4,13 +4,14 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/huandu/go-assert"
 	"github.com/yakumo-saki/phantasma-flow/messagehub"
 	"github.com/yakumo-saki/phantasma-flow/messagehub/messagehub_impl"
 )
 
 // Test abnormal state of messagehub
 func TestMessageHubAbnormal(t *testing.T) {
+	a := assert.New(t)
 	count := 0
 
 	hub := messagehub_impl.MessageHub{}
@@ -46,7 +47,6 @@ func TestMessageHubAbnormal(t *testing.T) {
 	count++
 	hub.Shutdown()
 
-	assert := assert.New(t)
-	assert.Equal(uint64(count), hub.GetMessageCount())
-	assert.Equal(count-1, (getCount("listner1"))) // listener not count EXIT msg
+	a.Equal(uint64(count), hub.GetMessageCount())
+	a.Equal(count-1, (getCount("listner1"))) // listener not count EXIT msg
 }

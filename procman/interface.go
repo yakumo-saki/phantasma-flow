@@ -5,7 +5,6 @@ import "context"
 type ProcmanModuleStruct struct {
 	FromProcmanCh <-chan string
 	ToProcmanCh   chan<- string
-	Name          string // Recommended for debug
 	Initialized   bool
 	RootCtx       context.Context
 	RootCancel    context.CancelFunc

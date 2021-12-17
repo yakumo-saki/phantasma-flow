@@ -9,13 +9,14 @@ import (
 	"github.com/yakumo-saki/phantasma-flow/util"
 )
 
-// With lock
+// Schedule next run, single job with lock
 func (js *JobScheduler) schedule(jobId string, now time.Time) {
 	js.mutex.Lock()
 	defer js.mutex.Unlock()
 	js.scheduleWithoutLock(jobId, now)
 }
 
+// Schedule next run, single job without lock
 func (js *JobScheduler) scheduleWithoutLock(jobId string, now time.Time) {
 	log := util.GetLoggerWithSource(js.GetName(), "schedule")
 
@@ -40,12 +41,17 @@ func (js *JobScheduler) scheduleWithoutLock(jobId string, now time.Time) {
 
 	// push next run schedule
 	newSchedule := schedule{}
-	newSchedule.runId = randstr.String(8)
+	newSchedule.runId = js.generateRunId()
 	newSchedule.jobId = jobId
 	newSchedule.scheduledAt = now.Unix()
+	newSchedule.reason = SC_TYPE_SCHEDULE
 
 	newSchedule.time = nextSchedule
 	js.schedules.PushFront(newSchedule)
+}
+
+func (js *JobScheduler) generateRunId() string {
+	return randstr.String(8)
 }
 
 // return unixtime

@@ -8,6 +8,7 @@ import (
 
 	"github.com/rs/zerolog/log"
 	"github.com/yakumo-saki/phantasma-flow/global"
+	"github.com/yakumo-saki/phantasma-flow/job/executer"
 	"github.com/yakumo-saki/phantasma-flow/job/nodemanager"
 	"github.com/yakumo-saki/phantasma-flow/job/scheduler"
 	"github.com/yakumo-saki/phantasma-flow/logcollecter/metalistener"
@@ -37,6 +38,8 @@ func main() {
 	// Start modules
 	hub := startMessageHub()
 
+	exec := executer.GetInstance()
+
 	procmanCh := make(chan string, 1) // controller to processManager. signal only
 	processManager := procman.NewProcessManager(procmanCh)
 
@@ -45,6 +48,7 @@ func main() {
 	processManager.Add(&metrics.PrometeusExporterModule{})
 	processManager.AddService(nodemanager.GetInstance())
 	processManager.AddService(&logfileexporter.LogFileExporter{})
+	processManager.AddService(exec)
 	processManager.AddService(&metalistener.MetaListener{})
 
 	processManager.Start()

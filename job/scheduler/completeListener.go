@@ -9,8 +9,8 @@ import (
 	"github.com/yakumo-saki/phantasma-flow/util"
 )
 
-// Subscribe for job completion and remove from runnable queue
-func (js *JobScheduler) jobCompleter(ctx context.Context) {
+// Create new schedule when job ends.
+func (js *JobScheduler) jobCompleteListener(ctx context.Context) {
 	const NAME = "jobCompleter"
 	log := util.GetLoggerWithSource(js.GetName(), NAME)
 
@@ -19,42 +19,25 @@ func (js *JobScheduler) jobCompleter(ctx context.Context) {
 	log.Debug().Msgf("%s started.", NAME)
 
 	for {
-		now := time.Now()
 
-		var exeMsg message.ExecuterMsg
+		var exeMsg *message.ExecuterMsg
 		select {
 		case <-ctx.Done():
 			log.Debug().Msgf("%s/%s stopped.", js.GetName(), NAME)
 			goto shutdown
 		case msg := <-jobReportCh:
-			exeMsg = msg.Body.(message.ExecuterMsg)
+			exeMsg = msg.Body.(*message.ExecuterMsg)
 		}
+
+		now := time.Now()
 
 		switch exeMsg.Subject {
 		case message.JOB_END:
 			// end
-		case message.JOB_START:
-			// start
+			js.schedule(exeMsg.JobId, now)
 		default:
 			continue
 		}
-
-		js.mutex.Lock()
-
-		for e := js.runnables.Front(); e != nil; e = e.Next() {
-			schedule := e.Value.(schedule)
-
-			switch exeMsg.Subject {
-			case message.JOB_START:
-				schedule.runAt = now.Unix()
-			case message.JOB_END:
-				schedule.endAt = now.Unix()
-				js.runnables.Remove(e)
-				js.scheduleWithoutLock(schedule.jobId, now)
-			}
-		}
-
-		js.mutex.Unlock()
 	}
 
 shutdown:

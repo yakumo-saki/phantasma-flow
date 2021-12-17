@@ -70,8 +70,8 @@ func (p *ProcessManager) AddImpl(typeName string, modmap map[string]*process, mo
 
 	_, ok := modmap[name]
 	if ok {
-		log.Error().Msgf("[%s] name %s is already registered.", typeName, name)
-		return false
+		msg := fmt.Sprintf("[%s] name %s is already registered.", typeName, name)
+		panic(msg)
 	}
 
 	proc := process{toModCh: toCh, fromModCh: fromCh, module: module}
@@ -148,9 +148,8 @@ func (p *ProcessManager) startImpl(typeName string, modmap map[string]*process) 
 			case <-time.After(10 * time.Second):
 				reason = REASON_TIMEOUT
 				p.outputTimeoutLog(typeName, "startup", p.workerModules)
-				log.Debug().Msgf("[%s] Startup timeout reached", typeName)
+				log.Fatal().Msgf("[%s] Startup timeout reached. '%s' is not started.", typeName, name)
 				return reason
-			default:
 			}
 		}
 	}

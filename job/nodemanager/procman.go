@@ -17,20 +17,17 @@ type NodeManager struct {
 	inShutdown bool // NodeManager in shutdown state
 	mutex      sync.Mutex
 	wg         sync.WaitGroup
-	nodePool   map[string]*list.List // map[nodename] list.List<nodeMeta>
+	// map[nodename] list.List<nodeMeta> only first nodemeta is used
+	// 2nd or later nodemetas stored when node setting is changed.
+	// and then first nodemeta is deprecated.
+	nodePool map[string]*list.List
 }
 
-// returns this instance is initialized or not.
-// When procman.Add, Procman calls Initialize() if not initialized.
 func (m *NodeManager) IsInitialized() bool {
 	return m.Initialized
 }
 
-// initialize this instance.
-// Between Initialize and Start, no shutdown is called when error occures.
-// so, dont initialize something needs shutdown sequence.
 func (m *NodeManager) Initialize() error {
-	m.Name = "NodeManager" // if you want to multiple instance, change name here
 	m.wg = sync.WaitGroup{}
 	m.RootCtx, m.RootCancel = context.WithCancel(context.Background())
 	m.nodePool = map[string]*list.List{}
@@ -40,10 +37,7 @@ func (m *NodeManager) Initialize() error {
 }
 
 func (m *NodeManager) GetName() string {
-	// Name of module. must be unique.
-	// return fix value indicates this module must be singleton.
-	// add secondary instance of this module can cause panic by procman.Add
-	return m.Name
+	return "NodeManager"
 }
 
 // lets roll! Do not forget to save procmanCh from parameter.
@@ -70,7 +64,8 @@ func (nm *NodeManager) Start(inCh <-chan string, outCh chan<- string) error {
 			nm.nodeDefHandler(nodeDefMsg.NodeDefinition)
 			nm.mutex.Unlock()
 		case msg := <-jobRepoCh:
-			exeMsg := msg.Body.(message.ExecuterMsg)
+			// BUG After shutdown initiated, this is not work
+			exeMsg := msg.Body.(*message.ExecuterMsg)
 			if exeMsg.Subject == message.JOB_STEP_END {
 				nm.mutex.Lock()
 				nm.cleanUpNodePool(exeMsg)

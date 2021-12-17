@@ -5,7 +5,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/huandu/go-assert"
 	"github.com/yakumo-saki/phantasma-flow/messagehub"
 	"github.com/yakumo-saki/phantasma-flow/messagehub/messagehub_impl"
 	"github.com/yakumo-saki/phantasma-flow/pkg/message"
@@ -45,10 +45,10 @@ func TestUnsubscribe(t *testing.T) {
 
 	hub.Shutdown()
 
-	assert := assert.New(t)
-	assert.Equal(count, getCount("listner11"))
-	assert.Equal(count, getCount("listner12"))
-	assert.Equal(count-1, getCount("listner2"))
+	a := assert.New(t)
+	a.Equal(count, getCount("listner11"))
+	a.Equal(count, getCount("listner12"))
+	a.Equal(count-1, getCount("listner2"))
 }
 
 func ListenerWithShutdownCh(hub *messagehub_impl.MessageHub, wg *sync.WaitGroup, topic, shutdownTopic, myname string) {

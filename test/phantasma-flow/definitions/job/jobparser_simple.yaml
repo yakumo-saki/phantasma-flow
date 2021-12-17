@@ -1,24 +1,22 @@
 kind: job
 # meta is updated by ph-flow.
 meta:
+  # dont change version. because test case check it
   version:
-    major: 1
-    minor: 0
+    major: 2
+    minor: 3
   created: 2021-11-13 01:02:03Z
   created-by: someuser
-# id is [a-z A-Z 0-9 _].*
 id: jobparser_simple
 displayName: JobParser Simple Test
 order: sequential
 steps:
   - name: step1
     node: local
-    script: |-
-      echo "`hostname` today is `date`"
+    command: echo "step1 `hostname` today is `date`"
 
   - name: step2
-    node: worker1
-    script: |-
-      echo "`hostname` today is `date`"
+    node: local
+    command: echo "step2 `hostname` today is `date`"
 
     

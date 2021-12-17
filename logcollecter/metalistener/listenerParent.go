@@ -28,7 +28,7 @@ func (m *MetaListener) LogMetaListener(ctx context.Context) {
 			if !msgok {
 				goto shutdown
 			}
-			execMsg := msg.Body.(message.ExecuterMsg)
+			execMsg := msg.Body.(*message.ExecuterMsg)
 
 			listener, ok := loggerMap[execMsg.JobId] // JobIDで見ているのは、JobMeta fileがJobId単位だから
 			if !ok {
@@ -77,13 +77,13 @@ shutdown:
 	log.Info().Msgf("%s/%s stopped.", m.GetName(), NAME)
 }
 
-func (m *MetaListener) createJobLogMetaListenerParams(lm message.ExecuterMsg) *logMetaListenerParams {
+func (m *MetaListener) createJobLogMetaListenerParams(lm *message.ExecuterMsg) *logMetaListenerParams {
 
 	loglis := logMetaListenerParams{}
 	loglis.RunId = lm.RunId
 	loglis.JobId = lm.JobId
 	loglis.Alive = false
-	ch := make(chan message.ExecuterMsg, 1)
+	ch := make(chan *message.ExecuterMsg, 1)
 	loglis.execChan = ch
 	loglis.Ctx, loglis.Cancel = context.WithCancel(context.Background())
 	return &loglis

@@ -1,8 +1,6 @@
 package messagehub_impl
 
 import (
-	"fmt"
-
 	"github.com/yakumo-saki/phantasma-flow/pkg/message"
 	"github.com/yakumo-saki/phantasma-flow/util"
 )
@@ -58,9 +56,9 @@ func (hub *MessageHub) Unsubscribe(topic string, name string) {
 		}
 	}
 
-	for _, l := range newListeners {
-		fmt.Printf("%v\n", l)
-	}
+	// for _, l := range newListeners {
+	// 	fmt.Printf("%v\n", l)
+	// }
 	hub.listeners.Store(topic, &newListeners)
 
 	if !unsubed {

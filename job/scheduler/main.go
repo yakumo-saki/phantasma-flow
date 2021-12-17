@@ -13,23 +13,29 @@ import (
 	"github.com/yakumo-saki/phantasma-flow/util"
 )
 
+type JobScheduler struct {
+	procman.ProcmanModuleStruct
+
+	jobs      map[string]job
+	schedules *list.List // list of schedule
+	mutex     sync.Mutex
+}
+
 func (m *JobScheduler) IsInitialized() bool {
 	return m.Initialized
 }
 
 func (m *JobScheduler) Initialize() error {
-	m.Name = "JobScheduler"
 	m.Initialized = true
 	m.jobs = make(map[string]job)
 	m.schedules = list.New()
-	m.runnables = list.New()
 	m.mutex = sync.Mutex{}
 	m.RootCtx, m.RootCancel = context.WithCancel(context.Background())
 	return nil
 }
 
 func (m *JobScheduler) GetName() string {
-	return m.Name
+	return "JobScheduler"
 }
 
 func (js *JobScheduler) Start(inCh <-chan string, outCh chan<- string) error {
@@ -39,11 +45,11 @@ func (js *JobScheduler) Start(inCh <-chan string, outCh chan<- string) error {
 
 	log.Info().Msgf("Starting %s server.", js.GetName())
 
-	// subscribe to messagehub
+	// Listen JobDefinition change to update JobMeta
 	jobDefCh := messagehub.Subscribe(messagehub.TOPIC_JOB_DEFINITION, js.GetName())
 
 	go js.pickRunnable(js.RootCtx)
-	go js.jobCompleter(js.RootCtx)
+	go js.jobCompleteListener(js.RootCtx)
 
 	// start ok
 	js.ToProcmanCh <- procman.RES_STARTUP_DONE
@@ -53,7 +59,7 @@ func (js *JobScheduler) Start(inCh <-chan string, outCh chan<- string) error {
 		case v := <-js.FromProcmanCh:
 			log.Debug().Msgf("Got request %s", v)
 		case job := <-jobDefCh:
-			log.Debug().Msgf("Got JobDefinitionMsg %s", job)
+			// log.Debug().Msgf("Got JobDefinitionMsg %s", job)
 
 			// TODO JOBS and re-schedule
 			jobDefMsg := job.Body.(message.JobDefinitionMsg)

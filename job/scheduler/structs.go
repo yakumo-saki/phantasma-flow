@@ -1,21 +1,8 @@
 package scheduler
 
 import (
-	"container/list"
-	"sync"
-
 	"github.com/yakumo-saki/phantasma-flow/pkg/objects"
-	"github.com/yakumo-saki/phantasma-flow/procman"
 )
-
-type JobScheduler struct {
-	procman.ProcmanModuleStruct
-
-	jobs      map[string]job
-	runnables *list.List // list of schedule(runnable)
-	schedules *list.List // list of schedule
-	mutex     sync.Mutex
-}
 
 // Create from jobdefinition. Filter out not needed for scheduling.
 type job struct {
@@ -25,13 +12,14 @@ type job struct {
 	jobMeta objects.JobMetaInfo
 }
 
-type schedule struct {
-	time  int64  // unixtime
-	runId string // sha1 of uuid
-	jobId string // job ID
+const SC_TYPE_SCHEDULE = "SC_TYPE_SCHEDULE"
+const SC_TYPE_IMMEDIATE = "SC_TYPE_IMMEDIATE"
 
-	scheduledAt int64
-	queuedAt    int64
-	runAt       int64
-	endAt       int64
+type schedule struct {
+	time        int64  // Next run. unixtime
+	runId       string // sha1 of uuid
+	jobId       string // job ID
+	reason      string // SC_TYPE_* scheduler or immediate
+	scheduledAt int64  // Schedule created unixtime
+	runAt       int64  // unixtime
 }

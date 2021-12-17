@@ -26,10 +26,10 @@ func (omb ObjectMetaBase) String() string {
 
 // Version of Objects
 type ObjectVersion struct {
-	Major uint
-	Minor uint
+	Major uint `json:"major"`
+	Minor uint `json:"minor"`
 }
 
 func (ov ObjectVersion) String() string {
-	return fmt.Sprintf("Version %d.%d", ov.Major, ov.Minor)
+	return fmt.Sprintf("v%d.%d", ov.Major, ov.Minor)
 }
