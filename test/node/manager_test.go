@@ -20,7 +20,7 @@ func TestBasicNodeManager(t *testing.T) {
 
 	nodeMan := nodemanager.GetInstance()
 
-	pman.AddService(nodeMan)
+	pman.AddService(80, nodeMan)
 	pman.Start()
 
 	hub.StartSender()

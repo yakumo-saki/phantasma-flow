@@ -18,7 +18,7 @@ func TestBasicLogFileExporter(t *testing.T) {
 
 	hub, pman := testutils.StartBaseModules()
 
-	pman.AddService(&logfileexporter.LogFileExporter{})
+	pman.AddService(10, &logfileexporter.LogFileExporter{})
 	pman.Start()
 
 	hub.StartSender()

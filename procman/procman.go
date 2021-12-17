@@ -1,7 +1,6 @@
 package procman
 
 import (
-	"context"
 	"fmt"
 	"time"
 
@@ -37,7 +36,7 @@ const myname = "procman"
 // Add module as Worker module
 // if procman is started, module is automaticaly start
 func (p *ProcessManager) Add(module ProcmanModule) {
-	success := p.AddImpl("Module", p.workerModules, module)
+	success := p.addImpl(TYPE_MOD, p.workerModules, module, 0)
 	if !success {
 		panic("Add failed. name=" + module.GetName())
 	}
@@ -45,14 +44,15 @@ func (p *ProcessManager) Add(module ProcmanModule) {
 
 // Add module as Service module
 // if procman is started, module is automaticaly start
-func (p *ProcessManager) AddService(module ProcmanModule) {
-	success := p.AddImpl("Service", p.serviceModules, module)
+func (p *ProcessManager) AddService(order uint8, module ProcmanModule) {
+	success := p.addImpl(TYPE_SVC, p.serviceModules, module, order)
 	if !success {
 		panic("AddService failed. name=" + module.GetName())
 	}
 }
 
-func (p *ProcessManager) AddImpl(typeName string, modmap map[string]*process, module ProcmanModule) bool {
+//
+func (p *ProcessManager) addImpl(typeName string, modmap map[string]*process, module ProcmanModule, order uint8) bool {
 	log := util.GetLoggerWithSource(myname, "add")
 
 	toCh := make(chan string, 1)
@@ -63,6 +63,9 @@ func (p *ProcessManager) AddImpl(typeName string, modmap map[string]*process, mo
 	}
 
 	name := module.GetName()
+	if typeName == TYPE_SVC {
+		name = fmt.Sprintf("%03v %s", order, module.GetName())
+	}
 	if name == "" {
 		msg := fmt.Sprintf("[%s] empty name is not allowed", typeName)
 		panic(msg)
@@ -79,7 +82,7 @@ func (p *ProcessManager) AddImpl(typeName string, modmap map[string]*process, mo
 
 	// Automatic start modules, when procman is already started
 	if p.startupDone {
-		result := p.startImpl(typeName, modmap)
+		result := p.StartImpl(typeName, modmap)
 		if result == REASON_COMPLETE {
 			log.Debug().Msgf("[%s] %s is added and started.", typeName, name)
 		} else {
@@ -95,7 +98,7 @@ func (p *ProcessManager) AddImpl(typeName string, modmap map[string]*process, mo
 // Blocks until all modules are start or not.
 func (p *ProcessManager) Start() {
 	log := util.GetLoggerWithSource(myname, "start")
-	svcResult := p.startImpl(TYPE_SVC, p.serviceModules)
+	svcResult := p.StartImpl(TYPE_SVC, p.serviceModules)
 	if svcResult == REASON_COMPLETE {
 		log.Debug().Msgf("[%s] All services started", TYPE_SVC)
 	} else {
@@ -104,7 +107,7 @@ func (p *ProcessManager) Start() {
 		panic(msg)
 	}
 
-	modResult := p.startImpl(TYPE_MOD, p.workerModules)
+	modResult := p.StartImpl(TYPE_MOD, p.workerModules)
 	if modResult == REASON_COMPLETE {
 		log.Debug().Msgf("[%s] All modules started", TYPE_MOD)
 	} else {
@@ -116,149 +119,44 @@ func (p *ProcessManager) Start() {
 	p.startupDone = true
 }
 
-func (p *ProcessManager) startImpl(typeName string, modmap map[string]*process) string {
-	log := util.GetLoggerWithSource(myname, "start")
-
-	if len(modmap) == 0 {
-		return REASON_COMPLETE
+func (p *ProcessManager) StartImpl(typeName string, modmap map[string]*process) string {
+	var result string
+	switch typeName {
+	case TYPE_MOD:
+		result = p.startModules(modmap)
+	case TYPE_SVC:
+		result = p.startServices(modmap)
+	default:
+		panic(fmt.Sprintf("Unknown typeName %s", typeName))
 	}
-
-	for _, proc := range modmap {
-		if !proc.started {
-			go proc.module.Start(proc.toModCh, proc.fromModCh)
-			log.Debug().Msgf("[%s] Request starting %s.", typeName, proc.module.GetName())
-		}
-	}
-
-	reason := "UNKNOWN"
-	for {
-		for name, proc := range modmap {
-			select {
-			case v := <-proc.fromModCh:
-				if v == RES_STARTUP_DONE {
-					log.Debug().Msgf("[%s] %s is started", typeName, name)
-					proc.started = true
-					proc.shutdown = false
-					if p.isStartupComplete(modmap) {
-						return REASON_COMPLETE
-					}
-				} else {
-					log.Warn().Str("module", name).Str("message", v).Msg("Unexpected response")
-				}
-			case <-time.After(10 * time.Second):
-				reason = REASON_TIMEOUT
-				p.outputTimeoutLog(typeName, "startup", p.workerModules)
-				log.Fatal().Msgf("[%s] Startup timeout reached. '%s' is not started.", typeName, name)
-				return reason
-			}
-		}
-	}
+	return result
 }
 
 func (p *ProcessManager) Shutdown() (string, string) {
 	// log := util.GetLogger()
 
-	reason1 := p.shutdownImpl("modules", p.workerModules)
+	reason1 := p.stopImpl(TYPE_MOD, p.workerModules)
 
 	// todo allow timeout?
 
-	reason2 := p.shutdownImpl("services", p.serviceModules)
+	reason2 := p.stopImpl(TYPE_SVC, p.serviceModules)
 
 	p.shutdownInitiated = true
 
 	return reason1, reason2
 }
 
-func (p *ProcessManager) shutdownImpl(typeName string, modmap map[string]*process) string {
-	log := util.GetLoggerWithSource(myname, "shutdown")
-
-	var reason string
-
-	if len(modmap) == 0 {
-		log.Debug().Msgf("[%s] Has no modules.", typeName)
-		return REASON_COMPLETE
+func (p *ProcessManager) stopImpl(typeName string, modmap map[string]*process) string {
+	var result string
+	switch typeName {
+	case TYPE_MOD:
+		result = p.stopModules(modmap)
+	case TYPE_SVC:
+		result = p.stopServices(modmap)
+	default:
+		panic(fmt.Sprintf("Unknown typeName %s", typeName))
 	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	for k, proc := range modmap {
-		log.Debug().Msgf("[%s] Sending shutdown request to %s", typeName, k)
-		proc.shutdown = false
-		proc.module.Shutdown()
-	}
-
-	for {
-		stop := false
-		for k, proc := range modmap {
-			select {
-			case v := <-proc.fromModCh:
-				if v == RES_SHUTDOWN_DONE {
-					proc.shutdown = true
-					if p.isShutdownComplete(modmap) {
-						stop = true
-						reason = REASON_COMPLETE
-						break
-					}
-				} else {
-					log.Warn().Str("module", k).Str("message", v).Msg("Unexpected response")
-				}
-			case <-ctx.Done():
-				reason = "TIMEOUT"
-				stop = true
-			default:
-			}
-		}
-
-		if stop {
-			if reason == "TIMEOUT" {
-				p.outputTimeoutLog(typeName, "shutdown", modmap)
-			}
-
-			log.Debug().Str("cause", reason).Msgf("[%s] Shutdown done.", typeName)
-			break
-		}
-
-		time.Sleep(100 * time.Millisecond)
-	}
-	return reason
-}
-
-func (p *ProcessManager) isShutdownComplete(modmap map[string]*process) bool {
-	for _, proc := range modmap {
-		if !proc.shutdown {
-			return false
-		}
-	}
-	return true
-}
-
-func (p *ProcessManager) isStartupComplete(modmap map[string]*process) bool {
-	for _, proc := range modmap {
-		if !proc.started {
-			return false
-		}
-	}
-	return true
-}
-
-func (p *ProcessManager) outputTimeoutLog(typeName string, action string, modmap map[string]*process) {
-	log := util.GetLoggerWithSource(myname, "timeout")
-
-	for name, proc := range modmap {
-		switch action {
-		case "shutdown":
-			if !proc.shutdown {
-				log.Error().Str("name", name).
-					Msgf("[%s] Do not response %s complete until timeout.", typeName, action)
-			}
-		default:
-			if !proc.started {
-				log.Error().Str("name", name).
-					Msgf("[%s] Do not response %s complete until timeout.", typeName, action)
-			}
-		}
-	}
+	return result
 }
 
 func NewProcessManager(channel chan string) ProcessManager {

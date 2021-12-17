@@ -21,7 +21,7 @@ func TestBasicMetaListener(t *testing.T) {
 
 	hub, pman := testutils.StartBaseModules()
 
-	pman.AddService(&metalistener.MetaListener{})
+	pman.AddService(10, &metalistener.MetaListener{})
 	pman.Start()
 
 	hub.StartSender()
