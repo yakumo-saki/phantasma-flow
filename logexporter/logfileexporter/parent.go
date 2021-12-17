@@ -27,7 +27,7 @@ func (m *LogFileExporter) LogListener(ctx context.Context) {
 				goto shutdown // channel closed
 			}
 
-			joblogMsg := msg.Body.(logfile.JobLogMessage)
+			joblogMsg := msg.Body.(*logfile.JobLogMessage)
 
 			listener, ok := loggerMap[joblogMsg.RunId] // Job log fileはRunId単位
 			if !ok {
@@ -79,12 +79,12 @@ shutdown:
 
 }
 
-func (m *LogFileExporter) createJobLogListenerParams(lm logfile.JobLogMessage) *logListenerParams {
+func (m *LogFileExporter) createJobLogListenerParams(lm *logfile.JobLogMessage) *logListenerParams {
 
 	loglis := logListenerParams{}
 	loglis.RunId = lm.RunId
 	loglis.JobId = lm.JobId
-	ch := make(chan logfile.JobLogMessage, 1)
+	ch := make(chan *logfile.JobLogMessage, 1)
 	loglis.logChan = ch
 	loglis.Ctx, loglis.Cancel = context.WithCancel(context.Background())
 	loglis.instance = logFileExporter{}

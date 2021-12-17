@@ -89,25 +89,25 @@ shutdown:
 	log.Debug().Msgf("Stopped %s for jobId %s", m.GetName(), params.JobId)
 }
 
-func (m *jobLogMetaListener) handleJobStart(msg message.ExecuterMsg) {
+func (m *jobLogMetaListener) handleJobStart(msg *message.ExecuterMsg) {
 	m.JobMetaLog.JobNumber = m.MetaLog.Meta.NextJobNumber
 	m.JobMetaLog.StartDateTime = util.GetDateTimeString()
 	m.JobMetaLog.EndDateTime = ""
 	m.MetaLog.Meta.NextJobNumber++
 }
 
-func (m *jobLogMetaListener) handleJobEnd(msg message.ExecuterMsg) {
+func (m *jobLogMetaListener) handleJobEnd(msg *message.ExecuterMsg) {
 	m.JobMetaLog.EndDateTime = util.GetDateTimeString()
 	m.JobMetaLog.Reason = msg.Reason
 }
 
-func (m *jobLogMetaListener) handleJobStepStart(msg message.ExecuterMsg) {
+func (m *jobLogMetaListener) handleJobStepStart(msg *message.ExecuterMsg) {
 	stepResult := m.createJobStepMetaResult(msg.StepName)
 	stepResult.StartDateTime = util.GetDateTimeString()
 	stepResults := append(m.JobMetaLog.StepResults, stepResult)
 	m.JobMetaLog.StepResults = stepResults
 }
-func (m *jobLogMetaListener) handleJobStepEnd(msg message.ExecuterMsg) {
+func (m *jobLogMetaListener) handleJobStepEnd(msg *message.ExecuterMsg) {
 	l := log.With().Str("reason", msg.Subject).Str("runId", msg.RunId).Logger()
 
 	stepResult := m.findStepResultByStepName(m.JobMetaLog.StepResults, msg.StepName)

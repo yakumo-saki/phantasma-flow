@@ -20,13 +20,13 @@ func (js *JobScheduler) jobCompleteListener(ctx context.Context) {
 
 	for {
 
-		var exeMsg message.ExecuterMsg
+		var exeMsg *message.ExecuterMsg
 		select {
 		case <-ctx.Done():
 			log.Debug().Msgf("%s/%s stopped.", js.GetName(), NAME)
 			goto shutdown
 		case msg := <-jobReportCh:
-			exeMsg = msg.Body.(message.ExecuterMsg)
+			exeMsg = msg.Body.(*message.ExecuterMsg)
 		}
 
 		now := time.Now()
