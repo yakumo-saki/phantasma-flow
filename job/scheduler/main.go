@@ -59,7 +59,7 @@ func (js *JobScheduler) Start(inCh <-chan string, outCh chan<- string) error {
 		case v := <-js.FromProcmanCh:
 			log.Debug().Msgf("Got request %s", v)
 		case job := <-jobDefCh:
-			log.Debug().Msgf("Got JobDefinitionMsg %s", job)
+			// log.Debug().Msgf("Got JobDefinitionMsg %s", job)
 
 			// TODO JOBS and re-schedule
 			jobDefMsg := job.Body.(message.JobDefinitionMsg)

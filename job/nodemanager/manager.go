@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/rs/zerolog/log"
 	"github.com/yakumo-saki/phantasma-flow/global"
 	"github.com/yakumo-saki/phantasma-flow/job/jobparser"
 	"github.com/yakumo-saki/phantasma-flow/job/nodemanager/node"
@@ -74,8 +73,10 @@ func (nm *NodeManager) ExecJobStep(ctx context.Context, step jobparser.Executabl
 }
 
 func (nm *NodeManager) HasEnoughCapacity(nodeMeta nodeMeta, step jobparser.ExecutableJobStep) {
+	log := util.GetLoggerWithSource(nm.GetName(), "HasEnoughCapacity")
+
 	if nodeMeta.Capacity < step.JobStepDefinition.UseCapacity {
-		msg := fmt.Sprintf("Insufficient node capacity req: %v, node: %v node_is_deprecated: %v",
+		msg := fmt.Sprintf("Insufficient node capacity node: %v, job-required: %v node_is_deprecated: %v",
 			nodeMeta.Capacity, step.JobStepDefinition.UseCapacity, nodeMeta.Deprecated)
 		if global.DEBUG {
 			panic(msg)

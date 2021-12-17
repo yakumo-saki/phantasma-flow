@@ -80,7 +80,7 @@ func buildFromSequentialJobDef(jobDef *objects.JobDefinition, jobId, runId strin
 
 		result.PushBack(execStep)
 		lastStep = &execStep
-		fmt.Println(execStep)
+		// fmt.Println(execStep)
 	}
 
 	return result, nil
@@ -95,8 +95,9 @@ func setDefaultValues(index int, execStep *ExecutableJobStep) {
 
 	if execStep.UseCapacity == -1 {
 		execStep.UseCapacity = 1
+	} else if execStep.UseCapacity == 0 {
+		execStep.UseCapacity = 1
 	}
-
 }
 
 func ifEmpty(values ...string) string {

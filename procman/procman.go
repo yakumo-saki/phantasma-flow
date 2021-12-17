@@ -70,8 +70,8 @@ func (p *ProcessManager) AddImpl(typeName string, modmap map[string]*process, mo
 
 	_, ok := modmap[name]
 	if ok {
-		log.Error().Msgf("[%s] name %s is already registered.", typeName, name)
-		return false
+		msg := fmt.Sprintf("[%s] name %s is already registered.", typeName, name)
+		panic(msg)
 	}
 
 	proc := process{toModCh: toCh, fromModCh: fromCh, module: module}
