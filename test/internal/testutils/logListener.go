@@ -5,6 +5,7 @@ import (
 
 	"github.com/yakumo-saki/phantasma-flow/logcollecter/logfile"
 	"github.com/yakumo-saki/phantasma-flow/messagehub"
+	"github.com/yakumo-saki/phantasma-flow/pkg/message"
 	"github.com/yakumo-saki/phantasma-flow/procman"
 	"github.com/yakumo-saki/phantasma-flow/util"
 )
@@ -35,16 +36,20 @@ func (m *TestLogListener) Start(inCh <-chan string, outCh chan<- string) error {
 	log.Info().Msgf("Starting %s.", m.GetName())
 	m.ToProcmanCh <- procman.RES_STARTUP_DONE
 
-	ch := messagehub.Subscribe(messagehub.TOPIC_JOB_LOG, m.GetName())
+	logch := messagehub.Subscribe(messagehub.TOPIC_JOB_LOG, m.GetName())
+	repoch := messagehub.Subscribe(messagehub.TOPIC_JOB_REPORT, m.GetName())
 
 	// wait for other message from Procman
 	for {
 		select {
 		case v := <-m.FromProcmanCh:
 			log.Debug().Msgf("Got request %s", v)
-		case jobLogMsg := <-ch:
+		case jobLogMsg := <-logch:
 			lm := jobLogMsg.Body.(*logfile.JobLogMessage)
 			log.Info().Msgf("%v", lm)
+		case exeMsg := <-repoch:
+			em := exeMsg.Body.(*message.ExecuterMsg)
+			log.Info().Msgf("JOB_REPORT: %v", em)
 		case <-m.RootCtx.Done():
 			goto shutdown
 		}

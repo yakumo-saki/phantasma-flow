@@ -41,7 +41,7 @@ func (ex *Executer) resultCollecter(startWg, stopWg *sync.WaitGroup) {
 			case message.JOB_STEP_END:
 				log.Debug().Msgf("Got JOB_STEP_END %v", exeMsg)
 				// step_end then store job result.
-				// step_end then exec next step or job abort
+				// step_end then check return code and abort job if failed
 				ex.mutex.Lock()
 				jobq := ex.jobQueue[exeMsg.RunId]
 				stepResult := jobq.StepResults[exeMsg.StepName]
@@ -49,9 +49,16 @@ func (ex *Executer) resultCollecter(startWg, stopWg *sync.WaitGroup) {
 
 				// XXX need exit code threshold
 				if exeMsg.ExitCode == 0 {
+					// job step success. run next step by queueExecuter
 					stepResult.Success = true
 				} else {
+					// TODO job step failed. fail all jobsteps to prevent run.
 					stepResult.Success = false
+				}
+
+				// check all jobstep is ended(success or not)
+				if false {
+					// JOB_END
 				}
 
 				ex.mutex.Unlock()

@@ -17,7 +17,10 @@ type NodeManager struct {
 	inShutdown bool // NodeManager in shutdown state
 	mutex      sync.Mutex
 	wg         sync.WaitGroup
-	nodePool   map[string]*list.List // map[nodename] list.List<nodeMeta>
+	// map[nodename] list.List<nodeMeta> only first nodemeta is used
+	// 2nd or later nodemetas stored when node setting is changed.
+	// and then first nodemeta is deprecated.
+	nodePool map[string]*list.List
 }
 
 func (m *NodeManager) IsInitialized() bool {

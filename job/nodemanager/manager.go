@@ -54,7 +54,7 @@ func (nm *NodeManager) ExecJobStep(ctx context.Context, step jobparser.Executabl
 		return
 	}
 	nodeMeta := nd.Front().Value.(nodeMeta)
-	nm.HasEnoughCapacity(nodeMeta, step) // check but not stop.
+	nm.HasEnoughCapacity(nodeMeta, step) // check but not stop. TODO: return job start fail to caller
 
 	// new Node instance
 	nodeInst := nodeInstance{}
@@ -64,7 +64,11 @@ func (nm *NodeManager) ExecJobStep(ctx context.Context, step jobparser.Executabl
 	nm.wg.Add(1)
 
 	execNode := node.ExecNode{}
-	execNode.Initialize(nodeMeta.Def)
+	err := execNode.Initialize(nodeMeta.Def)
+	if err != nil {
+		// XXX job fail ? job hold ?
+	}
+
 	go execNode.Run(ctx, &nm.wg, step)
 	nodeMeta.RunningInstances[step.GetId()] = nodeInst
 }

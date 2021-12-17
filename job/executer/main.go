@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"github.com/yakumo-saki/phantasma-flow/job/jobparser"
+	"github.com/yakumo-saki/phantasma-flow/job/nodemanager"
 	"github.com/yakumo-saki/phantasma-flow/procman"
 	"github.com/yakumo-saki/phantasma-flow/util"
 )
@@ -13,6 +14,7 @@ import (
 type Executer struct {
 	procman.ProcmanModuleStruct
 
+	nodeMan   *nodemanager.NodeManager
 	mutex     sync.Mutex
 	jobQueue  map[string]*queuedJob // map[runId] -> queuedJob
 	nodeQueue map[string]list.List  // map[nodeId] -> list.List<ExecutableJobStep>
@@ -36,6 +38,7 @@ func (ex *Executer) IsInitialized() bool {
 }
 
 func (ex *Executer) Initialize() error {
+	ex.nodeMan = nodemanager.GetInstance()
 	ex.mutex = sync.Mutex{}
 	ex.RootCtx, ex.RootCancel = context.WithCancel(context.Background())
 	ex.jobQueue = make(map[string]*queuedJob)

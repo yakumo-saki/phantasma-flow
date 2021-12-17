@@ -25,5 +25,5 @@ func (step ExecutableJobStep) String() string {
 }
 
 func (step *ExecutableJobStep) GetId() string {
-	return fmt.Sprintf("%s_%s_%s", step.JobId, step.RunId, step.Name)
+	return fmt.Sprintf("%s/%s/%s", step.JobId, step.RunId, step.Name)
 }

@@ -4,7 +4,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/yakumo-saki/phantasma-flow/job/nodemanager"
 	"github.com/yakumo-saki/phantasma-flow/util"
 )
 
@@ -19,8 +18,6 @@ func (ex *Executer) queueExecuter(startWg, stopWg *sync.WaitGroup) {
 	for {
 		select {
 		case <-ex.RootCtx.Done():
-			// XXX need for wait all jobs in running state
-			// TODO cancel all step context
 			goto shutdown
 		case <-time.After(1 * time.Second):
 			ex.mutex.Lock()
@@ -32,17 +29,23 @@ func (ex *Executer) queueExecuter(startWg, stopWg *sync.WaitGroup) {
 	}
 
 shutdown:
+	// XXX need for wait all jobs in running state
+	// TODO cancel all step context
+
 	log.Debug().Msgf("%s/%s stopped.", ex.GetName(), NAME)
 }
 
+// executeRunnable find and run runnable job step from queuedJobs.
+// Needs mutex.Lock before call.
 func (ex *Executer) executeRunnable(runId string, job *queuedJob) {
 	log := util.GetLoggerWithSource(ex.GetName(), "executeRunnable").
 		With().Str("runId", runId).Logger()
+
 	for _, step := range job.Steps {
 		stat := job.StepResults[step.Name]
 
-		if stat.Started && !stat.Ended {
-			// still running. nothing to do
+		if stat.Started || stat.Ended {
+			// still running or already ended. nothing to do
 			goto next
 		}
 
@@ -55,7 +58,8 @@ func (ex *Executer) executeRunnable(runId string, job *queuedJob) {
 		for _, pre := range step.PreSteps {
 			s, ok := job.StepResults[pre]
 			if !ok {
-				goto next // no result = not started. not run. should not occur
+				log.Warn().Msgf("BUG? PreStep %s is not in StepResults", pre)
+				goto next // no result = not started. not run. but this should not occur
 			}
 			if !s.Success {
 				goto next // preStep is failed. not run (Job is failed.)
@@ -66,7 +70,7 @@ func (ex *Executer) executeRunnable(runId string, job *queuedJob) {
 
 	runIt:
 		log.Debug().Msgf("Jobstep start %s/%s", step.JobId, step.Name)
-		nodemanager.GetInstance().ExecJobStep(job.Context, step)
+		ex.nodeMan.ExecJobStep(job.Context, step)
 		stat.Started = true // prevent double exec, change started flag here (not wait for job_step_start msg)
 
 	next:

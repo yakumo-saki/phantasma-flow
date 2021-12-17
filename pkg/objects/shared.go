@@ -31,5 +31,5 @@ type ObjectVersion struct {
 }
 
 func (ov ObjectVersion) String() string {
-	return fmt.Sprintf("Version %d.%d", ov.Major, ov.Minor)
+	return fmt.Sprintf("v%d.%d", ov.Major, ov.Minor)
 }

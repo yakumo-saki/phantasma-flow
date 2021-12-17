@@ -1,6 +1,10 @@
 package logfile
 
-import "github.com/yakumo-saki/phantasma-flow/pkg/objects"
+import (
+	"fmt"
+
+	"github.com/yakumo-saki/phantasma-flow/pkg/objects"
+)
 
 const LM_STAGE_PRE = "prerun"
 const LM_STAGE_JOB = "job"
@@ -16,6 +20,12 @@ type JobLogMessage struct {
 	LogDateTime string                `json:"logDateTime"` // RFC3339 yyyy-mm-ddTHH:MM:SS.nnnn+TZ
 	SeqNo       uint64                `json:"seqNo"`       // log sequence number (optional)
 	Message     string                `json:"message"`     // log message
+}
+
+func (log *JobLogMessage) String() string {
+	msg := fmt.Sprintf("JobLogMsg: JobId=%s(%v) RunId=%s Seq=%v Step=%s Stage=%s Source=%s Msg=%s",
+		log.JobId, log.Version, log.RunId, log.SeqNo, log.JobStep, log.Stage, log.Source, log.Message)
+	return msg
 }
 
 type JobLogData struct {
