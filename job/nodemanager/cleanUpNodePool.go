@@ -5,7 +5,7 @@ import (
 	"github.com/yakumo-saki/phantasma-flow/util"
 )
 
-// cleanup nodeInstance and Restore capacity
+// cleanUpNodePool cleanup nodeInstance and Restore capacity
 func (nm *NodeManager) cleanUpNodePool(exeMsg *message.ExecuterMsg) {
 	const NAME = "cleanUpNodePool"
 	log := util.GetLoggerWithSource(nm.GetName(), NAME)

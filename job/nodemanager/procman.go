@@ -64,6 +64,7 @@ func (nm *NodeManager) Start(inCh <-chan string, outCh chan<- string) error {
 			nm.nodeDefHandler(nodeDefMsg.NodeDefinition)
 			nm.mutex.Unlock()
 		case msg := <-jobRepoCh:
+			// BUG After shutdown initiated, this is not work
 			exeMsg := msg.Body.(*message.ExecuterMsg)
 			if exeMsg.Subject == message.JOB_STEP_END {
 				nm.mutex.Lock()

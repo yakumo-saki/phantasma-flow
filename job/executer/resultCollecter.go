@@ -1,6 +1,7 @@
 package executer
 
 import (
+	"fmt"
 	"sync"
 
 	"github.com/yakumo-saki/phantasma-flow/messagehub"
@@ -43,8 +44,8 @@ func (ex *Executer) resultCollecter(startWg, stopWg *sync.WaitGroup) {
 				// step_end then store job result.
 				// step_end then check return code and abort job if failed
 				ex.mutex.Lock()
-				jobq := ex.jobQueue[exeMsg.RunId]
-				stepResult := jobq.StepResults[exeMsg.StepName]
+				qjob := ex.jobQueue[exeMsg.RunId]
+				stepResult := qjob.StepResults[exeMsg.StepName]
 				stepResult.Ended = true
 
 				// XXX need exit code threshold
@@ -52,15 +53,41 @@ func (ex *Executer) resultCollecter(startWg, stopWg *sync.WaitGroup) {
 					// job step success. run next step by queueExecuter
 					stepResult.Success = true
 				} else {
-					// TODO job step failed. fail all jobsteps to prevent run.
+					// job step failed. fail all jobsteps to prevent further run.
 					stepResult.Success = false
+
+					ex.failJobSteps(qjob, exeMsg.RunId)
+
+					reason := fmt.Sprintf("Job '%s' (runId:%s) mark as failed, jobstep '%s' is failed.",
+						exeMsg.JobId, exeMsg.RunId, exeMsg.StepName)
+					log.Info().Msg(reason)
+
+					msg := ex.createExecuterMsg(qjob.Steps[0], message.JOB_END)
+					msg.Success = false
+					msg.Reason = reason
+					messagehub.Post(messagehub.TOPIC_JOB_REPORT, msg)
+
+					qjob.Cancel()
+					goto exit
 				}
 
-				// check all jobstep is ended(success or not)
-				if false {
-					// JOB_END
+				{ // check all jobstep is ended(success or not)
+					end, success := ex.checkJobComplete(qjob)
+					if end {
+						msg := ex.createExecuterMsg(qjob.Steps[0], message.JOB_END)
+						if success {
+							msg.Success = true
+						} else {
+							msg.Success = false
+							msg.Reason = "some jobstep is failed"
+						}
+
+						messagehub.Post(messagehub.TOPIC_JOB_REPORT, msg)
+						qjob.Cancel()
+					}
 				}
 
+			exit:
 				ex.mutex.Unlock()
 			default:
 				continue
@@ -72,4 +99,34 @@ func (ex *Executer) resultCollecter(startWg, stopWg *sync.WaitGroup) {
 shutdown:
 	messagehub.Unsubscribe(messagehub.TOPIC_JOB_REPORT, ex.GetName())
 	log.Debug().Msgf("%s/%s stopped.", ex.GetName(), NAME)
+}
+
+// checkJobComplete check all jobsteps are ended and all jobsteps are success
+func (ex *Executer) checkJobComplete(qjob *queuedJob) (end, success bool) {
+	end = true
+	success = true
+
+	for _, result := range qjob.StepResults {
+		if !result.Ended {
+			end = false
+		}
+		if !result.Success {
+			success = false
+		}
+	}
+	return end, success
+}
+
+func (ex *Executer) failJobSteps(qjob *queuedJob, runId string) {
+	log := util.GetLoggerWithSource(ex.GetName(), "failJobSteps").With().
+		Str("runId", runId).Logger()
+
+	jobs := ex.jobQueue[runId]
+	for step, result := range jobs.StepResults {
+		if !result.Started && !result.Ended {
+			result.Ended = true
+			result.Success = false
+			log.Debug().Msgf("Jobstep '%s' mark as failed, because of pre-jobstep is failed.", step)
+		}
+	}
 }
