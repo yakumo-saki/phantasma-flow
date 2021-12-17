@@ -44,12 +44,12 @@ func main() {
 	processManager := procman.NewProcessManager(procmanCh)
 
 	processManager.Add(&procmanExample.MinimalProcmanModule{})
-	processManager.Add(&scheduler.JobScheduler{})
 	processManager.Add(&metrics.PrometeusExporterModule{})
-	processManager.AddService(nodemanager.GetInstance())
-	processManager.AddService(&logfileexporter.LogFileExporter{})
-	processManager.AddService(exec)
-	processManager.AddService(&metalistener.MetaListener{})
+	processManager.AddService(10, &logfileexporter.LogFileExporter{})
+	processManager.AddService(11, &metalistener.MetaListener{})
+	processManager.AddService(80, nodemanager.GetInstance())
+	processManager.AddService(90, exec)
+	processManager.AddService(99, &scheduler.JobScheduler{})
 
 	processManager.Start()
 

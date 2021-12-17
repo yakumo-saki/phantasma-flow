@@ -23,8 +23,8 @@ func TestBasicNodeManager(t *testing.T) {
 	exec := executer.GetInstance()
 	repo := repository.GetRepository()
 
-	pman.AddService(nodeMan)
-	pman.AddService(exec)
+	pman.AddService(80, nodeMan)
+	pman.AddService(90, exec)
 	pman.Start()
 
 	hub.StartSender()
