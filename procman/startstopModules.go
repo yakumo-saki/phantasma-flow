@@ -42,7 +42,7 @@ func (p *ProcessManager) startModules(modmap map[string]*process) string {
 			case <-time.After(15 * time.Second):
 				reason = REASON_TIMEOUT
 				p.outputTimeoutLog(typeName, "startup", p.workerModules)
-				log.Fatal().Msgf("[%s] Startup timeout reached. '%s' is not started.", typeName, name)
+				log.Error().Msgf("[%s] Startup timeout reached. '%s' is not started.", typeName, name)
 				return reason
 			default:
 			}

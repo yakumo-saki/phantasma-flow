@@ -52,27 +52,33 @@ func (nm *NodeManager) ExecJobStep(ctx context.Context, step jobparser.Executabl
 		log.Error().Msgf("Node '%s' is not found in NodeManager.", step.Node)
 		return
 	}
-	nodeMeta := nd.Front().Value.(nodeMeta)
+
+	// capacity check
+	nodeMeta := nd.Front().Value.(*nodeMeta)
 	nm.HasEnoughCapacity(nodeMeta, step) // check but not stop. TODO: return job start fail to caller
 
-	// new Node instance
-	nodeInst := nodeInstance{}
-	ctx, cancel := context.WithCancel(ctx)
-	nodeInst.Cancel = cancel
-
-	nm.wg.Add(1)
-
+	// try initialize first
 	execNode := node.ExecNode{}
 	err := execNode.Initialize(nodeMeta.Def)
 	if err != nil {
 		// XXX job fail ? job hold ?
 	}
 
+	// Register to nodemanager and run
+	nodeInst := nodeInstance{}
+	nodeInst.UseCapacity = step.JobStepDefinition.UseCapacity
+	ctx, cancel := context.WithCancel(ctx)
+	nodeInst.Cancel = cancel // called on cleanUpNodePool
+
+	nm.wg.Add(1)
+	nodeMeta.Capacity = nodeMeta.Capacity - nodeInst.UseCapacity
+
+	execNode.Running = true // prevent cleanUp before goroutine start
 	go execNode.Run(ctx, &nm.wg, step)
 	nodeMeta.RunningInstances[step.GetId()] = nodeInst
 }
 
-func (nm *NodeManager) HasEnoughCapacity(nodeMeta nodeMeta, step jobparser.ExecutableJobStep) {
+func (nm *NodeManager) HasEnoughCapacity(nodeMeta *nodeMeta, step jobparser.ExecutableJobStep) {
 	log := util.GetLoggerWithSource(nm.GetName(), "HasEnoughCapacity")
 
 	if nodeMeta.Capacity < step.JobStepDefinition.UseCapacity {

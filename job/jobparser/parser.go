@@ -57,13 +57,15 @@ func BuildFromJobDefinition(jobDef *objects.JobDefinition, runId string) (*list.
 }
 
 func buildFromSequentialJobDef(jobDef *objects.JobDefinition, jobId, runId string) (*list.List, error) {
+	log := util.GetLoggerWithSource("buildFromSequentialJobDef")
+
 	result := list.New()
 	var lastStep *ExecutableJobStep
 
-	for idx, step := range jobDef.Steps {
+	for idx, defStep := range jobDef.Steps {
 		execStep := ExecutableJobStep{}
 		util.DeepCopy(jobDef, &execStep)
-		util.DeepCopy(&step, &execStep)
+		util.DeepCopy(&defStep, &execStep)
 		util.DeepCopy(jobDef.Meta.Version, &execStep.Version)
 
 		execStep.RunId = runId
@@ -76,6 +78,18 @@ func buildFromSequentialJobDef(jobDef *objects.JobDefinition, jobId, runId strin
 			execStep.PreSteps = []string{}
 		} else {
 			execStep.PreSteps = []string{lastStep.Name}
+		}
+
+		// execType
+		if defStep.ExecType == "" {
+			if defStep.Command != "" {
+				execStep.ExecType = objects.JOB_EXEC_TYPE_COMMAND
+			} else if defStep.Script != "" {
+				execStep.ExecType = objects.JOB_EXEC_TYPE_SCRIPT
+			} else {
+				msg := fmt.Sprintf("ExecType auto detect fail. Job=%s/%s", jobDef.Id, defStep.Name)
+				panic(msg)
+			}
 		}
 
 		result.PushBack(execStep)

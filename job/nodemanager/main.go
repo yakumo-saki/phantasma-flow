@@ -17,6 +17,7 @@ type NodeManager struct {
 	inShutdown bool // NodeManager in shutdown state
 	mutex      sync.Mutex
 	wg         sync.WaitGroup
+
 	// map[nodename] list.List<nodeMeta> only first nodemeta is used
 	// 2nd or later nodemetas stored when node setting is changed.
 	// and then first nodemeta is deprecated.
@@ -65,6 +66,7 @@ func (nm *NodeManager) Start(inCh <-chan string, outCh chan<- string) error {
 			nm.mutex.Unlock()
 		case msg := <-jobRepoCh:
 			// BUG After shutdown initiated, this is not work
+			// but its ok.
 			exeMsg := msg.Body.(*message.ExecuterMsg)
 			if exeMsg.Subject == message.JOB_STEP_END {
 				nm.mutex.Lock()

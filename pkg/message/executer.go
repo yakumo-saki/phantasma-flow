@@ -18,6 +18,7 @@ type ExecuterMsg struct {
 	RunId    string
 	Version  objects.ObjectVersion
 	StepName string // JOB_STEP_* only
+	Node     string // JOB_STEP_* only, execute Node id
 	Success  bool   // JOB_END or JOB_STEP_END
 	Reason   string // why success = true / false
 	ExitCode int    // JOB_STEP_END only
