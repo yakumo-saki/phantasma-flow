@@ -57,7 +57,7 @@ func BuildFromJobDefinition(jobDef *objects.JobDefinition, runId string) (*list.
 }
 
 func buildFromSequentialJobDef(jobDef *objects.JobDefinition, jobId, runId string) (*list.List, error) {
-	log := util.GetLoggerWithSource("buildFromSequentialJobDef")
+	// log := util.GetLoggerWithSource("buildFromSequentialJobDef")
 
 	result := list.New()
 	var lastStep *ExecutableJobStep
