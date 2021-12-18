@@ -21,7 +21,7 @@ func (nm *NodeManager) nodeDefHandler(nodeDef objects.NodeDefinition) {
 	ls, ok := nm.nodePool[nodeDef.Id]
 	if !ok {
 		ls = list.New()
-		ls.PushBack(nd)
+		ls.PushBack(&nd)
 		nm.nodePool[nd.Def.Id] = ls
 		log.Debug().Msgf("New node added. id=%s(%s) Cap:%v", nd.Def.Id, nd.Def.DisplayName, nd.Capacity)
 	} else {

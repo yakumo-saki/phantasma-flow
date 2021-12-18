@@ -40,6 +40,7 @@ func (n *ExecNode) Initialize(def objects.NodeDefinition) error {
 	return err
 }
 
+// Run jobStep context to cancel.
 func (n *ExecNode) Run(ctx context.Context, wg *sync.WaitGroup, jobStep jobparser.ExecutableJobStep) {
 	n.Running = true
 	n.sendJobStepStartMsg(jobStep)
@@ -69,6 +70,7 @@ func (n *ExecNode) createExecuterMsg(jobstep jobparser.ExecutableJobStep, subjec
 	msg.JobId = jobstep.JobId
 	msg.RunId = jobstep.RunId
 	msg.StepName = jobstep.Name
+	msg.Node = jobstep.Node
 	msg.Subject = subject
 
 	// fmt.Printf("Job REPORT: %s, Job:%s/%s RunId:%s\n", subject, msg.JobId, msg.StepName, msg.RunId)

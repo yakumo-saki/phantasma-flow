@@ -3,6 +3,7 @@ package node
 import (
 	"bufio"
 	"context"
+	"fmt"
 	"io"
 	"os/exec"
 	"sync/atomic"
@@ -32,13 +33,25 @@ func (n *localExecNode) Initialize(def objects.NodeDefinition) error {
 func (n *localExecNode) Run(ctx context.Context, jobStep jobparser.ExecutableJobStep) {
 
 	log := util.GetLoggerWithSource(n.GetName(), "run").With().
-		Str("jobId", jobStep.JobId).Str("runId", jobStep.RunId).Str("step", jobStep.Name).Logger()
+		Str("jobId", jobStep.JobId).Str("runId", jobStep.RunId).
+		Str("node", n.nodeDef.Id).Str("step", jobStep.Name).Logger()
 
-	log.Debug().Msgf("Run %s", jobStep)
 	n.jobStep = jobStep
 
 	var err error
-	cmd := exec.CommandContext(ctx, "sh", "-c", jobStep.Command)
+	var cmd *exec.Cmd
+	switch jobStep.ExecType {
+	case objects.JOB_EXEC_TYPE_COMMAND:
+		log.Trace().Msgf("Run command %s", jobStep.Command)
+		cmd = exec.CommandContext(ctx, "sh", "-c", jobStep.Command)
+	case objects.JOB_EXEC_TYPE_SCRIPT:
+		// TODO implement script run
+		log.Trace().Msgf("Run script %s", jobStep.Script)
+		cmd = exec.CommandContext(ctx, "sh", "-c", jobStep.Script)
+	default:
+		panic(fmt.Sprintf("Unknown execType %s on %s/%s",
+			jobStep.ExecType, jobStep.JobId, jobStep.Name))
+	}
 	stderr, err := cmd.StderrPipe()
 	if err == nil {
 		go n.PipeToLog(ctx, "stderr", stderr)
