@@ -43,7 +43,7 @@ func (m *logFileExporter) Start(params *logListenerParams, wg *sync.WaitGroup) {
 	useEmergencyLog := false
 	emLog := util.GetLoggerWithSource(m.GetName(), "emergency")
 
-	// XXX need to find same runid logfile
+	// Create log file or Open existed log file
 	f, err := m.openLogFile(params.JobId, params.RunId)
 	if err != nil {
 		useEmergencyLog = true

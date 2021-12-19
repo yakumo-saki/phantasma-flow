@@ -81,7 +81,6 @@ func (n *localExecNode) PipeToLog(ctx context.Context, name string, pipe io.Read
 	for scanner.Scan() {
 		seq := atomic.AddUint64(&n.seqNo, 1)
 		logmsg := scanner.Text()
-		// log.Info().Str("name", name).Uint64("seqNo", seq).Msg(logmsg)
 
 		msg := createJobLogMsg(seq, n.jobStep)
 		msg.Source = name
