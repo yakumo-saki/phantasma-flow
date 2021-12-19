@@ -29,8 +29,7 @@ func (ex *Executer) queueExecuter(startWg, stopWg *sync.WaitGroup) {
 	}
 
 shutdown:
-	// XXX need for wait all jobs in running state
-	// TODO cancel all step context
+	// TODO need for wait all jobs in running state. cancel all step context #38
 
 	log.Debug().Msgf("%s/%s stopped.", ex.GetName(), NAME)
 }

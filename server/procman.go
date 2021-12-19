@@ -35,7 +35,7 @@ func (sv *Server) GetName() string {
 
 func (sv *Server) startListen() error {
 	// Finally start listening
-	// TODO change port by config
+	// TODO change port by config #42
 	psock, err := net.Listen("tcp", ":5000")
 	if err != nil {
 		log.Error().Err(err).Msg("Failed listen tcp.")

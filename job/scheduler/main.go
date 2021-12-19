@@ -61,7 +61,7 @@ func (js *JobScheduler) Start(inCh <-chan string, outCh chan<- string) error {
 		case job := <-jobDefCh:
 			// log.Debug().Msgf("Got JobDefinitionMsg %s", job)
 
-			// TODO JOBS and re-schedule
+			// TODO JOBS and re-schedule if schedule is changed #40
 			jobDefMsg := job.Body.(message.JobDefinitionMsg)
 			jobdef := jobDefMsg.JobDefinition
 			id := js.addJob(jobdef)

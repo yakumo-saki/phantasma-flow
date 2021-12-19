@@ -49,7 +49,7 @@ func (m *LogFileExporter) LogListener(ctx context.Context) {
 			goto shutdown
 		}
 	}
-	// XXX clean up loggerMap every 30min
+	// TODO clean up loggerMap every 30min #44
 
 shutdown:
 	log.Debug().Msg("Stopping all log listerners.")

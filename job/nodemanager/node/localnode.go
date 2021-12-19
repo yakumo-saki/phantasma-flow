@@ -45,7 +45,7 @@ func (n *localExecNode) Run(ctx context.Context, jobStep jobparser.ExecutableJob
 		log.Trace().Msgf("Run command %s", jobStep.Command)
 		cmd = exec.CommandContext(ctx, "sh", "-c", jobStep.Command)
 	case objects.JOB_EXEC_TYPE_SCRIPT:
-		// TODO implement script run
+		// TODO implement script run #25
 		log.Trace().Msgf("Run script %s", jobStep.Script)
 		cmd = exec.CommandContext(ctx, "sh", "-c", jobStep.Script)
 	default:

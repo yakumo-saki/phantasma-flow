@@ -48,7 +48,7 @@ func (nm *NodeManager) ExecJobStep(ctx context.Context, step jobparser.Executabl
 	// fetch first node from nodePool
 	nd, ok := nm.nodePool[step.Node]
 	if !ok {
-		// XXX JOB FAIL
+		// XXX JOB FAIL #36
 		log.Error().Msgf("Node '%s' is not found in NodeManager.", step.Node)
 		return
 	}
@@ -61,7 +61,7 @@ func (nm *NodeManager) ExecJobStep(ctx context.Context, step jobparser.Executabl
 	execNode := node.ExecNode{}
 	err := execNode.Initialize(nodeMeta.Def)
 	if err != nil {
-		// XXX job fail ? job hold ?
+		// XXX job fail ? job hold ? #37
 	}
 
 	// Register to nodemanager and run
