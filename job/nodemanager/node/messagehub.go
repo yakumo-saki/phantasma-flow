@@ -13,6 +13,8 @@ func createJobLogMsg(seqNo uint64, jobStep jobparser.ExecutableJobStep) *objects
 	msg.Stage = objects.LM_STAGE_JOB
 	msg.SeqNo = seqNo
 	msg.Version = jobStep.Version
+	msg.JobStep = jobStep.Name
+	msg.Node = jobStep.Node
 	msg.LogDateTime = util.GetDateTimeString()
 	return &msg
 

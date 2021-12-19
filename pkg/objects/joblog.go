@@ -14,6 +14,7 @@ type JobLogMessage struct {
 	Version     ObjectVersion `json:"version"`           // Version of job definition
 	Stage       string        `json:"stage"`             // LM_STAGE_* prerun, job, postrun
 	JobStep     string        `json:"jobStep,omitempty"` // Stage=job only
+	Node        string        `json:"node,omitempty"`    // Stage=job only running node id
 	Source      string        `json:"source"`            // log from where. STAGE_JOB => stdout/stderr, others=>modulename
 	LogDateTime string        `json:"logDateTime"`       // RFC3339 yyyy-mm-ddTHH:MM:SS.nnnn+TZ
 	SeqNo       uint64        `json:"seqNo,omitempty"`   // log sequence number (optional)
