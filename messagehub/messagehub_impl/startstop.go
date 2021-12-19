@@ -19,8 +19,7 @@ func (hub *MessageHub) Initialize() {
 	hub.senderWaitGroup = sync.WaitGroup{}
 }
 
-// XXX senderのctxはすべて記録しないとだめ。 unsubscribeできない。
-// waitgroupは削除してもよさそうだが、確実に待つなら消せない
+// Multi sender is not allowed for now
 func (hub *MessageHub) StartSender() {
 	if hub.senderCtx == nil {
 		senderCtx, cancel := context.WithCancel(context.Background())
@@ -28,15 +27,24 @@ func (hub *MessageHub) StartSender() {
 		hub.senderCancel = &cancel
 	}
 
-	hub.senderWaitGroup.Add(1)
-	go hub.Sender(hub.senderCtx)
+	if !hub.senderStarted {
+		hub.senderWaitGroup.Add(1)
+		hub.senderStarted = true
+		go hub.Sender(hub.senderCtx)
+	} else {
+		panic("Calling StartSender twice is not allowed")
+	}
 }
 
 // Stop sender thread. (Not waiting all queue done)
 func (hub *MessageHub) StopSender() {
 	log := util.GetLoggerWithSource(hub.Name, "stopSender")
 	if hub.senderCtx == nil { // not start senders and shutdown
-		log.Info().Msgf("StopSender: No senders started. Nothing to do.")
+		log.Info().Msgf("StopSender: No senders started. Nothing to do. (no senderCtx)")
+		return
+	}
+	if !hub.senderStarted {
+		log.Info().Msgf("StopSender: No senders started. Nothing to do. (!senderStarted)")
 		return
 	}
 
@@ -49,6 +57,7 @@ func (hub *MessageHub) StopSender() {
 	log.Info().Msgf("Stopping all senders done.")
 	hub.senderCancel = nil
 	hub.senderCtx = nil
+	hub.senderStarted = false
 }
 
 // Block new post and wait for queue become empty

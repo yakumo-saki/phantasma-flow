@@ -66,7 +66,6 @@ func (js *JobScheduler) calcNextSchedule(now time.Time, schedules []objects.JobS
 	for _, sche := range schedules {
 		parser := js.getCronParser()
 
-		// TODO: change parser by sche.type
 		sc, err := parser.Parse(sche.Param)
 		if err != nil {
 			log.Err(err).Msg("Schedule parse error")

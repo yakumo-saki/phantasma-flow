@@ -43,7 +43,7 @@ func (ex *Executer) resultCollecter(startWg, stopWg *sync.WaitGroup) {
 
 			switch exeMsg.Subject {
 			case message.JOB_END:
-				// TODO job complete then delete from queue
+				// TODO job complete then delete from queue #39
 
 				log.Warn().Msgf("JOB_END Received. not implemented %v", msg)
 			case message.JOB_STEP_END:
@@ -55,7 +55,7 @@ func (ex *Executer) resultCollecter(startWg, stopWg *sync.WaitGroup) {
 				stepResult := qjob.StepResults[exeMsg.StepName]
 				stepResult.Ended = true
 
-				// XXX need exit code threshold
+				// TODO #43 Implement need exit code threshold
 				if exeMsg.ExitCode == 0 {
 					// job step success. run next step by queueExecuter
 					stepResult.Success = true

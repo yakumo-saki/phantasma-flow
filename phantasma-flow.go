@@ -24,7 +24,6 @@ import (
 )
 
 const DEBUG = false
-const myname = "main"
 
 func main() {
 	log := util.GetLoggerWithSource("main")
@@ -62,9 +61,6 @@ func main() {
 	messagehub.WaitForQueueEmpty("Wait for node registration")
 	repo.SendAllJobs()
 	messagehub.WaitForQueueEmpty("Wait for job registration")
-
-	// XXX: ノードとかジョブが行き渡ったことを確認する必要がある？
-	// nodeDef とか JobDef を送った数の分のノードができたことをチェックする？
 
 	// main loop
 	processManager.Add(&server.Server{})

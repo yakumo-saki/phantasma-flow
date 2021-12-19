@@ -15,8 +15,9 @@ type listener struct {
 
 type MessageHub struct {
 	listeners       sync.Map
-	listenerMutex   sync.Mutex // to read listeners TODO: mutex can be per topic basis for performance
+	listenerMutex   sync.Mutex // to read listeners. note: mutex can be per topic basis for performance
 	queue           *goconcurrentqueue.FIFO
+	senderStarted   bool
 	senderWaitGroup sync.WaitGroup
 	senderCtx       *context.Context
 	senderCancel    *context.CancelFunc
