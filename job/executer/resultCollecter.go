@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/yakumo-saki/phantasma-flow/logcollecter/logfile"
 	"github.com/yakumo-saki/phantasma-flow/messagehub"
 	"github.com/yakumo-saki/phantasma-flow/pkg/message"
+	"github.com/yakumo-saki/phantasma-flow/pkg/objects"
 	"github.com/yakumo-saki/phantasma-flow/util"
 )
 
@@ -72,7 +72,7 @@ func (ex *Executer) resultCollecter(startWg, stopWg *sync.WaitGroup) {
 					// send job end log
 					qjob := ex.jobQueue[exeMsg.RunId]
 					logmsg := ex.createJobLogMsg(qjob.Steps[0])
-					logmsg.Stage = logfile.LM_STAGE_POST
+					logmsg.Stage = objects.LM_STAGE_POST
 					logmsg.Message = reason
 					messagehub.Post(messagehub.TOPIC_JOB_LOG, logmsg)
 
@@ -102,7 +102,7 @@ func (ex *Executer) resultCollecter(startWg, stopWg *sync.WaitGroup) {
 						// send job end log
 						qjob := ex.jobQueue[exeMsg.RunId]
 						logmsg := ex.createJobLogMsg(firstStep)
-						logmsg.Stage = logfile.LM_STAGE_POST
+						logmsg.Stage = objects.LM_STAGE_POST
 						logmsg.Message = msg.Reason
 						messagehub.Post(messagehub.TOPIC_JOB_LOG, logmsg)
 
