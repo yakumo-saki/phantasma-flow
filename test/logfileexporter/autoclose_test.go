@@ -5,9 +5,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/yakumo-saki/phantasma-flow/logcollecter/logfile"
 	"github.com/yakumo-saki/phantasma-flow/logexporter/logfileexporter"
 	"github.com/yakumo-saki/phantasma-flow/messagehub"
+	"github.com/yakumo-saki/phantasma-flow/pkg/objects"
 	"github.com/yakumo-saki/phantasma-flow/test/internal/testutils"
 )
 
@@ -28,7 +28,7 @@ func TestAutoClose(t *testing.T) {
 	fmt.Println("start")
 
 	{
-		msg := createJobLogMsg(jobId, runId, logfile.LM_STAGE_JOB)
+		msg := createJobLogMsg(jobId, runId, objects.LM_STAGE_JOB)
 		msg.Source = "job"
 		msg.Message = "hello world"
 		messagehub.Post(messagehub.TOPIC_JOB_LOG, *msg)

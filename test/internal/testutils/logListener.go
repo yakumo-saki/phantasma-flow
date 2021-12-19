@@ -3,9 +3,9 @@ package testutils
 import (
 	"context"
 
-	"github.com/yakumo-saki/phantasma-flow/logcollecter/logfile"
 	"github.com/yakumo-saki/phantasma-flow/messagehub"
 	"github.com/yakumo-saki/phantasma-flow/pkg/message"
+	"github.com/yakumo-saki/phantasma-flow/pkg/objects"
 	"github.com/yakumo-saki/phantasma-flow/procman"
 	"github.com/yakumo-saki/phantasma-flow/util"
 )
@@ -45,7 +45,7 @@ func (m *TestLogListener) Start(inCh <-chan string, outCh chan<- string) error {
 		case v := <-m.FromProcmanCh:
 			log.Debug().Msgf("Got request %s", v)
 		case jobLogMsg := <-logch:
-			lm := jobLogMsg.Body.(*logfile.JobLogMessage)
+			lm := jobLogMsg.Body.(*objects.JobLogMessage)
 			log.Info().Msgf("%v", lm)
 		case exeMsg := <-repoch:
 			em := exeMsg.Body.(*message.ExecuterMsg)

@@ -5,7 +5,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/yakumo-saki/phantasma-flow/logcollecter/logfile"
 	"github.com/yakumo-saki/phantasma-flow/logexporter/logfileexporter"
 	"github.com/yakumo-saki/phantasma-flow/messagehub"
 	"github.com/yakumo-saki/phantasma-flow/pkg/objects"
@@ -27,25 +26,25 @@ func TestBasicLogFileExporter(t *testing.T) {
 	fmt.Println("start")
 
 	{
-		msg := createJobLogMsg(jobId, runId, logfile.LM_STAGE_PRE)
+		msg := createJobLogMsg(jobId, runId, objects.LM_STAGE_PRE)
 		msg.Source = "executer"
 		msg.Message = "Job queued"
 		messagehub.Post(messagehub.TOPIC_JOB_LOG, *msg)
 	}
 	{
-		msg := createJobLogMsg(jobId, runId, logfile.LM_STAGE_JOB)
+		msg := createJobLogMsg(jobId, runId, objects.LM_STAGE_JOB)
 		msg.Source = "executer"
 		msg.Message = "Start step1 on node1"
 		messagehub.Post(messagehub.TOPIC_JOB_LOG, *msg)
 	}
 	{
-		msg := createJobLogMsg(jobId, runId, logfile.LM_STAGE_JOB)
+		msg := createJobLogMsg(jobId, runId, objects.LM_STAGE_JOB)
 		msg.Source = "job"
 		msg.Message = "hello world"
 		messagehub.Post(messagehub.TOPIC_JOB_LOG, *msg)
 	}
 	{
-		msg := createJobLogMsg(jobId, runId, logfile.LM_STAGE_JOB)
+		msg := createJobLogMsg(jobId, runId, objects.LM_STAGE_JOB)
 		msg.Source = "executer"
 		msg.Message = "End step1, exitcode=0"
 		messagehub.Post(messagehub.TOPIC_JOB_LOG, *msg)
@@ -64,8 +63,8 @@ func PostAndWait(topic string, body interface{}) {
 	fmt.Println(messagehub.GetQueueLength())
 }
 
-func createJobLogMsg(jobId, runId, stage string) *logfile.JobLogMessage {
-	msg := logfile.JobLogMessage{}
+func createJobLogMsg(jobId, runId, stage string) *objects.JobLogMessage {
+	msg := objects.JobLogMessage{}
 	msg.JobId = jobId
 	msg.RunId = runId
 	msg.Stage = stage

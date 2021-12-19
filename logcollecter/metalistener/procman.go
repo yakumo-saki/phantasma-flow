@@ -14,7 +14,7 @@ type MetaListener struct {
 	procman.ProcmanModuleStruct
 	logChannelsWg sync.WaitGroup
 	logChannels   syncmap.Map // [string(runId)] <-chan LogMessage
-	logCloseFunc  syncmap.Map // [string(runId)] context.CancelFunc
+	// logCloseFunc  syncmap.Map // [string(runId)] context.CancelFunc
 }
 
 func (m *MetaListener) IsInitialized() bool {

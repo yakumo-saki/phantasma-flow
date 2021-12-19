@@ -1,6 +1,4 @@
-package logfile
-
-import "github.com/yakumo-saki/phantasma-flow/pkg/objects"
+package objects
 
 /*
 kind: job-meta
@@ -34,11 +32,13 @@ results:
 		exitCode: 0
 */
 
+const KIND_JOB_META = "job-meta"
+
 type JobMetaLog struct {
-	objects.ObjectBase                  // "job-meta"
-	Meta               JobMetaMeta      `json:"meta"`
-	JobId              string           `json:"jobId"`
-	Results            []*JobMetaResult `json:"results"`
+	ObjectBase                  // "job-meta"
+	Meta       JobMetaMeta      `json:"meta"`
+	JobId      string           `json:"jobId"`
+	Results    []*JobMetaResult `json:"results"`
 }
 
 type JobMetaMeta struct {
@@ -47,14 +47,14 @@ type JobMetaMeta struct {
 
 // Result of 1 job execution
 type JobMetaResult struct {
-	JobNumber     int                   `json:"jobNumber"`
-	Success       bool                  `json:"success"`
-	Reason        string                `json:"reason"` // reason why job success is true or false
-	Version       objects.ObjectVersion `json:"version"`
-	RunId         string                `json:"runId"`
-	StepResults   []*JobMetaStepResult  `json:"stepResults"`
-	StartDateTime string                `json:"startDateTime"` // RFC3306
-	EndDateTime   string                `json:"endDateTime"`   // RFC3306
+	JobNumber     int                  `json:"jobNumber"`
+	Success       bool                 `json:"success"`
+	Reason        string               `json:"reason"` // reason why job success is true or false
+	Version       ObjectVersion        `json:"version"`
+	RunId         string               `json:"runId"`
+	StepResults   []*JobMetaStepResult `json:"stepResults"`
+	StartDateTime string               `json:"startDateTime"` // RFC3306
+	EndDateTime   string               `json:"endDateTime"`   // RFC3306
 }
 
 // Result of 1 job-step execution

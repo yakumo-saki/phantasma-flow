@@ -10,8 +10,8 @@ import (
 
 	"github.com/goccy/go-yaml"
 	"github.com/rs/zerolog/log"
-	"github.com/yakumo-saki/phantasma-flow/logcollecter/logfile"
 	"github.com/yakumo-saki/phantasma-flow/pkg/message"
+	"github.com/yakumo-saki/phantasma-flow/pkg/objects"
 	"github.com/yakumo-saki/phantasma-flow/repository"
 	"github.com/yakumo-saki/phantasma-flow/util"
 )
@@ -19,8 +19,8 @@ import (
 // Trace single Job ID
 type jobLogMetaListener struct {
 	MetaLogFilePath string
-	MetaLog         *logfile.JobMetaLog    // overall meta log data (=single yaml file)
-	JobMetaLog      *logfile.JobMetaResult // Single job run meta log (=single result)
+	MetaLog         *objects.JobMetaLog    // overall meta log data (=single yaml file)
+	JobMetaLog      *objects.JobMetaResult // Single job run meta log (=single result)
 }
 
 func (m *jobLogMetaListener) GetName() string {
@@ -139,7 +139,7 @@ func (m *jobLogMetaListener) ReadOrCreateMetaLog(jobId string) {
 			panic(err)
 		}
 
-		meta := &logfile.JobMetaLog{}
+		meta := &objects.JobMetaLog{}
 		err = yaml.Unmarshal(bytes, meta)
 		if err == nil {
 			m.MetaLog = meta

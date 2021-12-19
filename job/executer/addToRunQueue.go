@@ -5,9 +5,9 @@ import (
 	"context"
 
 	"github.com/yakumo-saki/phantasma-flow/job/jobparser"
-	"github.com/yakumo-saki/phantasma-flow/logcollecter/logfile"
 	"github.com/yakumo-saki/phantasma-flow/messagehub"
 	"github.com/yakumo-saki/phantasma-flow/pkg/message"
+	"github.com/yakumo-saki/phantasma-flow/pkg/objects"
 	"github.com/yakumo-saki/phantasma-flow/util"
 )
 
@@ -25,7 +25,7 @@ func (ex *Executer) AddToRunQueue(execJobs *list.List) {
 
 	// send job start log
 	logmsg := ex.createJobLogMsg(jobstep)
-	logmsg.Stage = logfile.LM_STAGE_PRE
+	logmsg.Stage = objects.LM_STAGE_PRE
 	logmsg.Message = "Job started."
 	messagehub.Post(messagehub.TOPIC_JOB_LOG, logmsg)
 
@@ -68,8 +68,8 @@ func (ex *Executer) createExecuterMsg(jobstep jobparser.ExecutableJobStep, subje
 
 }
 
-func (ex *Executer) createJobLogMsg(jobstep jobparser.ExecutableJobStep) *logfile.JobLogMessage {
-	lm := logfile.JobLogMessage{}
+func (ex *Executer) createJobLogMsg(jobstep jobparser.ExecutableJobStep) *objects.JobLogMessage {
+	lm := objects.JobLogMessage{}
 	lm.Source = ex.GetName()
 	lm.Version = jobstep.Version
 	lm.JobId = jobstep.JobId
