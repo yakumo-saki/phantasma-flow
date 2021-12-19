@@ -64,7 +64,10 @@ func (p *ProcessManager) addImpl(typeName string, modmap map[string]*process, mo
 
 	name := module.GetName()
 	if typeName == TYPE_SVC {
-		name = fmt.Sprintf("%03v %s", order, module.GetName())
+		if order < 1 || 99 < order {
+			panic("procman: AddService order must be 1 ~ 99")
+		}
+		name = fmt.Sprintf("%02v %s", order, module.GetName())
 	}
 	if name == "" {
 		msg := fmt.Sprintf("[%s] empty name is not allowed", typeName)
