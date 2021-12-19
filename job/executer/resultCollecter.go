@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/yakumo-saki/phantasma-flow/logcollecter/logfile"
 	"github.com/yakumo-saki/phantasma-flow/messagehub"
 	"github.com/yakumo-saki/phantasma-flow/pkg/message"
 	"github.com/yakumo-saki/phantasma-flow/util"
@@ -15,6 +16,10 @@ type execJobStepResult struct {
 	Success bool // job step is success
 }
 
+// resultCollecter is
+// * collecting JobStep result
+// * Fail job, when job step failed
+// * detect job is ended
 func (ex *Executer) resultCollecter(startWg, stopWg *sync.WaitGroup) {
 	const NAME = "resultCollecter"
 	log := util.GetLoggerWithSource(ex.GetName(), NAME)
@@ -38,7 +43,9 @@ func (ex *Executer) resultCollecter(startWg, stopWg *sync.WaitGroup) {
 
 			switch exeMsg.Subject {
 			case message.JOB_END:
-				// job complete then delete from queue
+				// TODO job complete then delete from queue
+
+				log.Warn().Msgf("JOB_END Received. not implemented %v", msg)
 			case message.JOB_STEP_END:
 				log.Debug().Msgf("Got JOB_STEP_END %v", exeMsg)
 				// step_end then store job result.
@@ -62,6 +69,14 @@ func (ex *Executer) resultCollecter(startWg, stopWg *sync.WaitGroup) {
 						exeMsg.JobId, exeMsg.RunId, exeMsg.StepName)
 					log.Info().Msg(reason)
 
+					// send job end log
+					qjob := ex.jobQueue[exeMsg.RunId]
+					logmsg := ex.createJobLogMsg(qjob.Steps[0])
+					logmsg.Stage = logfile.LM_STAGE_POST
+					logmsg.Message = reason
+					messagehub.Post(messagehub.TOPIC_JOB_LOG, logmsg)
+
+					// Send JOB_END message
 					msg := ex.createExecuterMsg(qjob.Steps[0], message.JOB_END)
 					msg.Success = false
 					msg.Reason = reason
@@ -73,16 +88,28 @@ func (ex *Executer) resultCollecter(startWg, stopWg *sync.WaitGroup) {
 
 				{ // check all jobstep is ended(success or not)
 					end, success := ex.checkJobComplete(qjob)
+					firstStep := qjob.Steps[0]
 					if end {
-						msg := ex.createExecuterMsg(qjob.Steps[0], message.JOB_END)
+						msg := ex.createExecuterMsg(firstStep, message.JOB_END)
 						if success {
 							msg.Success = true
+							msg.Reason = "Job completed successfully"
 						} else {
 							msg.Success = false
-							msg.Reason = "some jobstep is failed"
+							msg.Reason = "Job failed. Some jobstep is failed"
 						}
 
+						// send job end log
+						qjob := ex.jobQueue[exeMsg.RunId]
+						logmsg := ex.createJobLogMsg(firstStep)
+						logmsg.Stage = logfile.LM_STAGE_POST
+						logmsg.Message = msg.Reason
+						messagehub.Post(messagehub.TOPIC_JOB_LOG, logmsg)
+
+						// send job end report
 						messagehub.Post(messagehub.TOPIC_JOB_REPORT, msg)
+						log.Warn().Msgf("JOB_END_SENT %v", msg)
+
 						qjob.Cancel()
 					}
 				}

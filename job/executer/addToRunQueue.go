@@ -19,7 +19,7 @@ func (ex *Executer) AddToRunQueue(execJobs *list.List) {
 
 	jobstep := execJobs.Front().Value.(jobparser.ExecutableJobStep)
 
-	// send job start message
+	// send job start message (job end message is sent by resultCollecter)
 	msg := ex.createExecuterMsg(jobstep, message.JOB_START)
 	messagehub.Post(messagehub.TOPIC_JOB_REPORT, msg)
 
