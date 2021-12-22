@@ -49,7 +49,9 @@ func (m *MetaListener) LogMetaListener(ctx context.Context) {
 				listener.Alive = true
 			}
 
+			log.Trace().Msgf("MetaLog send to %s %s", execMsg.JobId, execMsg.RunId)
 			listener.execChan <- execMsg
+			log.Trace().Msgf("MetaLog send OK to %s %s", execMsg.JobId, execMsg.RunId)
 		case <-ctx.Done():
 			goto shutdown
 		}

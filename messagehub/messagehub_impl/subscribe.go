@@ -1,6 +1,8 @@
 package messagehub_impl
 
 import (
+	"fmt"
+
 	"github.com/yakumo-saki/phantasma-flow/pkg/message"
 	"github.com/yakumo-saki/phantasma-flow/util"
 )
@@ -16,6 +18,14 @@ func (hub *MessageHub) Subscribe(topic string, name string) chan *message.Messag
 	array := &[]listener{}
 	if ok {
 		array = arr.(*[]listener)
+	}
+
+	// duplicate check
+	for _, lis := range *array {
+		if lis.name == name {
+			msg := fmt.Sprintf("Duplicate listen detected, topic=%s name=%s", topic, name)
+			panic(msg)
+		}
 	}
 
 	ch := make(chan *message.Message, 1)

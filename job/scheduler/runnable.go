@@ -2,6 +2,7 @@ package scheduler
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	"github.com/yakumo-saki/phantasma-flow/job/executer"
@@ -10,9 +11,14 @@ import (
 )
 
 // job runner
-func (js *JobScheduler) pickRunnable(ctx context.Context) {
+func (js *JobScheduler) pickRunnable(ctx context.Context, startWg, shutdownWg *sync.WaitGroup) {
 	const NAME = "pickRunnable"
 	log := util.GetLoggerWithSource(js.GetName(), NAME)
+
+	startWg.Done()
+	defer shutdownWg.Done()
+
+	// mainloop
 	for {
 		benchTime := time.Now()
 		js.mutex.Lock()

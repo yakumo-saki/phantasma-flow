@@ -71,7 +71,6 @@ func (n *localExecNode) Run(ctx context.Context, jobStep jobparser.ExecutableJob
 		log.Err(err)
 	}
 
-	log.Debug().Msgf("%v", cmd)
 }
 
 func (n *localExecNode) PipeToLog(ctx context.Context, name string, pipe io.Reader) {

@@ -17,6 +17,8 @@ import (
 )
 
 type logFileExporter struct {
+	useEmergencyLog bool // cant open logfile, output to server log
+	needClose       bool // logfile is not opened. dont close. this is not always equal useEmLog. (when log write failed)
 }
 
 func (m *logFileExporter) GetName() string {
@@ -28,7 +30,6 @@ func (m *logFileExporter) GetName() string {
 // 考え方：
 // * ログが送られてきたらRunIdごとに1 goroutine起動
 // * 終了はある程度の時間ログが送られてこなければタイムアウトして自動終了
-// * ジョブ終了をlistenすることもできるが、messagehubは順番が保証されないので
 //   ジョブ終了→ログとかなると困るので終了はタイムアウトのみとする
 func (m *logFileExporter) Start(params *logListenerParams, wg *sync.WaitGroup) {
 	NAME := "main"
@@ -39,20 +40,29 @@ func (m *logFileExporter) Start(params *logListenerParams, wg *sync.WaitGroup) {
 
 	defer wg.Done()
 
-	needClose := true
-	useEmergencyLog := false
+	m.needClose = true
+	m.useEmergencyLog = false
 	emLog := util.GetLoggerWithSource(m.GetName(), "emergency")
 
 	// Create log file or Open existed log file
 	f, err := m.openLogFile(params.JobId, params.RunId)
 	if err != nil {
-		useEmergencyLog = true
-		needClose = false
+		m.useEmergencyLog = true
+		m.needClose = false
 	}
 
+	timer := time.NewTimer(60 * time.Second)
+
 	for {
+		if !timer.Stop() {
+			<-timer.C
+		}
+		timer.Reset(60 * time.Second)
+
 		select {
-		case <-time.After(60 * time.Second):
+		case <-params.Ctx.Done():
+			goto shutdown
+		case <-timer.C:
 			log.Debug().Msg("Automatic close.")
 			goto shutdown
 		case msg, ok := <-params.logChan:
@@ -61,8 +71,7 @@ func (m *logFileExporter) Start(params *logListenerParams, wg *sync.WaitGroup) {
 				goto shutdown
 			}
 
-			// log.Debug().Msgf("%v", msg)
-
+			// JobLogMessage to string
 			bytes, err := json.Marshal(msg)
 			logmsg := ""
 			if err != nil {
@@ -72,32 +81,28 @@ func (m *logFileExporter) Start(params *logListenerParams, wg *sync.WaitGroup) {
 				logmsg = string(bytes)
 			}
 
-			if !useEmergencyLog {
+			// write to logfile
+			if !m.useEmergencyLog {
 				_, err = f.Write([]byte(logmsg + "\n"))
 				if err != nil {
 					log.Err(err).Msg("Log write error, use server log")
-					useEmergencyLog = true
+					m.useEmergencyLog = true
 				}
-			}
-
-			// write log failed or open failed, then server log
-			if useEmergencyLog {
+			} else {
 				emLog.Info().Msg(logmsg)
 			}
-		case <-params.Ctx.Done():
-			goto shutdown
 		}
 	}
 
 shutdown:
-	if needClose {
+	if m.needClose {
 		if err := f.Close(); err != nil {
 			log.Err(err).Msgf("Logfile close error. %s", f.Name())
 		}
 	}
 
 	params.Alive = false
-	log.Debug().Msgf("%s stopped.", m.GetName())
+	log.Debug().Msgf("%s/child process stopped.", m.GetName())
 }
 
 func (m *logFileExporter) openLogFile(jobId, runId string) (*os.File, error) {
@@ -118,9 +123,12 @@ func (m *logFileExporter) openLogFile(jobId, runId string) (*os.File, error) {
 func (m *logFileExporter) createLogFile(jobId, runId string) (*os.File, error) {
 
 	datetimeStr := time.Now().Format(global.DATETIME_FORMAT)
-	filename := fmt.Sprintf("%s_%s_%s.json", datetimeStr, runId, jobId)
 
-	logDir := repository.GetLogDirectory()
+	logBaseDir := repository.GetLogDirectory()
+	logDir := path.Join(logBaseDir, jobId)
+	util.MkdirAll(logDir, nil)
+
+	filename := fmt.Sprintf("%s_%s_%s.json", datetimeStr, runId, jobId)
 	logfile := path.Join(logDir, filename)
 
 	f, err := os.OpenFile(logfile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)

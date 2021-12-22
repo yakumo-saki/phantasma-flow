@@ -4,7 +4,7 @@ import "fmt"
 
 type Config struct {
 	ObjectBase
-	Meta ObjectMetaBase `yaml:"meta"`
+	Meta ObjectMetaBase `json:"meta"`
 }
 
 func (c Config) String() string {
@@ -12,8 +12,11 @@ func (c Config) String() string {
 		c.Kind, c.Meta)
 }
 
-type LogCollecterConfig struct {
+// LogFileExporterConfig is config object for logfileexporter
+type LogFileExporterConfig struct {
 	Config
+
+	MaxLogFileCount uint `json:"logFileCount"` // Max logfile count per jobId (If set 0 => default => 30)
 }
 
 type JobSchedulerConfig struct {

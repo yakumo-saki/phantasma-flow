@@ -3,7 +3,6 @@ package logfileexporter
 import (
 	"context"
 	"sync"
-	"time"
 
 	"github.com/yakumo-saki/phantasma-flow/procman"
 	"github.com/yakumo-saki/phantasma-flow/util"
@@ -14,7 +13,7 @@ type LogFileExporter struct {
 	procman.ProcmanModuleStruct
 	logChannelsWg sync.WaitGroup
 	logChannels   syncmap.Map // [string(runId)] <-chan LogMessage
-	logCloseFunc  syncmap.Map // [string(runId)] context.CancelFunc
+	// logCloseFunc  syncmap.Map // [string(runId)] context.CancelFunc
 }
 
 func (m *LogFileExporter) IsInitialized() bool {
@@ -41,12 +40,15 @@ func (m *LogFileExporter) Start(inCh <-chan string, outCh chan<- string) error {
 
 	m.logChannelsWg = sync.WaitGroup{}
 	m.logChannelsWg.Add(1)
-	go m.LogListener(m.RootCtx)
+
+	startUpWg := sync.WaitGroup{}
+	startUpWg.Add(2)
+	go m.LogFileExporter(m.RootCtx, &startUpWg)
+	go m.HouseKeeper(m.RootCtx, &startUpWg)
 
 	log.Info().Msgf("Starting %s server.", m.GetName())
 
-	time.Sleep(100 * time.Millisecond) // wait for LogListener starts
-
+	startUpWg.Wait()
 	m.ToProcmanCh <- procman.RES_STARTUP_DONE
 
 	for {

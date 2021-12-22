@@ -1,6 +1,8 @@
 package main
 
 import (
+	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"os/signal"
 	"syscall"
@@ -24,7 +26,6 @@ import (
 )
 
 const DEBUG = false
-const myname = "main"
 
 func main() {
 	log := util.GetLoggerWithSource("main")
@@ -38,24 +39,21 @@ func main() {
 	// Start modules
 	hub := startMessageHub()
 
-	exec := executer.GetInstance()
+	execute := executer.GetInstance()
 
 	procmanCh := make(chan string, 1) // controller to processManager. signal only
 	processManager := procman.NewProcessManager(procmanCh)
 
 	processManager.Add(&procmanExample.MinimalProcmanModule{})
 	processManager.Add(&metrics.PrometeusExporterModule{})
+	processManager.Add(&server.Server{})
 	processManager.AddService(10, &logfileexporter.LogFileExporter{})
 	processManager.AddService(11, &metalistener.MetaListener{})
 	processManager.AddService(80, nodemanager.GetInstance())
-	processManager.AddService(90, exec)
-	processManager.AddService(99, &scheduler.JobScheduler{})
+	processManager.AddService(90, execute)
+	processManager.AddService(91, &scheduler.JobScheduler{})
 
 	processManager.Start()
-
-	log.Info().Msg("Starting signal handling.")
-	signals := make(chan os.Signal, 1)
-	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
 
 	// Load definitions
 	repo.SendAllNodes() // must send node before job (must exist node, job requires)
@@ -63,12 +61,16 @@ func main() {
 	repo.SendAllJobs()
 	messagehub.WaitForQueueEmpty("Wait for job registration")
 
-	// XXX: ノードとかジョブが行き渡ったことを確認する必要がある？
-	// nodeDef とか JobDef を送った数の分のノードができたことをチェックする？
-
-	// main loop
-	processManager.Add(&server.Server{})
 	log.Info().Msg("Phantasma-flow started.")
+
+	go func() {
+		log.Info().Msg("Debug interface listen on :6060")
+		log.Debug().Msgf("%v", http.ListenAndServe("localhost:6060", nil))
+	}()
+
+	log.Info().Msg("Starting signal handling.")
+	signals := make(chan os.Signal, 1)
+	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
 
 	// for debug
 	debugCh := make(chan string, 1)
