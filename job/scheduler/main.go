@@ -51,7 +51,9 @@ func (js *JobScheduler) Start(inCh <-chan string, outCh chan<- string) error {
 	startWg := sync.WaitGroup{}
 	shutdownWg := sync.WaitGroup{}
 
-	startWg.Add(2)
+	const GOROUTINES = 2
+	startWg.Add(GOROUTINES)
+	shutdownWg.Add(GOROUTINES)
 	go js.pickRunnable(js.RootCtx, &startWg, &shutdownWg)
 	go js.jobCompleteListener(js.RootCtx, &startWg, &shutdownWg)
 
@@ -79,6 +81,7 @@ func (js *JobScheduler) Start(inCh <-chan string, outCh chan<- string) error {
 
 shutdown:
 	log.Info().Msgf("%s Stopped.", js.GetName())
+	shutdownWg.Wait()
 	js.ToProcmanCh <- procman.RES_SHUTDOWN_DONE
 	return nil
 }
