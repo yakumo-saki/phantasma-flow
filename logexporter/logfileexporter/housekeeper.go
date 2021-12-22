@@ -2,10 +2,10 @@ package logfileexporter
 
 import (
 	"context"
+	"os"
 	"path"
 	"sync"
 
-	"github.com/rs/zerolog/log"
 	"github.com/yakumo-saki/phantasma-flow/messagehub"
 	"github.com/yakumo-saki/phantasma-flow/pkg/message"
 	"github.com/yakumo-saki/phantasma-flow/pkg/objects"
@@ -19,7 +19,7 @@ import (
 // タイミングはJOB COMPLETEでOK
 
 // main method of LogListener
-func (m *LogFileExporter) HouseKeeper(ctx context.Context, startUp *sync.WaitGroup) {
+func (m *LogFileExporter) HouseKeeper(ctx context.Context, startUp, shutdown *sync.WaitGroup) {
 	const NAME = "HouseKeeper"
 	log := util.GetLoggerWithSource(m.GetName(), NAME)
 
@@ -30,6 +30,8 @@ func (m *LogFileExporter) HouseKeeper(ctx context.Context, startUp *sync.WaitGro
 	cfgCh := messagehub.Subscribe(messagehub.TOPIC_CONFIG_CHANGE, NAME)
 
 	startUp.Done()
+	defer shutdown.Done()
+
 	for {
 		select {
 		case <-ctx.Done():
@@ -59,8 +61,32 @@ shutdown:
 
 }
 
-func (m *LogFileExporter) HouseKeep(path string, count uint) {
-	log.Debug().Msgf("%s count=%v", path, count)
+// Housekeep is deleting files in directory from older (from filename)
+func (m *LogFileExporter) HouseKeep(logpath string, count uint) int {
+	log := util.GetLoggerWithSource(m.GetName(), "HouseKeep")
+
+	// files => alphabetical order (by os.ReadDir 's manual)
+	files, err := os.ReadDir(logpath)
+	if err != nil {
+		log.Error().Err(err).Msg("Directory listing failed. Abort housekeeping.")
+	}
+
+	deleteIdx := len(files) - int(count)
+	deleted := 0
+	for idx, file := range files {
+		if idx < deleteIdx {
+			fullpath := path.Join(logpath, file.Name())
+			err := os.Remove(fullpath)
+			if err == nil {
+				deleted++
+			} else {
+				log.Warn().Msgf("Failed to delete %s", fullpath)
+				continue
+			}
+		}
+	}
+
+	return deleted
 }
 
 func getConfigFromRepository() *objects.LogFileExporterConfig {

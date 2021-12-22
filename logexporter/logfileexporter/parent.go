@@ -11,10 +11,10 @@ import (
 )
 
 // main method of LogFileExporter
-func (m *LogFileExporter) LogFileExporter(ctx context.Context, startUp *sync.WaitGroup) {
+func (m *LogFileExporter) LogFileExporter(ctx context.Context, startUp, shutdown *sync.WaitGroup) {
 	const NAME = "main"
 	log := util.GetLoggerWithSource(m.GetName(), NAME)
-	defer m.logChannelsWg.Done()
+	defer shutdown.Done()
 
 	loggerMap := make(map[string]*logListenerParams) // runid -> loglistener
 	exportWg := sync.WaitGroup{}

@@ -2,12 +2,26 @@ package testutils
 
 import (
 	"fmt"
+	"testing"
 	"time"
 
+	"github.com/rs/zerolog"
 	"github.com/yakumo-saki/phantasma-flow/global"
+	"github.com/yakumo-saki/phantasma-flow/util"
 )
 
 var testStartTime *time.Time
+
+func SetupTestLogger(t *testing.T) {
+	cw := zerolog.ConsoleWriter{
+		Out:        zerolog.NewTestWriter(t),
+		NoColor:    true,
+		TimeFormat: ":",
+	}
+
+	zl := zerolog.New(cw).With().Timestamp().Logger()
+	util.ZeroLogger = &zl
+}
 
 func StartTest() {
 	global.DEBUG = true
