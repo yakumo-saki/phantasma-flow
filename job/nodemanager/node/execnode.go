@@ -21,7 +21,7 @@ func (n *ExecNode) GetName() string {
 	return "ExecNode"
 }
 
-func (n *ExecNode) Initialize(def objects.NodeDefinition) error {
+func (n *ExecNode) Initialize(def objects.NodeDefinition, jobStep jobparser.ExecutableJobStep) error {
 	n.nodeDef = def
 
 	var impl execNodeImpl
@@ -33,7 +33,7 @@ func (n *ExecNode) Initialize(def objects.NodeDefinition) error {
 		panic(msg)
 	}
 
-	err := impl.Initialize(def)
+	err := impl.Initialize(def, jobStep)
 	if err == nil {
 		n.node = impl
 	}
@@ -45,7 +45,7 @@ func (n *ExecNode) Run(ctx context.Context, wg *sync.WaitGroup, jobStep jobparse
 	n.Running = true
 	n.sendJobStepStartMsg(jobStep)
 
-	n.node.Run(ctx, jobStep)
+	n.node.Run(ctx)
 
 	n.Running = false
 	n.sendJobStepEndMsg(jobStep)

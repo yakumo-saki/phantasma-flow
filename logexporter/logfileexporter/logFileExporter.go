@@ -67,7 +67,7 @@ func (m *logFileExporter) Start(params *logListenerParams, wg *sync.WaitGroup) {
 			goto shutdown
 		case msg, ok := <-params.logChan:
 			if !ok {
-				log.Debug().Msg("Channel closed.")
+				log.Trace().Msg("Channel closed.")
 				goto shutdown
 			}
 
