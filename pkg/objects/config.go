@@ -3,8 +3,8 @@ package objects
 import "fmt"
 
 type Config struct {
-	ObjectBase
-	Meta ObjectMetaBase `yaml:"meta"`
+	ObjectBase `json:",inline"`
+	Meta       ObjectMetaBase `json:"meta"`
 }
 
 func (c Config) String() string {

@@ -86,7 +86,7 @@ func (ex *Executer) resultCollecter(startWg, stopWg *sync.WaitGroup) {
 					goto exit
 				}
 
-				{ // check all jobstep is ended(success or not)
+				{ // check all jobstep is ended(whether success or not)
 					end, success := ex.checkJobComplete(qjob)
 					firstStep := qjob.Steps[0]
 					if end {
@@ -108,7 +108,7 @@ func (ex *Executer) resultCollecter(startWg, stopWg *sync.WaitGroup) {
 
 						// send job end report
 						messagehub.Post(messagehub.TOPIC_JOB_REPORT, msg)
-						log.Warn().Msgf("JOB_END_SENT %v", msg)
+						// log.Trace().Msgf("JOB_END_SENT %v", msg)
 
 						qjob.Cancel()
 					}

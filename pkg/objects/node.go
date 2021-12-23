@@ -7,7 +7,7 @@ const NODE_SSH = "ssh"
 const NODE_WINRM = "winrm"
 
 type NodeDefinition struct {
-	ObjectBase
+	ObjectBase  `json:",inline"`
 	Meta        ObjectMetaBase `json:"meta"`
 	Id          string         `json:"id"`          // key
 	DisplayName string         `json:"displayName"` // display name
