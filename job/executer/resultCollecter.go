@@ -43,9 +43,10 @@ func (ex *Executer) resultCollecter(startWg, stopWg *sync.WaitGroup) {
 
 			switch exeMsg.Subject {
 			case message.JOB_END:
-				// TODO job complete then delete from queue #39
-
-				log.Warn().Msgf("JOB_END Received. not implemented %v", msg)
+				// job complete then delete from queue #39
+				ex.mutex.Lock()
+				delete(ex.jobQueue, exeMsg.RunId)
+				ex.mutex.Unlock()
 			case message.JOB_STEP_END:
 				log.Debug().Msgf("Got JOB_STEP_END %v", exeMsg)
 				// step_end then store job result.
