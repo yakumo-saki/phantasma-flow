@@ -4,11 +4,11 @@ import (
 	"path"
 	"testing"
 
-	"github.com/goccy/go-yaml"
 	"github.com/huandu/go-assert"
 	"github.com/yakumo-saki/phantasma-flow/job/jobparser"
 	"github.com/yakumo-saki/phantasma-flow/pkg/objects"
 	"github.com/yakumo-saki/phantasma-flow/test/internal/testutils"
+	"gopkg.in/yaml.v2"
 )
 
 func TestJobParserSimple(t *testing.T) {

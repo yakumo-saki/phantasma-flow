@@ -61,8 +61,6 @@ func main() {
 	repo.SendAllJobs()
 	messagehub.WaitForQueueEmpty("Wait for job registration")
 
-	log.Info().Msg("Phantasma-flow started.")
-
 	go func() {
 		log.Info().Msg("Debug interface listen on :6060")
 		log.Debug().Msgf("%v", http.ListenAndServe("localhost:6060", nil))
@@ -71,6 +69,8 @@ func main() {
 	log.Info().Msg("Starting signal handling.")
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
+
+	log.Info().Msg("Phantasma-flow started.")
 
 	// for debug
 	debugCh := make(chan string, 1)

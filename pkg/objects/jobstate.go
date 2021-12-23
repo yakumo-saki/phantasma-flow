@@ -1,5 +1,6 @@
 package objects
 
+// internal
 type JobState struct {
 	JobId      string
 	RunId      string

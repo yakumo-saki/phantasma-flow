@@ -2,17 +2,17 @@ package objects
 
 import "fmt"
 
-const NODE_LOCAL = "local"
-const NODE_SSH = "ssh"
-const NODE_WINRM = "winrm"
+const NODE_TYPE_LOCAL = "local"
+const NODE_TYPE_SSH = "ssh"
+const NODE_TYPE_WINRM = "winrm"
 
 type NodeDefinition struct {
-	ObjectBase  `json:",inline"`
-	Meta        ObjectMetaBase `json:"meta"`
-	Id          string         `json:"id"`          // key
-	DisplayName string         `json:"displayName"` // display name
-	NodeType    string         `json:"nodeType"`    // SSH / WinRM / local / internal
-	Capacity    int            `json:"capacity"`    // max concurrent job point.
+	ObjectBase  `yaml:",inline"`
+	Meta        ObjectMetaBase `yaml:"meta"`
+	Id          string         `yaml:"id"`          // key
+	DisplayName string         `yaml:"displayName"` // display name
+	NodeType    string         `yaml:"nodeType"`    // SSH / WinRM / local / internal
+	Capacity    int            `yaml:"capacity"`    // max concurrent job point.
 }
 
 func (nd NodeDefinition) String() string {

@@ -32,8 +32,6 @@ results:
 		exitCode: 0
 */
 
-const KIND_JOB_META = "job-meta"
-
 type JobMetaLog struct {
 	ObjectBase `json:",inline"` // "job-meta"
 	Meta       JobMetaMeta      `json:"meta"`

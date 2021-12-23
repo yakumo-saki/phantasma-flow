@@ -8,6 +8,8 @@ const LM_STAGE_PRE = "prerun"
 const LM_STAGE_JOB = "job"
 const LM_STAGE_POST = "postrun"
 
+// JobLog data type.
+// NOTE: This is not yaml. output is JSON
 type JobLogMessage struct {
 	JobId       string        `json:"jobId"`
 	RunId       string        `json:"runId"`

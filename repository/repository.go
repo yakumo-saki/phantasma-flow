@@ -1,15 +1,16 @@
 package repository
 
 import (
+	"fmt"
 	"io/ioutil"
 	"path/filepath"
 	"sync"
 
-	"github.com/goccy/go-yaml"
 	"github.com/yakumo-saki/phantasma-flow/messagehub"
 	"github.com/yakumo-saki/phantasma-flow/pkg/message"
 	"github.com/yakumo-saki/phantasma-flow/pkg/objects"
 	"github.com/yakumo-saki/phantasma-flow/util"
+	"gopkg.in/yaml.v2"
 )
 
 const myname = "Repository"
@@ -36,6 +37,10 @@ func (r *Repository) Initialize() error {
 		CONFIG: r.paths.ConfigDef,
 		JOB:    r.paths.JobDef,
 	}
+
+	log.Info().Msgf("%s=%s", ENV_HOME_DIR, r.paths.Home)
+	log.Info().Msgf("%s=%s", ENV_DEF_DIR, r.paths.Def)
+	log.Info().Msgf("%s=%s", ENV_DATA_DIR, r.paths.Data)
 
 	for typ, dirPath := range dirType {
 		// log.Debug().Msgf("Reading %s from %s", typ, dirPath)
@@ -97,7 +102,10 @@ func (repo *Repository) readAllYaml(path string, objType objectType) error {
 			return err
 		}
 
-		// log.Debug().Msgf("Reading %s", fp)
+		notobj := func(typestr, kind, id string) {
+			msg := fmt.Sprintf("Not %s yaml. Kind='%s' id='%s'", typestr, kind, id)
+			panic(msg)
+		}
 
 		switch objType {
 		case NODE:
@@ -106,12 +114,18 @@ func (repo *Repository) readAllYaml(path string, objType objectType) error {
 			if err != nil {
 				return err
 			}
+			if obj.Kind != objects.KIND_NODE_DEF {
+				notobj("node definition", obj.Kind, obj.Id)
+			}
 			repo.nodes = append(repo.nodes, obj)
 		case JOB:
 			obj := objects.JobDefinition{}
 			err := yaml.Unmarshal(bytes, &obj)
 			if err != nil {
 				return err
+			}
+			if obj.Kind != objects.KIND_JOB_DEF {
+				notobj("job definition", obj.Kind, obj.Id)
 			}
 			repo.jobs = append(repo.jobs, obj)
 		case CONFIG:

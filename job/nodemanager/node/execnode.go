@@ -25,11 +25,11 @@ func (n *ExecNode) Initialize(def objects.NodeDefinition) error {
 	n.nodeDef = def
 
 	var impl execNodeImpl
-	if def.NodeType == objects.NODE_LOCAL {
+	if def.NodeType == objects.NODE_TYPE_LOCAL {
 		lo := localExecNode{}
 		impl = &lo
 	} else {
-		msg := fmt.Sprintf("NodeType %s is unknown", def.NodeType)
+		msg := fmt.Sprintf("Error Node %s: nodeType %s is unknown. %v", def.Id, def.NodeType, def)
 		panic(msg)
 	}
 

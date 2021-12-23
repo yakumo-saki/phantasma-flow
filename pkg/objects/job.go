@@ -4,36 +4,36 @@ import "fmt"
 
 //
 type JobDefinition struct {
-	ObjectBase `json:",inline"`
-	Meta       ObjectMetaBase      `json:"meta"`
-	JobMeta    JobMetaInfo         `json:"jobmeta"` // Job meta informations (schedules)
-	Steps      []JobStepDefinition `json:"steps"`   // Jobstep definitions
-	Name       string              `json:"name"`    // display name of this job
-	Id         string              `json:"id"`      // string-ID. it is used for filename of job related.
+	ObjectBase `yaml:",inline"`
+	Meta       ObjectMetaBase      `yaml:"meta"`
+	JobMeta    JobMetaInfo         `yaml:"jobmeta"` // Job meta informations (schedules)
+	Steps      []JobStepDefinition `yaml:"steps"`   // Jobstep definitions
+	Name       string              `yaml:"name"`    // display name of this job
+	Id         string              `yaml:"id"`      // string-ID. it is used for filename of job related.
 }
 
 const JOB_TYPE_SEQ = "sequential"
 const JOB_TYPE_PARA = "parallel"
 
 type JobMetaInfo struct {
-	Schedules []JobSchedule `json:"schedules"` // Run schedules (empty ok)
-	ExecType  string        `json:"execType"`  // Type of running jobsteps. JOB_TYPE_* default=sequential.
+	Schedules []JobSchedule `yaml:"schedules"` // Run schedules (empty ok)
+	ExecType  string        `yaml:"execType"`  // Type of running jobsteps. JOB_TYPE_* default=sequential.
 }
 
 type JobSchedule struct {
-	ScheduleType string `json:"type"` // cron
-	Param        string `json:"param"`
+	ScheduleType string `yaml:"type"` // cron
+	Param        string `yaml:"param"`
 }
 
 const JOB_EXEC_TYPE_COMMAND = "command"
 const JOB_EXEC_TYPE_SCRIPT = "script"
 
 type JobStepDefinition struct {
-	Name        string `json:"name"`                     // JobStep Name (optional on sequential job)
-	UseCapacity int    `json:"useCapacity" default:"-1"` // number how many capacity this step use. default 1
-	ExecType    string `json:"execType"`                 // JOB_EXEC_TYPE_*. internal, command, script, (optional when command or script is defined.)
-	Command     string `json:"command"`                  // JOB_EXEC_TYPE_COMMAND only
-	Script      string `json:"script"`                   // JOB_EXEC_TYPE_SCRIPT only
+	Name        string `yaml:"name"`                     // JobStep Name (optional on sequential job)
+	UseCapacity int    `yaml:"useCapacity" default:"-1"` // number how many capacity this step use. default 1
+	ExecType    string `yaml:"execType"`                 // JOB_EXEC_TYPE_*. internal, command, script, (optional when command or script is defined.)
+	Command     string `yaml:"command"`                  // JOB_EXEC_TYPE_COMMAND only
+	Script      string `yaml:"script"`                   // JOB_EXEC_TYPE_SCRIPT only
 }
 
 func (jd JobDefinition) String() string {
