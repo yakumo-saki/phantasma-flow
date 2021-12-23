@@ -1,7 +1,6 @@
 package repository
 
 import (
-	"fmt"
 	"io/ioutil"
 	"path/filepath"
 	"sync"
@@ -10,7 +9,6 @@ import (
 	"github.com/yakumo-saki/phantasma-flow/pkg/message"
 	"github.com/yakumo-saki/phantasma-flow/pkg/objects"
 	"github.com/yakumo-saki/phantasma-flow/util"
-	"gopkg.in/yaml.v2"
 )
 
 const myname = "Repository"
@@ -102,38 +100,15 @@ func (repo *Repository) readAllYaml(path string, objType objectType) error {
 			return err
 		}
 
-		notobj := func(typestr, kind, id string) {
-			msg := fmt.Sprintf("Not %s yaml. Kind='%s' id='%s'", typestr, kind, id)
-			panic(msg)
-		}
-
 		switch objType {
 		case NODE:
-			obj := objects.NodeDefinition{}
-			err := yaml.Unmarshal(bytes, &obj)
-			if err != nil {
-				return err
-			}
-			if obj.Kind != objects.KIND_NODE_DEF {
-				notobj("node definition", obj.Kind, obj.Id)
-			}
+			obj := parseNodeDef(bytes)
 			repo.nodes = append(repo.nodes, obj)
 		case JOB:
-			obj := objects.JobDefinition{}
-			err := yaml.Unmarshal(bytes, &obj)
-			if err != nil {
-				return err
-			}
-			if obj.Kind != objects.KIND_JOB_DEF {
-				notobj("job definition", obj.Kind, obj.Id)
-			}
+			obj := parseJobDef(bytes)
 			repo.jobs = append(repo.jobs, obj)
 		case CONFIG:
-			obj := objects.Config{}
-			err := yaml.Unmarshal(bytes, &obj)
-			if err != nil {
-				return err
-			}
+			obj := parseConfig(bytes)
 			repo.configs = append(repo.configs, obj)
 		}
 
