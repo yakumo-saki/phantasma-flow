@@ -53,7 +53,7 @@ func (n *localExecNode) createScriptFile(jobStep jobparser.ExecutableJobStep) (s
 
 	// if script has not shebang, /bin/bash assumed
 	if !strings.HasPrefix(jobStep.Script, "#!") {
-		tempfile.WriteString("#!/bin/bash") // XXX #50
+		tempfile.WriteString("#!/bin/bash\n") // XXX #50
 	}
 	_, err = tempfile.WriteString(jobStep.Script)
 	if err != nil {
@@ -88,7 +88,7 @@ func (n *localExecNode) Run(ctx context.Context) {
 		log.Trace().Msgf("Run command %s", jobStep.Command)
 		cmd = exec.CommandContext(ctx, "sh", "-c", jobStep.Command)
 	case objects.JOB_EXEC_TYPE_SCRIPT:
-		// TODO implement script run #25
+		// Run script created on initialize #25
 		log.Trace().Msgf("Run script %s", n.scriptPath)
 		cmd = exec.CommandContext(ctx, n.scriptPath)
 	default:
