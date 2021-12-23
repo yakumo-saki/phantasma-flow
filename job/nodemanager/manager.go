@@ -59,7 +59,7 @@ func (nm *NodeManager) ExecJobStep(ctx context.Context, step jobparser.Executabl
 
 	// try initialize first
 	execNode := node.ExecNode{}
-	err := execNode.Initialize(nodeMeta.Def)
+	err := execNode.Initialize(nodeMeta.Def, step)
 	if err != nil {
 		// XXX job fail ? job hold ? #37
 	}
