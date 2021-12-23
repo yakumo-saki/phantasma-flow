@@ -50,9 +50,7 @@ func (m *LogFileExporter) LogFileExporter(ctx context.Context, startUp, shutdown
 			}
 
 			// send log to child process
-			log.Debug().Msg("send log to child")
 			listener.logChan <- joblogMsg
-			log.Debug().Msg("send log to child OK")
 		}
 	}
 	// XXX clean up loggerMap every 30min

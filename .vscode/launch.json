@@ -5,11 +5,11 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "controller",
+            "name": "ph-flow",
             "type": "go",
             "request": "launch",
             "mode": "auto",
-            "program": "controller.go"
+            "program": "phantasma-flow.go"
         }
     ]
 }

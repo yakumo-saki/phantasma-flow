@@ -65,7 +65,7 @@ func (m *jobLogMetaListener) Start(params *logMetaListenerParams, wg *sync.WaitG
 					m.handleJobStepEnd(msg)
 				case message.JOB_END:
 					m.handleJobEnd(msg)
-					log.Debug().Msg("Shutdown because job is ended.")
+					log.Trace().Msg("Stop child process because job is ended.")
 					goto shutdown
 				}
 

@@ -40,14 +40,15 @@ func (m *LogFileExporter) HouseKeeper(ctx context.Context, startUp, shutdown *sy
 			if !ok {
 				goto shutdown // channel closed
 			}
-			log.Debug().Msgf("%v", cfg)
+			log.Debug().Msgf("Not implemented config change %v", cfg)
+			// TODO change config (maxlogfile count changed)
 		case msg, ok := <-repoCh:
 			if !ok {
 				goto shutdown // channel closed
 			}
 
 			exeMsg := msg.Body.(*message.ExecuterMsg)
-			if exeMsg.Reason != message.JOB_END {
+			if exeMsg.Subject != message.JOB_END {
 				continue
 			}
 
@@ -57,6 +58,9 @@ func (m *LogFileExporter) HouseKeeper(ctx context.Context, startUp, shutdown *sy
 	}
 
 shutdown:
+	messagehub.Unsubscribe(messagehub.TOPIC_JOB_REPORT, NAME)
+	messagehub.Unsubscribe(messagehub.TOPIC_CONFIG_CHANGE, NAME)
+
 	log.Debug().Msgf("%s/%s Stopped", m.GetName(), NAME)
 
 }
