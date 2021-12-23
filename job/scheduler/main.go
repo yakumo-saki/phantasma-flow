@@ -48,8 +48,16 @@ func (js *JobScheduler) Start(inCh <-chan string, outCh chan<- string) error {
 	// Listen JobDefinition change to update JobMeta
 	jobDefCh := messagehub.Subscribe(messagehub.TOPIC_JOB_DEFINITION, js.GetName())
 
-	go js.pickRunnable(js.RootCtx)
-	go js.jobCompleteListener(js.RootCtx)
+	startWg := sync.WaitGroup{}
+	shutdownWg := sync.WaitGroup{}
+
+	const GOROUTINES = 2
+	startWg.Add(GOROUTINES)
+	shutdownWg.Add(GOROUTINES)
+	go js.pickRunnable(js.RootCtx, &startWg, &shutdownWg)
+	go js.jobCompleteListener(js.RootCtx, &startWg, &shutdownWg)
+
+	startWg.Wait()
 
 	// start ok
 	js.ToProcmanCh <- procman.RES_STARTUP_DONE
@@ -58,6 +66,8 @@ func (js *JobScheduler) Start(inCh <-chan string, outCh chan<- string) error {
 		select {
 		case v := <-js.FromProcmanCh:
 			log.Debug().Msgf("Got request %s", v)
+		case <-js.RootCtx.Done():
+			goto shutdown
 		case job := <-jobDefCh:
 			// log.Debug().Msgf("Got JobDefinitionMsg %s", job)
 
@@ -66,13 +76,12 @@ func (js *JobScheduler) Start(inCh <-chan string, outCh chan<- string) error {
 			jobdef := jobDefMsg.JobDefinition
 			id := js.addJob(jobdef)
 			js.schedule(id, time.Now())
-		case <-js.RootCtx.Done():
-			goto shutdown
 		}
 	}
 
 shutdown:
 	log.Info().Msgf("%s Stopped.", js.GetName())
+	shutdownWg.Wait()
 	js.ToProcmanCh <- procman.RES_SHUTDOWN_DONE
 	return nil
 }

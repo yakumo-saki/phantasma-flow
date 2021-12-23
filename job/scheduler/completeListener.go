@@ -2,6 +2,7 @@ package scheduler
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	"github.com/yakumo-saki/phantasma-flow/messagehub"
@@ -10,13 +11,15 @@ import (
 )
 
 // Create new schedule when job ends.
-func (js *JobScheduler) jobCompleteListener(ctx context.Context) {
+func (js *JobScheduler) jobCompleteListener(ctx context.Context, startWg, shutdownWg *sync.WaitGroup) {
 	const NAME = "jobCompleter"
 	log := util.GetLoggerWithSource(js.GetName(), NAME)
 
 	jobReportCh := messagehub.Subscribe(messagehub.TOPIC_JOB_REPORT, NAME)
 
 	log.Debug().Msgf("%s started.", NAME)
+	startWg.Done()
+	defer shutdownWg.Done()
 
 	for {
 
@@ -43,5 +46,4 @@ func (js *JobScheduler) jobCompleteListener(ctx context.Context) {
 shutdown:
 	// messagehub.StopListen(NAME)
 	log.Debug().Msgf("%s stopped.", NAME)
-
 }

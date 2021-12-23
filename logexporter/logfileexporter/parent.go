@@ -10,18 +10,21 @@ import (
 	"github.com/yakumo-saki/phantasma-flow/util"
 )
 
-// main method of LogListener
-func (m *LogFileExporter) LogListener(ctx context.Context) {
-	const NAME = "parent"
+// main method of LogFileExporter
+func (m *LogFileExporter) LogFileExporter(ctx context.Context, startUp, shutdown *sync.WaitGroup) {
+	const NAME = "main"
 	log := util.GetLoggerWithSource(m.GetName(), NAME)
-	defer m.logChannelsWg.Done()
+	defer shutdown.Done()
 
 	loggerMap := make(map[string]*logListenerParams) // runid -> loglistener
 	exportWg := sync.WaitGroup{}
 	logCh := messagehub.Subscribe(messagehub.TOPIC_JOB_LOG, NAME)
 
+	startUp.Done()
 	for {
 		select {
+		case <-ctx.Done():
+			goto shutdown
 		case msg, ok := <-logCh:
 			if !ok {
 				goto shutdown // channel closed
@@ -40,13 +43,14 @@ func (m *LogFileExporter) LogListener(ctx context.Context) {
 				go loglis.instance.Start(loglis, &exportWg)
 				listener = loglis
 			} else if !listener.Alive {
+				log.Trace().Msgf("Restart logFileExporter for runId %s", joblogMsg.RunId)
 				listener.Alive = true
 				exportWg.Add(1)
 				go listener.instance.Start(listener, &exportWg)
 			}
+
+			// send log to child process
 			listener.logChan <- joblogMsg
-		case <-ctx.Done():
-			goto shutdown
 		}
 	}
 	// TODO clean up loggerMap every 30min #44
@@ -57,9 +61,10 @@ shutdown:
 	for id, loglis := range loggerMap {
 		if loglis.Alive {
 			log.Trace().Msgf("Stop %v", id)
+			close(loglis.logChan)
 			loglis.Cancel()
-		} else {
-			log.Trace().Msgf("Already stopped, Skip %v", id)
+			// } else {
+			// 	log.Trace().Msgf("Already stopped, Skip %v", id)
 		}
 	}
 

@@ -1,11 +1,9 @@
 package repository
 
 import (
-	"fmt"
 	"os"
 	"path"
 
-	"github.com/rs/zerolog/log"
 	"github.com/yakumo-saki/phantasma-flow/util"
 )
 
@@ -97,22 +95,15 @@ func isNotGoodDir(dirname string, name string) {
 }
 
 func makeSureDirExists(p phflowPath) {
-	util.GetLoggerWithSource(myname, "phflowPath")
+	log := util.GetLoggerWithSource(myname, "phflowPath")
 
-	mkdir := func(pth string) {
-		if e := os.MkdirAll(pth, 0750); e != nil {
-			log.Err(e).Str("dir", pth).Msgf("mkdir failed")
-			panic(fmt.Sprintf("mkdir failed %s %s\n", pth, e))
-		}
-	}
-
-	mkdir(p.Home)
-	mkdir(p.Def)
-	mkdir(p.Data)
-	mkdir(p.Temp)
-	mkdir(p.NodeDef)
-	mkdir(p.ConfigDef)
-	mkdir(p.JobDef)
-	mkdir(p.JobLog)
-	mkdir(p.JobMeta)
+	util.MkdirAll(p.Home, &log)
+	util.MkdirAll(p.Def, &log)
+	util.MkdirAll(p.Data, &log)
+	util.MkdirAll(p.Temp, &log)
+	util.MkdirAll(p.NodeDef, &log)
+	util.MkdirAll(p.ConfigDef, &log)
+	util.MkdirAll(p.JobDef, &log)
+	util.MkdirAll(p.JobLog, &log)
+	util.MkdirAll(p.JobMeta, &log)
 }

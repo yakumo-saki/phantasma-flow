@@ -8,12 +8,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/goccy/go-yaml"
+	// "github.com/goccy/go-yaml"
 	"github.com/rs/zerolog/log"
 	"github.com/yakumo-saki/phantasma-flow/pkg/message"
 	"github.com/yakumo-saki/phantasma-flow/pkg/objects"
 	"github.com/yakumo-saki/phantasma-flow/repository"
 	"github.com/yakumo-saki/phantasma-flow/util"
+	"gopkg.in/yaml.v2"
 )
 
 // Trace single Job ID
@@ -64,7 +65,7 @@ func (m *jobLogMetaListener) Start(params *logMetaListenerParams, wg *sync.WaitG
 					m.handleJobStepEnd(msg)
 				case message.JOB_END:
 					m.handleJobEnd(msg)
-					log.Debug().Msg("Shutdown because job is ended.")
+					log.Trace().Msg("Stop child process because job is ended.")
 					goto shutdown
 				}
 

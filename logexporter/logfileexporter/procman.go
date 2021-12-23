@@ -3,7 +3,6 @@ package logfileexporter
 import (
 	"context"
 	"sync"
-	"time"
 
 	"github.com/yakumo-saki/phantasma-flow/procman"
 	"github.com/yakumo-saki/phantasma-flow/util"
@@ -12,9 +11,7 @@ import (
 
 type LogFileExporter struct {
 	procman.ProcmanModuleStruct
-	logChannelsWg sync.WaitGroup
-	logChannels   syncmap.Map // [string(runId)] <-chan LogMessage
-	logCloseFunc  syncmap.Map // [string(runId)] context.CancelFunc
+	logChannels syncmap.Map // [string(runId)] <-chan LogMessage
 }
 
 func (m *LogFileExporter) IsInitialized() bool {
@@ -39,14 +36,16 @@ func (m *LogFileExporter) Start(inCh <-chan string, outCh chan<- string) error {
 	m.ToProcmanCh = outCh
 	log := util.GetLoggerWithSource(m.GetName(), "main")
 
-	m.logChannelsWg = sync.WaitGroup{}
-	m.logChannelsWg.Add(1)
-	go m.LogListener(m.RootCtx)
+	startUpWg := sync.WaitGroup{}
+	startUpWg.Add(2)
+	shutdownWg := sync.WaitGroup{}
+	shutdownWg.Add(2)
+	go m.LogFileExporter(m.RootCtx, &startUpWg, &shutdownWg)
+	go m.HouseKeeper(m.RootCtx, &startUpWg, &shutdownWg)
 
 	log.Info().Msgf("Starting %s server.", m.GetName())
 
-	time.Sleep(100 * time.Millisecond) // wait for LogListener starts
-
+	startUpWg.Wait()
 	m.ToProcmanCh <- procman.RES_STARTUP_DONE
 
 	for {
@@ -60,7 +59,7 @@ func (m *LogFileExporter) Start(inCh <-chan string, outCh chan<- string) error {
 
 shutdown:
 	log.Trace().Msgf("Wait for stop all listeners")
-	m.logChannelsWg.Wait()
+	shutdownWg.Wait()
 	log.Info().Msgf("%s Stopped.", m.GetName())
 	m.ToProcmanCh <- procman.RES_SHUTDOWN_DONE
 	return nil

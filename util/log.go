@@ -7,17 +7,20 @@ import (
 	"github.com/rs/zerolog"
 )
 
+var ZeroLogger *zerolog.Logger
+
 func GetLogger() zerolog.Logger {
-	//		TimeFormat: "2006-01-02T15:04:05.999Z07:00",
-	output := zerolog.ConsoleWriter{
-		Out:        os.Stdout,
-		TimeFormat: "15:04:05.999",
+	if ZeroLogger == nil {
+		w := zerolog.ConsoleWriter{
+			Out:        os.Stdout,
+			TimeFormat: "15:04:05.999",
+		}
+
+		zl := zerolog.New(w).With().Timestamp().Caller().Logger()
+		ZeroLogger = &zl
 	}
-	log := zerolog.New(output).
-		With().Timestamp().
-		Caller().
-		Logger()
-	return log
+
+	return *ZeroLogger
 }
 
 func GetLoggerWithSource(name ...string) zerolog.Logger {

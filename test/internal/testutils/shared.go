@@ -25,6 +25,8 @@ func StartBaseModules() (*messagehub_impl.MessageHub, *procman.ProcessManager) {
 
 }
 
+// StartRepository creates New instance of repository.
+// Also repository.* is usable after call this.
 func StartRepository() *repository.Repository {
 
 	dir := GetTestBaseDir()

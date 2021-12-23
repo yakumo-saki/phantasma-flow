@@ -20,7 +20,7 @@ type Repository struct {
 	mutex   sync.Mutex
 	nodes   []objects.NodeDefinition
 	jobs    []objects.JobDefinition
-	configs []objects.Config
+	configs []interface{}
 
 	paths phflowPath
 }
@@ -123,6 +123,21 @@ func (repo *Repository) readAllYaml(path string, objType objectType) error {
 			repo.configs = append(repo.configs, obj)
 		}
 
+	}
+
+	return nil
+}
+
+func (repo *Repository) GetConfigByKind(kind string) interface{} {
+	repo.mutex.Lock()
+	defer repo.mutex.Unlock()
+
+	for _, j := range repo.configs {
+		jCopy := j.(objects.Config)
+
+		if jCopy.Kind == kind {
+			return jCopy
+		}
 	}
 
 	return nil
