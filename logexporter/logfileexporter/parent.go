@@ -53,7 +53,7 @@ func (m *LogFileExporter) LogFileExporter(ctx context.Context, startUp, shutdown
 			listener.logChan <- joblogMsg
 		}
 	}
-	// XXX clean up loggerMap every 30min
+	// TODO clean up loggerMap every 30min #44
 
 shutdown:
 	log.Debug().Msg("Stopping all log listerners.")

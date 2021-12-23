@@ -47,7 +47,7 @@ func (sv *Server) dispatch(rootctx context.Context, conn net.Conn) {
 		lineStr := strings.ToUpper(strings.TrimSpace(string(line)))
 
 		log.Debug().Str("set-type", lineStr).Msg("Received from client")
-		// TODO: Need phflow protocol
+		// TODO: Need phflow protocol #41
 		switch lineStr {
 		case "LISTENER":
 			log.Debug().Msg("Start listener")

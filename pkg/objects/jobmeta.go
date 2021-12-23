@@ -35,7 +35,7 @@ results:
 const KIND_JOB_META = "job-meta"
 
 type JobMetaLog struct {
-	ObjectBase                  // "job-meta"
+	ObjectBase `json:",inline"` // "job-meta"
 	Meta       JobMetaMeta      `json:"meta"`
 	JobId      string           `json:"jobId"`
 	Results    []*JobMetaResult `json:"results"`

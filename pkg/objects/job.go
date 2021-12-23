@@ -4,12 +4,12 @@ import "fmt"
 
 //
 type JobDefinition struct {
-	ObjectBase
-	Meta    ObjectMetaBase      `json:"meta"`
-	JobMeta JobMetaInfo         `json:"jobmeta"` // Job meta informations (schedules)
-	Steps   []JobStepDefinition `json:"steps"`   // Jobstep definitions
-	Name    string              `json:"name"`    // display name of this job
-	Id      string              `json:"id"`      // string-ID. it is used for filename of job related.
+	ObjectBase `json:",inline"`
+	Meta       ObjectMetaBase      `json:"meta"`
+	JobMeta    JobMetaInfo         `json:"jobmeta"` // Job meta informations (schedules)
+	Steps      []JobStepDefinition `json:"steps"`   // Jobstep definitions
+	Name       string              `json:"name"`    // display name of this job
+	Id         string              `json:"id"`      // string-ID. it is used for filename of job related.
 }
 
 const JOB_TYPE_SEQ = "sequential"

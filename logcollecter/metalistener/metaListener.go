@@ -97,8 +97,10 @@ func (m *jobLogMetaListener) handleJobStart(msg *message.ExecuterMsg) {
 	m.MetaLog.Meta.NextJobNumber++
 }
 
+// JOB_END
 func (m *jobLogMetaListener) handleJobEnd(msg *message.ExecuterMsg) {
 	m.JobMetaLog.EndDateTime = util.GetDateTimeString()
+	m.JobMetaLog.Success = msg.Success
 	m.JobMetaLog.Reason = msg.Reason
 }
 
@@ -108,6 +110,8 @@ func (m *jobLogMetaListener) handleJobStepStart(msg *message.ExecuterMsg) {
 	stepResults := append(m.JobMetaLog.StepResults, stepResult)
 	m.JobMetaLog.StepResults = stepResults
 }
+
+// JOB_STEP_END
 func (m *jobLogMetaListener) handleJobStepEnd(msg *message.ExecuterMsg) {
 	l := log.With().Str("reason", msg.Subject).Str("runId", msg.RunId).Logger()
 
@@ -124,33 +128,53 @@ func (m *jobLogMetaListener) handleJobStepEnd(msg *message.ExecuterMsg) {
 	}
 	stepResult.EndDateTime = util.GetDateTimeString()
 	stepResult.ExitCode = msg.ExitCode
+	stepResult.Success = msg.Success
 	stepResult.Reason = msg.Reason
 
 }
 
+// ReadOrCreateMetaLog reads existing yaml file or create new one
 func (m *jobLogMetaListener) ReadOrCreateMetaLog(jobId string) {
+	log := util.GetLoggerWithSource(m.GetName(), "ReadOrCreateMetaLog")
+
 	logDir := repository.GetJobMetaDirectory()
 	filename := fmt.Sprintf("%s.yaml", jobId)
 	metaFilePath := path.Join(logDir, filename)
 	m.MetaLogFilePath = metaFilePath
 
-	if util.IsFileExist(metaFilePath) {
-		bytes, err := ioutil.ReadFile(metaFilePath)
-		if err != nil {
-			panic(err)
-		}
-
-		meta := &objects.JobMetaLog{}
-		err = yaml.Unmarshal(bytes, meta)
-		if err == nil {
-			m.MetaLog = meta
-		} else {
-			log.Err(err).Msgf("JobMeta yaml is broken. Recreate %s", metaFilePath)
-			m.MetaLog = m.createEmptyJobLogMeta(jobId)
-		}
-	} else {
+	createNewJobLogMetaFile := func(jobId string) {
 		m.MetaLog = m.createEmptyJobLogMeta(jobId)
+		m.WriteMetaLogToFile()
 	}
+
+	if !util.IsFileExist(metaFilePath) {
+		createNewJobLogMetaFile(jobId)
+		return
+	}
+
+	// read existed yaml
+	bytes, err := ioutil.ReadFile(metaFilePath)
+	if err != nil {
+		log.Err(err).Msgf("JobMeta yaml unreadable. Recreate %s", metaFilePath)
+		createNewJobLogMetaFile(jobId)
+		return
+	}
+
+	meta := &objects.JobMetaLog{}
+	err = yaml.Unmarshal(bytes, meta)
+	if err != nil {
+		log.Err(err).Msgf("JobMeta yaml is broken. Recreate %s", metaFilePath)
+		createNewJobLogMetaFile(jobId)
+		return
+	}
+
+	if meta.Kind == objects.KIND_JOB_META {
+		m.MetaLog = meta // success
+	} else {
+		log.Err(err).Msgf("JobMeta yaml has wrong kind. Recreate %s", metaFilePath)
+		createNewJobLogMetaFile(jobId)
+	}
+
 }
 
 func (m *jobLogMetaListener) WriteMetaLogToFile() {
@@ -158,7 +182,7 @@ func (m *jobLogMetaListener) WriteMetaLogToFile() {
 
 	metaFilePath := m.MetaLogFilePath
 	// write yaml
-	f, err := os.OpenFile(metaFilePath, os.O_CREATE|os.O_WRONLY, 0644)
+	f, err := os.OpenFile(metaFilePath, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0644)
 	if err != nil {
 		log.Err(err).Msgf("failed to open job meta file %s. %s", metaFilePath, RESULT_LOST)
 		return
