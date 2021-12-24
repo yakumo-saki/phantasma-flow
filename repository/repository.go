@@ -19,7 +19,7 @@ type Repository struct {
 	mutex   sync.Mutex
 	nodes   []objects.NodeDefinition
 	jobs    []objects.JobDefinition
-	configs []interface{}
+	configs map[string]interface{} // map[kind] -> struct
 
 	paths phflowPath
 }
@@ -29,6 +29,7 @@ func (r *Repository) Initialize() error {
 	log.Debug().Msg("Repository initialize start")
 
 	r.paths = aquirePhflowPath()
+	r.configs = make(map[string]interface{})
 
 	dirType := map[objectType]string{
 		NODE:   r.paths.NodeDef,
@@ -108,8 +109,8 @@ func (repo *Repository) readAllYaml(path string, objType objectType) error {
 			obj := parseJobDef(bytes, fp)
 			repo.jobs = append(repo.jobs, obj)
 		case CONFIG:
-			obj := parseConfig(bytes, fp)
-			repo.configs = append(repo.configs, obj)
+			kind, obj := parseConfig(bytes, fp)
+			repo.configs[kind] = obj
 		}
 
 	}
@@ -121,15 +122,12 @@ func (repo *Repository) GetConfigByKind(kind string) interface{} {
 	repo.mutex.Lock()
 	defer repo.mutex.Unlock()
 
-	for _, j := range repo.configs {
-		jCopy := j.(objects.Config)
-
-		if jCopy.Kind == kind {
-			return jCopy
-		}
+	obj, ok := repo.configs[kind]
+	if !ok {
+		return nil
 	}
 
-	return nil
+	return obj
 }
 
 func (repo *Repository) GetJobById(jobId string) *objects.JobDefinition {

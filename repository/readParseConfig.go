@@ -7,7 +7,8 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-func parseConfig(bytes []byte, filepath string) objects.Config {
+// parseConfig returns kind and object. objects are objects.XxxConfig
+func parseConfig(bytes []byte, filepath string) (string, interface{}) {
 	obj := objects.Config{}
 	err := yaml.Unmarshal(bytes, &obj)
 	if err != nil {
@@ -17,5 +18,24 @@ func parseConfig(bytes []byte, filepath string) objects.Config {
 		parseYamlPanic("config", obj.Kind, "", "config kind must be suffixed by 'config'", filepath)
 	}
 
-	return obj
+	parseYamlOrPanic := func(bytes []byte, out interface{}) {
+		err := yaml.Unmarshal(bytes, out)
+		if err != nil {
+			parseYamlPanic("config", obj.Kind, "", err.Error(), filepath)
+		}
+	}
+
+	var ret interface{}
+	switch obj.Kind {
+	case objects.KIND_PHFLOW_CFG:
+		o := objects.PhantasmaFlowConfig{}
+		parseYamlOrPanic(bytes, &o)
+		ret = o
+	case objects.KIND_LOGFILE_EXPORTER_CFG:
+		o := objects.LogFileExporterConfig{}
+		parseYamlOrPanic(bytes, &o)
+		ret = o
+	}
+
+	return obj.Kind, ret
 }

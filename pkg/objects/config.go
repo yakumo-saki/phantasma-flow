@@ -2,9 +2,14 @@ package objects
 
 import "fmt"
 
+const KIND_PHFLOW_CFG = "phantasma-flow-config"
+const KIND_LOGFILE_EXPORTER_CFG = "logfileexporter-config"
+
+// Config type is base struct of All config structs
+// Config structs are serialized to yaml
 type Config struct {
-	ObjectBase `json:",inline"`
-	Meta       ObjectMetaBase `json:"meta"`
+	ObjectBase `yaml:",inline"`
+	Meta       ObjectMetaBase `yaml:"meta"`
 }
 
 func (c Config) String() string {
@@ -12,13 +17,28 @@ func (c Config) String() string {
 		c.Kind, c.Meta)
 }
 
-// LogFileExporterConfig is config object for logfileexporter
-type LogFileExporterConfig struct {
-	Config
+// PhantasmaFlowConfig is config object for Phantasma-Flow.
+//  kind is KIND_PHFLOW_CFG
+type PhantasmaFlowConfig struct {
+	Config `yaml:",inline"`
 
-	MaxLogFileCount uint `json:"logFileCount"` // Max logfile count per jobId (If set 0 => default => 30)
+	Security struct {
+		Mode string // none, (not impl -> apikey)
+	}
 }
 
-type JobSchedulerConfig struct {
-	Config
+// LogFileExporterConfig is config object for logfileexporter.
+//  kind is KIND_LOGFILE_EXPORTER_CFG
+type LogFileExporterConfig struct {
+	Config `yaml:",inline"`
+
+	MaxLogFileCount int `yaml:"logFileCount"` // Max logfile count per jobId (If set 0 => default => 30)
+}
+
+// GeneralConfig is config object for fallback
+//  Use of this is not recommended.
+type GeneralConfig struct {
+	Config `yaml:",inline"`
+
+	ConfigMap map[string]interface{}
 }

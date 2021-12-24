@@ -66,7 +66,7 @@ shutdown:
 }
 
 // Housekeep is deleting files in directory from older (from filename)
-func (m *LogFileExporter) HouseKeep(logpath string, count uint) int {
+func (m *LogFileExporter) HouseKeep(logpath string, count int) int {
 	log := util.GetLoggerWithSource(m.GetName(), "HouseKeep")
 
 	// files => alphabetical order (by os.ReadDir 's manual)
@@ -93,12 +93,12 @@ func (m *LogFileExporter) HouseKeep(logpath string, count uint) int {
 	return deleted
 }
 
-func getConfigFromRepository() *objects.LogFileExporterConfig {
+func getConfigFromRepository() objects.LogFileExporterConfig {
 	const KIND = "logfileexporter-config"
 	bareConfig := repository.GetRepository().GetConfigByKind(KIND)
 	if bareConfig != nil {
 		// config exist
-		return bareConfig.(*objects.LogFileExporterConfig)
+		return bareConfig.(objects.LogFileExporterConfig)
 	}
 
 	ret := objects.LogFileExporterConfig{}
@@ -106,5 +106,5 @@ func getConfigFromRepository() *objects.LogFileExporterConfig {
 	ret.MaxLogFileCount = 30
 	ret.Meta.Version = objects.ObjectVersion{Major: 1, Minor: 0}
 
-	return &ret
+	return ret
 }
