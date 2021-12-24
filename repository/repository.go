@@ -102,13 +102,13 @@ func (repo *Repository) readAllYaml(path string, objType objectType) error {
 
 		switch objType {
 		case NODE:
-			obj := parseNodeDef(bytes)
+			obj := parseNodeDef(bytes, fp)
 			repo.nodes = append(repo.nodes, obj)
 		case JOB:
-			obj := parseJobDef(bytes)
+			obj := parseJobDef(bytes, fp)
 			repo.jobs = append(repo.jobs, obj)
 		case CONFIG:
-			obj := parseConfig(bytes)
+			obj := parseConfig(bytes, fp)
 			repo.configs = append(repo.configs, obj)
 		}
 

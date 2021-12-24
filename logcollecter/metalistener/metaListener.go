@@ -40,8 +40,22 @@ func (m *jobLogMetaListener) Start(params *logMetaListenerParams, wg *sync.WaitG
 	// 既存ログファイルオープン or 新規作成
 	m.ReadOrCreateMetaLog(params.JobId)
 
+	timeout := time.NewTimer(15 * time.Second)
+
 	for {
+		// clean stop timer
+		if !timeout.Stop() {
+			<-timeout.C
+		}
+		timeout.Reset(15 * time.Second)
+
 		select {
+		case <-params.Ctx.Done():
+			log.Debug().Msg("Shutdown request received.")
+			goto shutdown
+		case <-timeout.C:
+			log.Debug().Msg("Metalog timeout, automatic shutdown.")
+			goto shutdown
 		case msg, ok := <-params.execChan:
 			if !ok {
 				log.Debug().Msg("Shutdown request received via channel close")
@@ -71,13 +85,6 @@ func (m *jobLogMetaListener) Start(params *logMetaListenerParams, wg *sync.WaitG
 
 				// log.Debug().Msgf("%v", msg)
 			}
-
-		case <-time.After(15 * time.Second):
-			log.Debug().Msg("Metalog timeout, automatic shutdown.")
-			goto shutdown
-		case <-params.Ctx.Done():
-			log.Debug().Msg("Shutdown request received.")
-			goto shutdown
 		}
 	}
 shutdown:
