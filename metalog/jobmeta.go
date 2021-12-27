@@ -1,4 +1,4 @@
-package metalistener
+package metalog
 
 import (
 	"github.com/yakumo-saki/phantasma-flow/logcollecter"
