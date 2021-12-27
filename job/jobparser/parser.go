@@ -70,6 +70,7 @@ func buildFromSequentialJobDef(jobDef *objects.JobDefinition, jobId, runId strin
 
 		execStep.RunId = runId
 		execStep.JobId = jobId
+		execStep.JobNumber = 100 // XXX temp
 		setDefaultValues(idx, &execStep)
 
 		// PreStep

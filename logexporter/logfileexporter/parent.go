@@ -89,6 +89,7 @@ func (m *LogFileExporter) createJobLogListenerParams(lm *objects.JobLogMessage) 
 	loglis := logListenerParams{}
 	loglis.RunId = lm.RunId
 	loglis.JobId = lm.JobId
+	loglis.JobNumber = lm.JobNumber
 	ch := make(chan *objects.JobLogMessage, 1)
 	loglis.logChan = ch
 	loglis.Ctx, loglis.Cancel = context.WithCancel(context.Background())

@@ -13,6 +13,7 @@ const LM_STAGE_POST = "postrun"
 type JobLogMessage struct {
 	JobId       string        `json:"jobId"`
 	RunId       string        `json:"runId"`
+	JobNumber   int           `json:"jobNumber"`         // Job Sequence Number (from jobmeta. not suitable for key.)
 	Version     ObjectVersion `json:"version"`           // Version of job definition
 	Stage       string        `json:"stage"`             // LM_STAGE_* prerun, job, postrun
 	JobStep     string        `json:"jobStep,omitempty"` // Stage=job only
@@ -25,7 +26,8 @@ type JobLogMessage struct {
 
 func (log *JobLogMessage) String() string {
 	msg := fmt.Sprintf("JobLogMsg: JobId=%s(%v) RunId=%s Seq=%v Step=%s Stage=%s Source=%s Msg=%s",
-		log.JobId, log.Version, log.RunId, log.SeqNo, log.JobStep, log.Stage, log.Source, log.Message)
+		log.JobId, log.Version, log.RunId, log.SeqNo,
+		log.JobStep, log.Stage, log.Source, log.Message)
 	return msg
 }
 
