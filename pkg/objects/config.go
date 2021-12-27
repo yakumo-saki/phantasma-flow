@@ -4,6 +4,7 @@ import "fmt"
 
 const KIND_PHFLOW_CFG = "phantasma-flow-config"
 const KIND_LOGFILE_EXPORTER_CFG = "logfileexporter-config"
+const KIND_PPROF_SERVER_CFG = "pprof-server-config"
 
 // Config type is base struct of All config structs
 // Config structs are serialized to yaml
@@ -33,6 +34,15 @@ type LogFileExporterConfig struct {
 	Config `yaml:",inline"`
 
 	MaxLogFileCount int `yaml:"logFileCount"` // Max logfile count per jobId (If set 0 => default => 30)
+}
+
+// LogFileExporterConfig is config object for pprofserver.
+//  kind is KIND_PPROF_SERVER_CFG
+type PprofServerConfig struct {
+	Config `yaml:",inline"`
+
+	Enabled           bool   `yaml:"enabled"`           // true to start server
+	ListenAddrAndPort string `yaml:"listenAddrAndPort"` // ex) localhost:6060 (default)
 }
 
 // GeneralConfig is config object for fallback
