@@ -67,6 +67,7 @@ func createJobLogMsg(jobId, runId, stage string) *objects.JobLogMessage {
 	msg := objects.JobLogMessage{}
 	msg.JobId = jobId
 	msg.RunId = runId
+	msg.JobNumber = 12345
 	msg.Stage = stage
 	msg.Version = objects.ObjectVersion{Major: 12, Minor: 89}
 	msg.LogDateTime = util.GetDateTimeString()

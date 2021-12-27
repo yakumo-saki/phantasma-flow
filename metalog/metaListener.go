@@ -60,31 +60,31 @@ func (m *jobLogMetaListener) Start(params *logMetaListenerParams, wg *sync.WaitG
 			if !ok {
 				log.Debug().Msg("Shutdown request received via channel close")
 				goto shutdown
-			} else {
-				// find for JobMetaResults
-				jresult := m.findMetaResultByRunId(m.MetaLog.Results, msg.RunId)
-				if jresult != nil {
-					m.JobMetaLog = jresult
-				} else {
-					m.JobMetaLog = m.createNewJobLogMetaResult(msg.RunId, msg.Version)
-					m.MetaLog.Results = m.appendMetaResult(m.MetaLog.Results, m.JobMetaLog)
-				}
-
-				switch msg.Subject {
-				case message.JOB_START:
-					m.handleJobStart(msg)
-				case message.JOB_STEP_START:
-					m.handleJobStepStart(msg)
-				case message.JOB_STEP_END:
-					m.handleJobStepEnd(msg)
-				case message.JOB_END:
-					m.handleJobEnd(msg)
-					log.Trace().Msg("Stop child process because job is ended.")
-					goto shutdown
-				}
-
-				// log.Debug().Msgf("%v", msg)
 			}
+			// find for JobMetaResults
+			jresult := m.findMetaResultByRunId(m.MetaLog.Results, msg.RunId)
+			if jresult != nil {
+				m.JobMetaLog = jresult
+			} else {
+				m.JobMetaLog = m.createNewJobLogMetaResult(msg.RunId, msg.Version)
+				m.MetaLog.Results = m.appendMetaResult(m.MetaLog.Results, m.JobMetaLog)
+			}
+
+			switch msg.Subject {
+			case message.JOB_START:
+				m.handleJobStart(msg)
+			case message.JOB_STEP_START:
+				m.handleJobStepStart(msg)
+			case message.JOB_STEP_END:
+				m.handleJobStepEnd(msg)
+			case message.JOB_END:
+				m.handleJobEnd(msg)
+				log.Trace().Msg("Stop child process because job is ended.")
+				goto shutdown
+			}
+
+			// log.Debug().Msgf("%v", msg)
+
 		}
 	}
 shutdown:
@@ -95,6 +95,13 @@ shutdown:
 	m.MetaLog = nil
 	m.JobMetaLog = nil
 	log.Debug().Msgf("Stopped %s for jobId %s", m.GetName(), params.JobId)
+}
+
+func (m *jobLogMetaListener) GetNextJobNumber(jobId string) int {
+	if m.MetaLog == nil {
+		panic("Request GetNextJobNumber but MetaLog is null")
+	}
+	return m.MetaLog.Meta.NextJobNumber
 }
 
 func (m *jobLogMetaListener) handleJobStart(msg *message.ExecuterMsg) {

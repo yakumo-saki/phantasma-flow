@@ -123,6 +123,7 @@ func (m *logFileExporter) openLogFile(jobNumber int, jobId, runId string) (*os.F
 
 }
 
+//
 func (m *logFileExporter) createLogFile(jobNumber int, jobId, runId string) (*os.File, error) {
 
 	datetimeStr := time.Now().Format(global.DATETIME_FORMAT)
