@@ -1,8 +1,6 @@
 package main
 
 import (
-	"net/http"
-	_ "net/http/pprof"
 	"os"
 	"os/signal"
 	"syscall"
@@ -18,6 +16,7 @@ import (
 	"github.com/yakumo-saki/phantasma-flow/messagehub"
 	"github.com/yakumo-saki/phantasma-flow/messagehub/messagehub_impl"
 	"github.com/yakumo-saki/phantasma-flow/metrics"
+	"github.com/yakumo-saki/phantasma-flow/pprofserver"
 	"github.com/yakumo-saki/phantasma-flow/procman"
 	"github.com/yakumo-saki/phantasma-flow/procmanExample"
 	"github.com/yakumo-saki/phantasma-flow/repository"
@@ -47,6 +46,7 @@ func main() {
 	processManager.Add(&procmanExample.MinimalProcmanModule{})
 	processManager.Add(&metrics.PrometeusExporterModule{})
 	processManager.Add(&server.Server{})
+	processManager.Add(&pprofserver.PprofServer{})
 	processManager.AddService(10, &logfileexporter.LogFileExporter{})
 	processManager.AddService(11, &metalistener.MetaListener{})
 	processManager.AddService(80, nodemanager.GetInstance())
@@ -60,11 +60,6 @@ func main() {
 	messagehub.WaitForQueueEmpty("Wait for node registration")
 	repo.SendAllJobs()
 	messagehub.WaitForQueueEmpty("Wait for job registration")
-
-	go func() {
-		log.Info().Msg("Debug interface listen on :6060")
-		log.Debug().Msgf("%v", http.ListenAndServe("localhost:6060", nil))
-	}()
 
 	log.Info().Msg("Starting signal handling.")
 	signals := make(chan os.Signal, 1)

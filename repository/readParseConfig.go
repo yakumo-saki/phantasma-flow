@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/yakumo-saki/phantasma-flow/pkg/objects"
@@ -35,6 +36,13 @@ func parseConfig(bytes []byte, filepath string) (string, interface{}) {
 		o := objects.LogFileExporterConfig{}
 		parseYamlOrPanic(bytes, &o)
 		ret = o
+	case objects.KIND_PPROF_SERVER_CFG:
+		o := objects.PprofServerConfig{}
+		parseYamlOrPanic(bytes, &o)
+		ret = o
+	default:
+		msg := fmt.Sprintf("Unknown config kind: %s", obj.Kind)
+		panic(msg)
 	}
 
 	return obj.Kind, ret
