@@ -2,7 +2,7 @@
 
 SCRIPT_DIR=$(cd $(dirname $0); pwd)
 
-VERSION=`cat ${SCRIPT_DIR}/global/version.go | grep -o "Version.*\".*\"" | sed -e 's/.*=\s//g' -e 's/"//g'`
+VERSION=`cat ${SCRIPT_DIR}/global/version.go | grep -o "VERSION.*\".*\"" | sed -e 's/.*=\s//g' -e 's/"//g'`
 COMMIT=`git log -n 1 --pretty=format:"%H" | cut -c 1-7`
 
 # worktree is dirty? rc = 1 means dirty
