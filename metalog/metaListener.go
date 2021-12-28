@@ -39,8 +39,15 @@ func (m *jobLogMetaListener) Start(params *logMetaListenerParams, wg *sync.WaitG
 
 	defer wg.Done()
 
-	bareLogcfg := repository.GetRepository().GetConfigByKind(objects.KIND_JOBLOG_CFG)
-	logcfg := bareLogcfg.(objects.JoblogConfig)
+	// get config
+	jobResultCount := 64 // default
+	{
+		bareLogcfg := repository.GetRepository().GetConfigByKind(objects.KIND_JOBLOG_CFG)
+		if bareLogcfg != nil {
+			logcfg := bareLogcfg.(objects.JoblogConfig)
+			jobResultCount = logcfg.JobResultCount
+		}
+	}
 
 	// 既存ログファイルオープン or 新規作成
 	m.ReadOrCreateMetaLog(params.JobId)
@@ -90,7 +97,7 @@ func (m *jobLogMetaListener) Start(params *logMetaListenerParams, wg *sync.WaitG
 				log.Trace().Msg("Stop child process because job is ended.")
 
 				// delete metalog results over limit
-				m.MetaLog.Results = m.MetaLog.Results[:logcfg.JobResultCount]
+				m.MetaLog.Results = m.MetaLog.Results[:jobResultCount]
 
 				m.Mutex.Unlock()
 				goto shutdown
