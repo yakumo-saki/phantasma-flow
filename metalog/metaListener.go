@@ -1,6 +1,7 @@
 package metalog
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -19,6 +20,7 @@ import (
 
 // Trace single Job ID
 type jobLogMetaListener struct {
+	Mutex           sync.Mutex
 	MetaLogFilePath string
 	MetaLog         *objects.JobMetaLog    // overall meta log data (=single yaml file)
 	JobMetaLog      *objects.JobMetaResult // Single job run meta log (=single result)
@@ -36,6 +38,9 @@ func (m *jobLogMetaListener) Start(params *logMetaListenerParams, wg *sync.WaitG
 		With().Str("jobId", params.JobId).Logger()
 
 	defer wg.Done()
+
+	bareLogcfg := repository.GetRepository().GetConfigByKind(objects.KIND_JOBLOG_CFG)
+	logcfg := bareLogcfg.(objects.JoblogConfig)
 
 	// 既存ログファイルオープン or 新規作成
 	m.ReadOrCreateMetaLog(params.JobId)
@@ -61,10 +66,13 @@ func (m *jobLogMetaListener) Start(params *logMetaListenerParams, wg *sync.WaitG
 				log.Debug().Msg("Shutdown request received via channel close")
 				goto shutdown
 			}
+
+			m.Mutex.Lock() // For GetNextJobNumber()
+
 			// find for JobMetaResults
 			jresult := m.findMetaResultByRunId(m.MetaLog.Results, msg.RunId)
 			if jresult != nil {
-				m.JobMetaLog = jresult
+				m.JobMetaLog = jresult // found job result
 			} else {
 				m.JobMetaLog = m.createNewJobLogMetaResult(msg.RunId, msg.Version)
 				m.MetaLog.Results = m.appendMetaResult(m.MetaLog.Results, m.JobMetaLog)
@@ -80,11 +88,15 @@ func (m *jobLogMetaListener) Start(params *logMetaListenerParams, wg *sync.WaitG
 			case message.JOB_END:
 				m.handleJobEnd(msg)
 				log.Trace().Msg("Stop child process because job is ended.")
+
+				// delete metalog results over limit
+				m.MetaLog.Results = m.MetaLog.Results[:logcfg.JobResultCount]
+
+				m.Mutex.Unlock()
 				goto shutdown
 			}
 
-			// log.Debug().Msgf("%v", msg)
-
+			m.Mutex.Unlock()
 		}
 	}
 shutdown:
@@ -97,7 +109,10 @@ shutdown:
 	log.Debug().Msgf("Stopped %s for jobId %s", m.GetName(), params.JobId)
 }
 
-func (m *jobLogMetaListener) GetNextJobNumber(jobId string) int {
+func (m *jobLogMetaListener) GetNextJobNumber() int {
+	m.Mutex.Lock()
+	defer m.Mutex.Unlock()
+
 	if m.MetaLog == nil {
 		panic("Request GetNextJobNumber but MetaLog is null")
 	}
@@ -156,39 +171,51 @@ func (m *jobLogMetaListener) ReadOrCreateMetaLog(jobId string) {
 	metaFilePath := path.Join(logDir, filename)
 	m.MetaLogFilePath = metaFilePath
 
-	createNewJobLogMetaFile := func(jobId string) {
+	meta, err := readMetaLogfile(jobId)
+	if err != nil {
+		log.Debug().Msgf("Create jobmeta file %s", metaFilePath)
 		m.MetaLog = m.createEmptyJobLogMeta(jobId)
 		m.WriteMetaLogToFile()
-	}
-
-	if !util.IsFileExist(metaFilePath) {
-		createNewJobLogMetaFile(jobId)
 		return
 	}
+
+	m.MetaLog = meta
+}
+
+//
+func readMetaLogfile(jobId string) (*objects.JobMetaLog, error) {
+	log := util.GetLoggerWithSource("ReadMetaLogfile")
+
+	logDir := repository.GetJobMetaDirectory()
+	filename := fmt.Sprintf("%s.yaml", jobId)
+	metaFilePath := path.Join(logDir, filename)
 
 	// read existed yaml
+	if !util.IsFileExist(metaFilePath) {
+		return nil, errors.New("JobMeta yaml not found")
+	}
+
+	// unreadable yaml
 	bytes, err := ioutil.ReadFile(metaFilePath)
 	if err != nil {
-		log.Err(err).Msgf("JobMeta yaml unreadable. Recreate %s", metaFilePath)
-		createNewJobLogMetaFile(jobId)
-		return
+		log.Err(err).Msgf("JobMeta yaml unreadable.")
+		return nil, err
 	}
 
 	meta := &objects.JobMetaLog{}
 	err = yaml.Unmarshal(bytes, meta)
 	if err != nil {
-		log.Err(err).Msgf("JobMeta yaml is broken. Recreate %s", metaFilePath)
-		createNewJobLogMetaFile(jobId)
-		return
+		log.Err(err).Msgf("JobMeta yaml is broken.")
+		return nil, err
 	}
 
-	if meta.Kind == objects.KIND_JOB_META {
-		m.MetaLog = meta // success
-	} else {
-		log.Err(err).Msgf("JobMeta yaml has wrong kind. Recreate %s", metaFilePath)
-		createNewJobLogMetaFile(jobId)
+	// validation
+	if meta.Kind != objects.KIND_JOB_META {
+		log.Err(err).Msgf("JobMeta yaml has wrong kind %s.", meta.Kind)
+		return nil, err
 	}
 
+	return meta, nil // success
 }
 
 func (m *jobLogMetaListener) WriteMetaLogToFile() {

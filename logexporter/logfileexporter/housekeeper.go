@@ -113,15 +113,15 @@ func (m *LogFileExporter) HouseKeep(logpath string, count int) int {
 	return deleted
 }
 
-func getConfigFromRepository() objects.LogFileExporterConfig {
+func getConfigFromRepository() objects.JoblogConfig {
 	const KIND = "logfileexporter-config"
 	bareConfig := repository.GetRepository().GetConfigByKind(KIND)
 	if bareConfig != nil {
 		// config exist
-		return bareConfig.(objects.LogFileExporterConfig)
+		return bareConfig.(objects.JoblogConfig)
 	}
 
-	ret := objects.LogFileExporterConfig{}
+	ret := objects.JoblogConfig{}
 	ret.Kind = KIND
 	ret.MaxLogFileCount = 30
 	ret.Meta.Version = objects.ObjectVersion{Major: 1, Minor: 0}

@@ -10,18 +10,22 @@ import (
 	"golang.org/x/sync/syncmap"
 )
 
-type MetaListener struct {
+type LogMetaManager struct {
 	procman.ProcmanModuleStruct
 	logChannelsWg sync.WaitGroup
 	logChannels   syncmap.Map // [string(runId)] <-chan LogMessage
+
+	// For manager
+	loggerMapMutex sync.Mutex                        // mutex for loggerMap
+	loggerMap      map[string]*logMetaListenerParams // JobId->metaListener(params) for manager
 	// logCloseFunc  syncmap.Map // [string(runId)] context.CancelFunc
 }
 
-func (m *MetaListener) IsInitialized() bool {
+func (m *LogMetaManager) IsInitialized() bool {
 	return m.Initialized
 }
 
-func (m *MetaListener) Initialize() error {
+func (m *LogMetaManager) Initialize() error {
 	// used for procman <-> module communication
 	// procman -> PAUSE(prepare for backup) is considered
 	m.Initialized = true
@@ -30,18 +34,18 @@ func (m *MetaListener) Initialize() error {
 	return nil
 }
 
-func (m *MetaListener) GetName() string {
+func (m *LogMetaManager) GetName() string {
 	return "MetaListener"
 }
 
-func (m *MetaListener) Start(inCh <-chan string, outCh chan<- string) error {
+func (m *LogMetaManager) Start(inCh <-chan string, outCh chan<- string) error {
 	m.FromProcmanCh = inCh
 	m.ToProcmanCh = outCh
 	log := util.GetLoggerWithSource(m.GetName(), "main")
 
 	m.logChannelsWg = sync.WaitGroup{}
 	m.logChannelsWg.Add(1)
-	go m.LogMetaListener(m.RootCtx)
+	go m.Manager(m.RootCtx)
 
 	log.Info().Msgf("Starting %s server.", m.GetName())
 
@@ -65,7 +69,7 @@ shutdown:
 	return nil
 }
 
-func (sv *MetaListener) Shutdown() {
+func (sv *LogMetaManager) Shutdown() {
 	log := util.GetLoggerWithSource(sv.GetName(), "shutdown")
 	log.Debug().Msg("Shutdown initiated")
 	sv.RootCancel()

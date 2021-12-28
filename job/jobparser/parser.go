@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/yakumo-saki/phantasma-flow/metalog"
 	"github.com/yakumo-saki/phantasma-flow/pkg/objects"
 	"github.com/yakumo-saki/phantasma-flow/repository"
 	"github.com/yakumo-saki/phantasma-flow/util"
@@ -70,7 +71,7 @@ func buildFromSequentialJobDef(jobDef *objects.JobDefinition, jobId, runId strin
 
 		execStep.RunId = runId
 		execStep.JobId = jobId
-		execStep.JobNumber = 100 // XXX temp
+		execStep.JobNumber = metalog.GetInstance().GetNextJobNumber(jobId)
 		setDefaultValues(idx, &execStep)
 
 		// PreStep

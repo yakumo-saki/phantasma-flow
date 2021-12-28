@@ -39,6 +39,7 @@ func main() {
 	hub := startMessageHub()
 
 	execute := executer.GetInstance()
+	logMetaMan := metalog.GetInstance()
 
 	procmanCh := make(chan string, 1) // controller to processManager. signal only
 	processManager := procman.NewProcessManager(procmanCh)
@@ -48,7 +49,7 @@ func main() {
 	processManager.Add(&server.Server{})
 	processManager.Add(&pprofserver.PprofServer{})
 	processManager.AddService(10, &logfileexporter.LogFileExporter{})
-	processManager.AddService(11, &metalog.MetaListener{})
+	processManager.AddService(11, logMetaMan)
 	processManager.AddService(80, nodemanager.GetInstance())
 	processManager.AddService(90, execute)
 	processManager.AddService(91, &scheduler.JobScheduler{})

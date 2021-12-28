@@ -62,6 +62,7 @@ func (ex *Executer) createExecuterMsg(jobstep jobparser.ExecutableJobStep, subje
 	msg.Version = jobstep.Version
 	msg.JobId = jobstep.JobId
 	msg.RunId = jobstep.RunId
+	// JobNumber not needed -> msg.JobNumber = jobstep.JobNumber
 	msg.Subject = subject
 
 	return &msg
