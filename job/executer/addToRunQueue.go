@@ -62,6 +62,7 @@ func (ex *Executer) createExecuterMsg(jobstep jobparser.ExecutableJobStep, subje
 	msg.Version = jobstep.Version
 	msg.JobId = jobstep.JobId
 	msg.RunId = jobstep.RunId
+	// JobNumber not needed -> msg.JobNumber = jobstep.JobNumber
 	msg.Subject = subject
 
 	return &msg
@@ -74,6 +75,7 @@ func (ex *Executer) createJobLogMsg(jobstep jobparser.ExecutableJobStep) *object
 	lm.Version = jobstep.Version
 	lm.JobId = jobstep.JobId
 	lm.RunId = jobstep.RunId
+	lm.JobNumber = jobstep.JobNumber
 	lm.LogDateTime = util.GetDateTimeString()
 
 	return &lm

@@ -3,7 +3,7 @@ package objects
 import "fmt"
 
 const KIND_PHFLOW_CFG = "phantasma-flow-config"
-const KIND_LOGFILE_EXPORTER_CFG = "logfileexporter-config"
+const KIND_JOBLOG_CFG = "joblog-config"
 const KIND_PPROF_SERVER_CFG = "pprof-server-config"
 
 // Config type is base struct of All config structs
@@ -28,12 +28,13 @@ type PhantasmaFlowConfig struct {
 	}
 }
 
-// LogFileExporterConfig is config object for logfileexporter.
+// JoblogConfig is config object for job logs.
 //  kind is KIND_LOGFILE_EXPORTER_CFG
-type LogFileExporterConfig struct {
+type JoblogConfig struct {
 	Config `yaml:",inline"`
 
-	MaxLogFileCount int `yaml:"logFileCount"` // Max logfile count per jobId (If set 0 => default => 30)
+	MaxLogFileCount int `yaml:"logFileCount"`   // Max logfile count per jobId (If set 0 => default => 30)
+	JobResultCount  int `yaml:"jobResultCount"` // Max result count per jobId (metalog)
 }
 
 // LogFileExporterConfig is config object for pprofserver.

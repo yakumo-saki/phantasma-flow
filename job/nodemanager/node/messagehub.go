@@ -10,6 +10,7 @@ func createJobLogMsg(seqNo uint64, jobStep jobparser.ExecutableJobStep) *objects
 	msg := objects.JobLogMessage{}
 	msg.JobId = jobStep.JobId
 	msg.RunId = jobStep.RunId
+	msg.JobNumber = jobStep.JobNumber
 	msg.Stage = objects.LM_STAGE_JOB
 	msg.SeqNo = seqNo
 	msg.Version = jobStep.Version

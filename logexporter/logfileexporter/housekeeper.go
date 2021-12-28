@@ -4,6 +4,9 @@ import (
 	"context"
 	"os"
 	"path"
+	"sort"
+	"strconv"
+	"strings"
 	"sync"
 
 	"github.com/yakumo-saki/phantasma-flow/messagehub"
@@ -75,11 +78,28 @@ func (m *LogFileExporter) HouseKeep(logpath string, count int) int {
 		log.Error().Err(err).Msg("Directory listing failed. Abort housekeeping.")
 	}
 
+	// create datetime -> filename map
+	filemap := make(map[string]string)
+	for _, file := range files {
+		_, datetime, _, _, ok := parseFilename(file.Name())
+		if ok {
+			filemap[datetime] = file.Name()
+		} else {
+			log.Warn().Msgf("Ingored invalid filename %s", file.Name())
+		}
+	}
+
+	keys := make([]string, 0, len(filemap))
+	for k := range filemap {
+		keys = append(keys, k)
+	}
+	sortedDates := sort.StringSlice(keys)
+
 	deleteIdx := len(files) - int(count)
 	deleted := 0
-	for idx, file := range files {
+	for idx, key := range sortedDates {
 		if idx < deleteIdx {
-			fullpath := path.Join(logpath, file.Name())
+			fullpath := path.Join(logpath, filemap[key])
 			err := os.Remove(fullpath)
 			if err == nil {
 				deleted++
@@ -93,18 +113,43 @@ func (m *LogFileExporter) HouseKeep(logpath string, count int) int {
 	return deleted
 }
 
-func getConfigFromRepository() objects.LogFileExporterConfig {
+func getConfigFromRepository() objects.JoblogConfig {
 	const KIND = "logfileexporter-config"
 	bareConfig := repository.GetRepository().GetConfigByKind(KIND)
 	if bareConfig != nil {
 		// config exist
-		return bareConfig.(objects.LogFileExporterConfig)
+		return bareConfig.(objects.JoblogConfig)
 	}
 
-	ret := objects.LogFileExporterConfig{}
+	ret := objects.JoblogConfig{}
 	ret.Kind = KIND
 	ret.MaxLogFileCount = 30
 	ret.Meta.Version = objects.ObjectVersion{Major: 1, Minor: 0}
 
 	return ret
+}
+
+func parseFilename(filename string) (JobNumber int, DatetimeStr, RunId, JobId string, ok bool) {
+	strs := strings.Split(filename, FILENAME_SEP)
+
+	if len(strs) < 4 {
+		ok = false
+		return
+	}
+
+	JobNumber, err := strconv.Atoi(strs[0])
+	if err != nil {
+		ok = false
+		return
+	}
+	DatetimeStr = strs[1]
+	if len(DatetimeStr) != 14 {
+		ok = false
+		return
+	}
+	RunId = strs[2]
+	JobId = strs[3]
+
+	ok = true
+	return
 }

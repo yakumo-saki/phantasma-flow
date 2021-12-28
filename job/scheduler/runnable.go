@@ -40,7 +40,7 @@ func (js *JobScheduler) pickRunnable(ctx context.Context, startWg, shutdownWg *s
 				execJobs, err := jobparser.BuildExecutableJob(schedule.jobId, schedule.runId)
 				if err != nil {
 					// job fail.
-					// error to reason
+					// XXX: error to reason
 				} else {
 					// exec it
 					executer.GetInstance().AddToRunQueue(execJobs)

@@ -8,17 +8,18 @@ import (
 
 type ExecutableJobStep struct {
 	objects.JobStepDefinition
-	Version  objects.ObjectVersion
-	JobId    string
-	RunId    string
-	Node     string   // node id of running.
-	PreSteps []string // Stepnames they must be completed before this job step run.
+	Version   objects.ObjectVersion
+	JobId     string
+	RunId     string
+	JobNumber int
+	Node      string   // node id of running.
+	PreSteps  []string // Stepnames they must be completed before this job step run.
 }
 
 func (step ExecutableJobStep) String() string {
-	msg := fmt.Sprintf("JobId:%s(v%v.%v) RunId:%s StepName:%s Cap: %v Pre:%v CMD:'%s' SCRIPT:'%s'",
+	msg := fmt.Sprintf("JobId:%s(v%v.%v) RunId:%s(%v) StepName:%s Cap: %v Pre:%v CMD:'%s' SCRIPT:'%s'",
 		step.JobId, step.Version.Major, step.Version.Minor,
-		step.RunId, step.Name,
+		step.RunId, step.JobNumber, step.Name,
 		step.UseCapacity, step.PreSteps,
 		step.Command, step.Script)
 	return msg

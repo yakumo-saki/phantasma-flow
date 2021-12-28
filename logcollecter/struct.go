@@ -5,9 +5,10 @@ import (
 )
 
 type LogCollecterParamsBase struct {
-	RunId  string
-	JobId  string
-	Alive  bool
-	Ctx    context.Context
-	Cancel context.CancelFunc
+	RunId     string
+	JobId     string
+	JobNumber int
+	Alive     bool
+	Ctx       context.Context
+	Cancel    context.CancelFunc
 }

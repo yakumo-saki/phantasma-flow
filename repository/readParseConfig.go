@@ -32,8 +32,8 @@ func parseConfig(bytes []byte, filepath string) (string, interface{}) {
 		o := objects.PhantasmaFlowConfig{}
 		parseYamlOrPanic(bytes, &o)
 		ret = o
-	case objects.KIND_LOGFILE_EXPORTER_CFG:
-		o := objects.LogFileExporterConfig{}
+	case objects.KIND_JOBLOG_CFG:
+		o := objects.JoblogConfig{}
 		parseYamlOrPanic(bytes, &o)
 		ret = o
 	case objects.KIND_PPROF_SERVER_CFG:

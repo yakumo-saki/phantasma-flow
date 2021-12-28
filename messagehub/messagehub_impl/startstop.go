@@ -104,13 +104,15 @@ shutdown:
 	hub.StopSender()
 
 	// dump if message left
-	if hub.queue.GetLen() > 0 {
-		for {
-			m, err := hub.queue.Dequeue()
-			if err == nil && m != nil {
-				mx := m.(*message.Message)
-				log.Error().Str("msg", fmt.Sprintf("%v", mx)).Msg("Dump messages can't send.")
-			}
+	for {
+		m, err := hub.queue.Dequeue()
+		if err == nil && m != nil {
+			mx := m.(*message.Message)
+			log.Error().Str("msg", fmt.Sprintf("%v", mx)).Msg("Dump messages can't send.")
+		}
+
+		if hub.queue.GetLen() == 0 {
+			break
 		}
 	}
 
