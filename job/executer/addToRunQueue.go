@@ -11,7 +11,7 @@ import (
 	"github.com/yakumo-saki/phantasma-flow/util"
 )
 
-//
+// AddToRunQueue enques ExecutableJobSteps into ex.jobQueue[runid]
 func (ex *Executer) AddToRunQueue(execJobs *list.List) {
 	if execJobs.Len() == 0 {
 		panic("Execute Job is empty.")

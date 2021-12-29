@@ -7,6 +7,7 @@ import (
 	"github.com/yakumo-saki/phantasma-flow/util"
 )
 
+// queueExecuter is find runnable jobstep from ex.jobQueue and exec it
 func (ex *Executer) queueExecuter(startWg, stopWg *sync.WaitGroup) {
 	const NAME = "queueExecuter"
 	log := util.GetLoggerWithSource(ex.GetName(), NAME)
@@ -29,7 +30,12 @@ func (ex *Executer) queueExecuter(startWg, stopWg *sync.WaitGroup) {
 	}
 
 shutdown:
-	// TODO need for wait all jobs in running state. cancel all step context #38
+	// TODO need for cancel all jobs in running state. and wait for cancel done #38
+	ex.mutex.Lock()
+	for _, queuedJob := range ex.jobQueue {
+		queuedJob.Cancel()
+	}
+	ex.mutex.Unlock()
 
 	log.Debug().Msgf("%s/%s stopped.", ex.GetName(), NAME)
 }
