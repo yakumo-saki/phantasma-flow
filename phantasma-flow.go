@@ -20,6 +20,7 @@ import (
 	"github.com/yakumo-saki/phantasma-flow/procman"
 	"github.com/yakumo-saki/phantasma-flow/procmanExample"
 	"github.com/yakumo-saki/phantasma-flow/repository"
+	"github.com/yakumo-saki/phantasma-flow/repository/validater"
 	"github.com/yakumo-saki/phantasma-flow/server"
 	"github.com/yakumo-saki/phantasma-flow/util"
 )
@@ -55,6 +56,8 @@ func main() {
 	processManager.AddService(91, &scheduler.JobScheduler{})
 
 	processManager.Start()
+
+	validater.ValidateAllJobDef()
 
 	// Load definitions
 	repo.SendAllNodes() // must send node before job (must exist node, job requires)
