@@ -114,7 +114,7 @@ func (m *LogFileExporter) cleanUpLoggerMapTimer(ctx context.Context, outCh chan<
 		select {
 		case <-ctx.Done():
 			goto shutdown
-		case <-time.After(1 * time.Minute):
+		case <-time.After(10 * time.Minute):
 			log.Debug().Msgf("cleanUpLoggerMap request send.")
 			outCh <- struct{}{}
 		}
