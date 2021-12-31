@@ -21,6 +21,11 @@ func (m *LogFileExporter) LogFileExporter(ctx context.Context, startUp, shutdown
 	logCh := messagehub.Subscribe(messagehub.TOPIC_JOB_LOG, NAME)
 
 	startUp.Done()
+
+	//
+	cleanUpCh := make(chan struct{}, 1)
+	go m.cleanUpLoggerMapTimer(ctx, cleanUpCh)
+
 	for {
 		select {
 		case <-ctx.Done():
@@ -51,9 +56,26 @@ func (m *LogFileExporter) LogFileExporter(ctx context.Context, startUp, shutdown
 
 			// send log to child process
 			listener.logChan <- joblogMsg
+		case _, ok := <-cleanUpCh:
+			if !ok {
+				goto shutdown // channel closed
+			}
+
+			// clean up loggerMap periodic #44
+			log.Debug().Msgf("CleanUpLoggerMap start.")
+
+			count := 0
+			for runId, loglis := range loggerMap {
+				if !loglis.Alive {
+					// no need to wait. because Alive = false means already stopped and file closed.
+					loglis.Cancel()
+					delete(loggerMap, runId)
+					count++
+				}
+			}
+			log.Debug().Msgf("CleanUpLoggerMap end. %v objects freed.", count)
 		}
 	}
-	// TODO clean up loggerMap every 30min #44
 
 shutdown:
 	log.Debug().Msg("Stopping all log listerners.")
@@ -82,6 +104,24 @@ shutdown:
 		log.Warn().Msg("Stopping all log listerners timeout")
 	}
 
+}
+
+func (m *LogFileExporter) cleanUpLoggerMapTimer(ctx context.Context, outCh chan<- struct{}) {
+	const NAME = "cleanUpLoggerMapTimer"
+	log := util.GetLoggerWithSource(m.GetName(), NAME)
+
+	for {
+		select {
+		case <-ctx.Done():
+			goto shutdown
+		case <-time.After(1 * time.Minute):
+			log.Debug().Msgf("cleanUpLoggerMap request send.")
+			outCh <- struct{}{}
+		}
+	}
+
+shutdown:
+	log.Debug().Msgf("%s/%s stopped.", m.GetName(), NAME)
 }
 
 func (m *LogFileExporter) createJobLogListenerParams(lm *objects.JobLogMessage) *logListenerParams {
