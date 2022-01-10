@@ -1,0 +1,16 @@
+kind: node
+# meta is updated by ph-flow.
+meta:
+  version:
+    major: 1
+    minor: 0
+  created: 2021-11-13 01:02:03Z
+  createdBy: SYSTEM
+id: sshtestnode
+nodeType: ssh
+capacity: 2
+ssh:
+  host: 192.168.10.20
+  port: 22
+  user: yakumo
+  keyfile: ${PHFLOW_DATA}/sshkeyfile.key

@@ -13,6 +13,15 @@ type NodeDefinition struct {
 	DisplayName string         `yaml:"displayName"` // display name
 	NodeType    string         `yaml:"nodeType"`    // SSH / WinRM / local / internal
 	Capacity    int            `yaml:"capacity"`    // max concurrent job point.
+	Ssh         SSHDefinition  `yaml:"ssh"`         // nodetype=SSH only
+}
+
+type SSHDefinition struct {
+	Port    int    `yaml:"port"`    // default 22
+	Host    int    `yaml:"host"`    //
+	User    string `yaml:"user"`    // SSH username
+	Key     string `yaml:"key"`     // SSH key string begin with ----------BEGIN OPENSSH PRIVATE KEY-----
+	Keyfile string `yaml:"keyfile"` // SSH keyfile path
 }
 
 func (nd NodeDefinition) String() string {

@@ -25,10 +25,15 @@ func (n *ExecNode) Initialize(def objects.NodeDefinition, jobStep jobparser.Exec
 	n.nodeDef = def
 
 	var impl execNodeImpl
-	if def.NodeType == objects.NODE_TYPE_LOCAL {
-		lo := localExecNode{}
-		impl = &lo
-	} else {
+	switch def.NodeType {
+
+	case objects.NODE_TYPE_LOCAL:
+		node := localExecNode{}
+		impl = &node
+	case objects.NODE_TYPE_SSH:
+		node := sshExecNode{}
+		impl = &node
+	default:
 		msg := fmt.Sprintf("Error Node %s: nodeType %s is unknown. %v", def.Id, def.NodeType, def)
 		panic(msg)
 	}
