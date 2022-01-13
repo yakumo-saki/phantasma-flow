@@ -12,6 +12,13 @@ import (
 	"github.com/yakumo-saki/phantasma-flow/repository"
 )
 
+/*
+Start modules for testing.
+* repository
+* messagehub
+* TestLogListener
+* ProcessManager
+*/
 func StartBaseModules() (*messagehub_impl.MessageHub, *procman.ProcessManager) {
 	StartRepository()
 	hub := messagehub_impl.MessageHub{}

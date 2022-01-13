@@ -46,7 +46,7 @@ func (m *TestLogListener) Start(inCh <-chan string, outCh chan<- string) error {
 			log.Debug().Msgf("Got request %s", v)
 		case jobLogMsg := <-logch:
 			lm := jobLogMsg.Body.(*objects.JobLogMessage)
-			log.Info().Msgf("%v", lm)
+			log.Info().Msgf("JOB_LOG: %v", lm)
 		case exeMsg := <-repoch:
 			em := exeMsg.Body.(*message.ExecuterMsg)
 			log.Info().Msgf("JOB_REPORT: %v", em)

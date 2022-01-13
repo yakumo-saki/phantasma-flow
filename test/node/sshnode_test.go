@@ -17,6 +17,7 @@ import (
 func TestSSHNode(t *testing.T) {
 	JOBID := "manager_test"
 	RUNID := "run123"
+	NODE := "sshkeyfile"
 	hub, pman := testutils.StartBaseModules()
 
 	nodeMan := nodemanager.GetInstance()
@@ -33,7 +34,7 @@ func TestSSHNode(t *testing.T) {
 
 	log := util.GetLogger()
 
-	localCap := nodeMan.GetCapacity("local")
+	localCap := nodeMan.GetCapacity(NODE)
 	log.Debug().Msgf("node local capacity = %v", localCap)
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -43,14 +44,14 @@ func TestSSHNode(t *testing.T) {
 	js.ExecType = objects.JOB_EXEC_TYPE_COMMAND
 	js.JobId = JOBID
 	js.RunId = RUNID
-	js.Node = "sshkeyfile"
+	js.Node = NODE
 	js.Name = "Step1"
 	js.Command = "echo \"`hostname` today is `date`\""
 	nodeMan.ExecJobStep(ctx, js)
 
-	testutils.EndTest()
-
 	time.Sleep(5 * time.Second)
+
+	testutils.EndTest()
 
 	pman.Shutdown()
 

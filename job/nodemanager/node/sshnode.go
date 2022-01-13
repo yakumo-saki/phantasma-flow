@@ -2,7 +2,6 @@ package node
 
 import (
 	"bufio"
-	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -162,31 +161,42 @@ func (n *sshExecNode) Run(ctx context.Context) {
 }
 
 func (n *sshExecNode) doCommand(ctx context.Context, cmd string) {
+	log := util.GetLoggerWithSource(n.GetName(), "doCommand")
+
 	session, err := n.sshClient.NewSession()
 	if err != nil {
-		log.Fatal("Failed to create session: ", err)
+		log.Error().Err(err).Msg("Failed to create session: ")
 	}
 	defer session.Close()
 
-	var stdoutBuf bytes.Buffer
-	var stderrBuf bytes.Buffer
-	session.Stdout = &stdoutBuf
-	session.Stderr = &stderrBuf
-	go n.pipeToLog("stdout", &stdoutBuf)
-	go n.pipeToLog("stderr", &stderrBuf)
+	stderr, err := session.StdoutPipe()
+	if err == nil {
+		go n.pipeToLog("stderr", stderr)
+	} else {
+		log.Err(err)
+	}
+
+	stdout, err := session.StdoutPipe()
+	if err == nil {
+		go n.pipeToLog("stdout", stdout)
+	} else {
+		log.Err(err)
+	}
+
+	log.Debug().Msgf("start")
 
 	if err := session.Start(cmd); err != nil {
-		log.Fatal("Failed to run: " + cmd + " " + err.Error())
+		log.Err(err).Msgf("Failed to run: %s", cmd)
 	}
 	err = session.Wait()
 	if err != nil {
-		log.Fatal("wait err: " + cmd + " " + err.Error())
+		log.Err(err).Msgf("wait err: %s", cmd)
 	}
 
 }
 
 func (n *sshExecNode) pipeToLog(name string, pipe io.Reader) {
-	// log := util.GetLoggerWithSource(n.GetName(), "run", name)
+	// log := util.GetLoggerWithSource(n.GetName(), "pipeToLog", name)
 
 	scanner := bufio.NewScanner(pipe)
 	for scanner.Scan() {
@@ -198,6 +208,7 @@ func (n *sshExecNode) pipeToLog(name string, pipe io.Reader) {
 		msg.Message = logmsg
 		messagehub.Post(messagehub.TOPIC_JOB_LOG, msg)
 	}
+
 }
 
 func (n *sshExecNode) doSftp() {
