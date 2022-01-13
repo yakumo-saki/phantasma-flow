@@ -97,14 +97,14 @@ func (n *localExecNode) Run(ctx context.Context) {
 	}
 	stderr, err := cmd.StderrPipe()
 	if err == nil {
-		go n.PipeToLog(ctx, "stderr", stderr)
+		go n.pipeToLog("stderr", stderr)
 	} else {
 		log.Err(err)
 	}
 
 	stdout, err := cmd.StdoutPipe()
 	if err == nil {
-		go n.PipeToLog(ctx, "stdout", stdout)
+		go n.pipeToLog("stdout", stdout)
 	} else {
 		log.Err(err)
 	}
@@ -119,7 +119,7 @@ func (n *localExecNode) Run(ctx context.Context) {
 	}
 }
 
-func (n *localExecNode) PipeToLog(ctx context.Context, name string, pipe io.Reader) {
+func (n *localExecNode) pipeToLog(name string, pipe io.Reader) {
 	// log := util.GetLoggerWithSource(n.GetName(), "run", name)
 
 	scanner := bufio.NewScanner(pipe)
@@ -132,5 +132,4 @@ func (n *localExecNode) PipeToLog(ctx context.Context, name string, pipe io.Read
 		msg.Message = logmsg
 		messagehub.Post(messagehub.TOPIC_JOB_LOG, msg)
 	}
-
 }

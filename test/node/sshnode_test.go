@@ -3,6 +3,7 @@ package node
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/huandu/go-assert"
 	"github.com/yakumo-saki/phantasma-flow/job/jobparser"
@@ -42,12 +43,15 @@ func TestSSHNode(t *testing.T) {
 	js.ExecType = objects.JOB_EXEC_TYPE_COMMAND
 	js.JobId = JOBID
 	js.RunId = RUNID
-	js.Node = "local"
+	js.Node = "sshkeyfile"
 	js.Name = "Step1"
-	js.Command = "echo \"`hostname` today is `date`\" && sleep 3 && LANG=C date"
+	js.Command = "echo \"`hostname` today is `date`\""
 	nodeMan.ExecJobStep(ctx, js)
 
 	testutils.EndTest()
+
+	time.Sleep(5 * time.Second)
+
 	pman.Shutdown()
 
 	assert.Equal(t, 2, localCap)

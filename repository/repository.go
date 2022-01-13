@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"sync"
 
+	"github.com/yakumo-saki/phantasma-flow/global/consts"
 	"github.com/yakumo-saki/phantasma-flow/messagehub"
 	"github.com/yakumo-saki/phantasma-flow/pkg/message"
 	"github.com/yakumo-saki/phantasma-flow/pkg/objects"
@@ -37,9 +38,9 @@ func (r *Repository) Initialize() error {
 		JOB:    r.paths.JobDef,
 	}
 
-	log.Info().Msgf("%s=%s", ENV_HOME_DIR, r.paths.Home)
-	log.Info().Msgf("%s=%s", ENV_DEF_DIR, r.paths.Def)
-	log.Info().Msgf("%s=%s", ENV_DATA_DIR, r.paths.Data)
+	log.Info().Msgf("%s=%s", consts.ENV_HOME_DIR, r.paths.Home)
+	log.Info().Msgf("%s=%s", consts.ENV_DEF_DIR, r.paths.Def)
+	log.Info().Msgf("%s=%s", consts.ENV_DATA_DIR, r.paths.Data)
 
 	for typ, dirPath := range dirType {
 		// log.Debug().Msgf("Reading %s from %s", typ, dirPath)

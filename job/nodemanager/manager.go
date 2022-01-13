@@ -32,7 +32,7 @@ func (nm *NodeManager) GetCapacity(name string) int {
 		return ERRVAL
 	}
 
-	meta := pool.Front().Value.(nodeMeta)
+	meta := pool.Front().Value.(*nodeMeta)
 
 	return meta.Capacity
 }

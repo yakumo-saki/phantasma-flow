@@ -4,14 +4,9 @@ import (
 	"os"
 	"path"
 
+	"github.com/yakumo-saki/phantasma-flow/global/consts"
 	"github.com/yakumo-saki/phantasma-flow/util"
 )
-
-// External configable env value
-const ENV_HOME_DIR = "PHFLOW_HOME"
-const ENV_DEF_DIR = "PHFLOW_DEF_DIR"
-const ENV_DATA_DIR = "PHFLOW_DATA_DIR"
-const ENV_TEMP_DIR = "PHFLOW_TEMP_DIR"
 
 type phflowPath struct {
 	Home      string
@@ -33,10 +28,10 @@ func aquirePhflowPath() phflowPath {
 
 	p := phflowPath{}
 
-	p.Home = os.Getenv(ENV_HOME_DIR)
-	p.Def = os.Getenv(ENV_DEF_DIR)
-	p.Data = os.Getenv(ENV_DATA_DIR)
-	p.Temp = os.Getenv(ENV_TEMP_DIR)
+	p.Home = os.Getenv(consts.ENV_HOME_DIR)
+	p.Def = os.Getenv(consts.ENV_DEF_DIR)
+	p.Data = os.Getenv(consts.ENV_DATA_DIR)
+	p.Temp = os.Getenv(consts.ENV_TEMP_DIR)
 	if p.Home == "" {
 		home, err := os.UserHomeDir()
 		if err != nil {
@@ -60,10 +55,10 @@ func aquirePhflowPath() phflowPath {
 	p.JobLog = path.Join(p.Data, "log")
 	p.JobMeta = path.Join(p.Data, "meta")
 
-	isNotGoodDir(p.Home, ENV_HOME_DIR)
-	isNotGoodDir(p.Def, ENV_DEF_DIR)
-	isNotGoodDir(p.Data, ENV_DATA_DIR)
-	isNotGoodDir(p.Temp, ENV_TEMP_DIR)
+	isNotGoodDir(p.Home, consts.ENV_HOME_DIR)
+	isNotGoodDir(p.Def, consts.ENV_DEF_DIR)
+	isNotGoodDir(p.Data, consts.ENV_DATA_DIR)
+	isNotGoodDir(p.Temp, consts.ENV_TEMP_DIR)
 	isNotGoodDir(p.NodeDef, p.NodeDef)
 	isNotGoodDir(p.ConfigDef, p.ConfigDef)
 	isNotGoodDir(p.JobDef, p.JobDef)
@@ -71,6 +66,11 @@ func aquirePhflowPath() phflowPath {
 	isNotGoodDir(p.JobMeta, p.JobMeta)
 
 	makeSureDirExists(p)
+
+	os.Setenv(consts.ENV_HOME_DIR, p.Home)
+	os.Setenv(consts.ENV_DEF_DIR, p.Def)
+	os.Setenv(consts.ENV_DATA_DIR, p.Data)
+	os.Setenv(consts.ENV_TEMP_DIR, p.Temp)
 
 	return p
 

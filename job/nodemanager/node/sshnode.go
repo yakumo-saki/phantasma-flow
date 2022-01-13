@@ -6,15 +6,14 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
-	"os/exec"
 	"strings"
 	"sync/atomic"
 	"time"
 
 	"github.com/pkg/sftp"
+	"github.com/yakumo-saki/phantasma-flow/global/consts"
 	"github.com/yakumo-saki/phantasma-flow/job/jobparser"
 	"github.com/yakumo-saki/phantasma-flow/messagehub"
 	"github.com/yakumo-saki/phantasma-flow/pkg/objects"
@@ -36,6 +35,10 @@ func (n *sshExecNode) GetName() string {
 }
 
 func (n *sshExecNode) Initialize(def objects.NodeDefinition, jobStep jobparser.ExecutableJobStep) error {
+
+	log := util.GetLoggerWithSource(n.GetName(), "Init")
+	log.Info().Msgf("%s", def)
+
 	n.nodeDef = def
 	n.jobStep = jobStep
 
@@ -55,35 +58,43 @@ func (n *sshExecNode) Initialize(def objects.NodeDefinition, jobStep jobparser.E
 }
 
 func (n *sshExecNode) connectSSH() error {
-	pk, err := ioutil.ReadFile(os.Getenv("HOME") + "/.ssh/id_rsa_nopass")
-	if err != nil {
-		panic("failed to read ssh key")
-	}
-
-	signer, err := ssh.ParsePrivateKey(pk)
-	if err != nil {
-		fmt.Println(err)
-		panic("failed to parse ssh key")
-	}
+	log := util.GetLoggerWithSource(n.GetName(), "connectSSH")
 
 	config := &ssh.ClientConfig{
-		User: "yakumo",
+		User: n.nodeDef.Ssh.User,
 		Auth: []ssh.AuthMethod{
-			ssh.Password("empty"),
-			ssh.PublicKeys(signer),
+			n.getAuthMethod(),
 		},
-		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+		HostKeyCallback: util.GetHostKeyCallback(n.nodeDef.Ssh.HostAuthType, n.nodeDef.Ssh.HostKey),
 	}
 
-	client, err := ssh.Dial("tcp", "192.168.10.20:22", config)
+	host := fmt.Sprintf("%s:%v", n.nodeDef.Ssh.Host, n.nodeDef.Ssh.Port)
+	client, err := ssh.Dial("tcp", host, config)
 	if err != nil {
-		log.Fatal("Failed to dial: ", err)
+		log.Error().Err(err).Msgf("Failed to dial:%s %s", host)
 	}
 
 	n.sshClient = client
 	return nil
 }
 
+func (n *sshExecNode) getAuthMethod() ssh.AuthMethod {
+	switch n.nodeDef.Ssh.AuthType {
+	case consts.USER_AUTHTYPE_KEY:
+		signer := util.GetSignerFromKeyAndPass(n.nodeDef.Ssh.Key, n.nodeDef.Ssh.KeyPassphrase)
+		return ssh.PublicKeys(signer)
+	case consts.USER_AUTHTYPE_KEYFILE:
+		sshkey := util.ReadPublicKeyfile(n.nodeDef.Ssh.Keyfile)
+		signer := util.GetSignerFromKeyAndPass(sshkey, n.nodeDef.Ssh.Password)
+		return ssh.PublicKeys(signer)
+	case consts.USER_AUTHTYPE_PASSWORD:
+		return ssh.Password(n.nodeDef.Ssh.Password)
+	default:
+		panic("unknown ssh authtype " + n.nodeDef.Ssh.AuthType)
+	}
+}
+
+//
 func (n *sshExecNode) createScriptFile(jobStep jobparser.ExecutableJobStep) (string, error) {
 	tempFilename := fmt.Sprintf("%s_%s_*", jobStep.JobId, jobStep.Name)
 	tempfile, err := os.CreateTemp("", tempFilename)
@@ -121,40 +132,23 @@ func (n *sshExecNode) Run(ctx context.Context) {
 		Str("jobId", n.jobStep.JobId).Str("runId", jobStep.RunId).
 		Str("node", n.nodeDef.Id).Str("step", jobStep.Name).Logger()
 
-	var err error
-	var cmd *exec.Cmd
 	switch n.jobStep.ExecType {
 	case objects.JOB_EXEC_TYPE_COMMAND:
 		log.Trace().Msgf("Run command %s", jobStep.Command)
-		cmd = exec.CommandContext(ctx, "sh", "-c", jobStep.Command)
-		n.doCommand(ctx, "sh -c "+jobStep.Command)
+
+		n.doCommand(ctx, jobStep.Command)
+		// cmd = exec.CommandContext(ctx, "sh", "-c", jobStep.Command)
+		// n.doCommand(ctx, "sh -c "+jobStep.Command)
 	case objects.JOB_EXEC_TYPE_SCRIPT:
 		// Run script created on initialize #25
 		log.Trace().Msgf("Run script %s", n.scriptPath)
-		cmd = exec.CommandContext(ctx, n.scriptPath)
+		// cmd = exec.CommandContext(ctx, n.scriptPath)
 	default:
 		panic(fmt.Sprintf("Unknown execType %s on %s/%s",
 			jobStep.ExecType, jobStep.JobId, jobStep.Name))
 	}
-	stderr, err := cmd.StderrPipe()
-	if err == nil {
-		go n.PipeToLog(ctx, "stderr", stderr)
-	} else {
-		log.Err(err)
-	}
 
-	stdout, err := cmd.StdoutPipe()
-	if err == nil {
-		go n.PipeToLog(ctx, "stdout", stdout)
-	} else {
-		log.Err(err)
-	}
-
-	err = cmd.Run() // block until process exit
-	if err != nil {
-		log.Err(err)
-	}
-
+	// teardown:
 	if n.scriptPath != "" {
 		n.doSftpDelete()
 	}
@@ -167,7 +161,31 @@ func (n *sshExecNode) Run(ctx context.Context) {
 	}
 }
 
-func (n *sshExecNode) PipeToLog(ctx context.Context, name string, pipe io.Reader) {
+func (n *sshExecNode) doCommand(ctx context.Context, cmd string) {
+	session, err := n.sshClient.NewSession()
+	if err != nil {
+		log.Fatal("Failed to create session: ", err)
+	}
+	defer session.Close()
+
+	var stdoutBuf bytes.Buffer
+	var stderrBuf bytes.Buffer
+	session.Stdout = &stdoutBuf
+	session.Stderr = &stderrBuf
+	go n.pipeToLog("stdout", &stdoutBuf)
+	go n.pipeToLog("stderr", &stderrBuf)
+
+	if err := session.Start(cmd); err != nil {
+		log.Fatal("Failed to run: " + cmd + " " + err.Error())
+	}
+	err = session.Wait()
+	if err != nil {
+		log.Fatal("wait err: " + cmd + " " + err.Error())
+	}
+
+}
+
+func (n *sshExecNode) pipeToLog(name string, pipe io.Reader) {
 	// log := util.GetLoggerWithSource(n.GetName(), "run", name)
 
 	scanner := bufio.NewScanner(pipe)
@@ -180,27 +198,6 @@ func (n *sshExecNode) PipeToLog(ctx context.Context, name string, pipe io.Reader
 		msg.Message = logmsg
 		messagehub.Post(messagehub.TOPIC_JOB_LOG, msg)
 	}
-
-}
-
-func (n *sshExecNode) doCommand(ctx context.Context, cmd string) {
-	session, err := n.sshClient.NewSession()
-	if err != nil {
-		log.Fatal("Failed to create session: ", err)
-	}
-	defer session.Close()
-
-	var b bytes.Buffer
-	session.Stdout = &b
-	if err := session.Start(cmd); err != nil {
-		log.Fatal("Failed to run: " + cmd + " " + err.Error())
-	}
-	err = session.Wait()
-	if err != nil {
-		log.Fatal("wait err: " + cmd + " " + err.Error())
-	}
-	fmt.Println(b.String())
-
 }
 
 func (n *sshExecNode) doSftp() {

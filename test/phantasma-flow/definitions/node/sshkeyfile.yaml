@@ -6,11 +6,12 @@ meta:
     minor: 0
   created: 2021-11-13 01:02:03Z
   createdBy: SYSTEM
-id: sshtestnode
+id: sshkeyfile
 nodeType: ssh
 capacity: 2
 ssh:
-  host: 192.168.10.20
+  host: "192.168.10.20"
   port: 22
   user: yakumo
-  keyfile: ${PHFLOW_DATA}/sshkeyfile.key
+  keyfile: ${PHFLOW_DATA_DIR}/sshkeyfile.key
+  hostAuthType: insecureIgnore

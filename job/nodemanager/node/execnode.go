@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/yakumo-saki/phantasma-flow/global/consts"
 	"github.com/yakumo-saki/phantasma-flow/job/jobparser"
 	"github.com/yakumo-saki/phantasma-flow/messagehub"
 	"github.com/yakumo-saki/phantasma-flow/pkg/message"
@@ -27,10 +28,10 @@ func (n *ExecNode) Initialize(def objects.NodeDefinition, jobStep jobparser.Exec
 	var impl execNodeImpl
 	switch def.NodeType {
 
-	case objects.NODE_TYPE_LOCAL:
+	case consts.NODE_TYPE_LOCAL:
 		node := localExecNode{}
 		impl = &node
-	case objects.NODE_TYPE_SSH:
+	case consts.NODE_TYPE_SSH:
 		node := sshExecNode{}
 		impl = &node
 	default:

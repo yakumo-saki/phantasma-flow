@@ -1,0 +1,9 @@
+kind: joblog-config
+# meta is updated by ph-flow.
+meta:
+  version:
+    major: 1
+    minor: 0
+# log file count per job-id
+logFileCount: 10
+jobResultCount: 50
