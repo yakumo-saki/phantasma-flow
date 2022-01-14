@@ -7,7 +7,6 @@ import (
 	"io"
 	"os"
 	"os/exec"
-	"strings"
 	"sync/atomic"
 
 	"github.com/yakumo-saki/phantasma-flow/job/jobparser"
@@ -35,42 +34,13 @@ func (n *localExecNode) Initialize(def objects.NodeDefinition, jobStep jobparser
 	// create script. if jobStep is SCRIPT
 	if jobStep.ExecType == objects.JOB_EXEC_TYPE_SCRIPT {
 		var err error
-		n.scriptPath, err = n.createScriptFile(jobStep)
+		n.scriptPath, err = createScriptFile(jobStep)
 		if err != nil {
 			panic(err) // XXX job fail
 		}
 	}
 
 	return nil
-}
-
-func (n *localExecNode) createScriptFile(jobStep jobparser.ExecutableJobStep) (string, error) {
-	tempFilename := fmt.Sprintf("%s_%s_*", jobStep.JobId, jobStep.Name)
-	tempfile, err := os.CreateTemp("", tempFilename)
-	if err != nil {
-		return "", err
-	}
-
-	// if script has not shebang, /bin/bash assumed
-	if !strings.HasPrefix(jobStep.Script, "#!") {
-		tempfile.WriteString("#!/bin/bash\n") // XXX #50
-	}
-	_, err = tempfile.WriteString(jobStep.Script)
-	if err != nil {
-		return "", err
-	}
-	err = tempfile.Chmod(os.FileMode(int(0700)))
-	if err != nil {
-		return "", err
-	}
-
-	tempfile.Close()
-	if err != nil {
-		return "", err
-	}
-
-	return tempfile.Name(), nil
-
 }
 
 func (n *localExecNode) Run(ctx context.Context) {

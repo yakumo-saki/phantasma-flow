@@ -3,7 +3,6 @@ package node
 import (
 	"context"
 	"testing"
-	"time"
 
 	"github.com/huandu/go-assert"
 	"github.com/yakumo-saki/phantasma-flow/job/jobparser"
@@ -14,8 +13,8 @@ import (
 	"github.com/yakumo-saki/phantasma-flow/util"
 )
 
-func TestSSHNode(t *testing.T) {
-	JOBID := "manager_test"
+func TestSSHNodeRunScript(t *testing.T) {
+	JOBID := "ssh_script_test"
 	RUNID := "run123"
 	NODE := "sshkeyfile"
 	hub, pman := testutils.StartBaseModules()
@@ -33,27 +32,36 @@ func TestSSHNode(t *testing.T) {
 	testutils.StartTest()
 
 	log := util.GetLogger()
-
-	localCap := nodeMan.GetCapacity(NODE)
-	log.Debug().Msgf("node local capacity = %v", localCap)
+	capa := nodeMan.GetCapacity(NODE)
+	log.Debug().Msgf("node %s capacity = %v", NODE, capa)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	js := jobparser.ExecutableJobStep{}
-	js.ExecType = objects.JOB_EXEC_TYPE_COMMAND
+	js.ExecType = objects.JOB_EXEC_TYPE_SCRIPT
 	js.JobId = JOBID
 	js.RunId = RUNID
 	js.Node = NODE
+	js.UseCapacity = 1
 	js.Name = "Step1"
-	js.Command = "echo \"`hostname` today is `date`\""
+	js.Script = "hostname\nLANG=C date\nls -1\nsleep 1"
 	nodeMan.ExecJobStep(ctx, js)
 
-	time.Sleep(5 * time.Second)
+	capa = nodeMan.GetCapacity(NODE)
+	log.Debug().Msgf("node %s capacity = %v", NODE, capa)
+
+	nodeMan.DebugWaitForAllJobsDone()
+
+	// capacity before complete job is 1
+	assert.Equal(t, 1, capa)
+
+	// capacity restored
+	capa = nodeMan.GetCapacity(NODE)
+	assert.Equal(t, 2, capa)
 
 	testutils.EndTest()
 
 	pman.Shutdown()
 
-	assert.Equal(t, 2, localCap)
 }

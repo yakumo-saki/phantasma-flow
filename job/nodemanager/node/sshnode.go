@@ -5,11 +5,10 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"log"
+	"io/ioutil"
 	"os"
-	"strings"
+	"path"
 	"sync/atomic"
-	"time"
 
 	"github.com/pkg/sftp"
 	"github.com/yakumo-saki/phantasma-flow/global/consts"
@@ -46,11 +45,23 @@ func (n *sshExecNode) Initialize(def objects.NodeDefinition, jobStep jobparser.E
 	// create script. if jobStep is SCRIPT
 	if jobStep.ExecType == objects.JOB_EXEC_TYPE_SCRIPT {
 		var err error
-		n.scriptPath, err = n.createScriptFile(jobStep)
+		n.scriptPath, err = createScriptFile(jobStep)
 		if err != nil {
 			panic(err) // XXX job fail
 		}
-		n.doSftp()
+		err = n.createScriptOnRemote(n.scriptPath)
+		if err != nil {
+			panic(err) // XXX job fail
+		}
+
+		// We dont need script file on local now.
+		err = os.Remove(n.scriptPath)
+		if err != nil {
+			log.Warn().Err(err).Msgf("Failed to delete temporary file %s", n.scriptPath)
+		}
+
+		// we dont need local script path. but still need filename.
+		n.scriptPath = path.Base(n.scriptPath)
 	}
 
 	return nil
@@ -93,36 +104,6 @@ func (n *sshExecNode) getAuthMethod() ssh.AuthMethod {
 	}
 }
 
-//
-func (n *sshExecNode) createScriptFile(jobStep jobparser.ExecutableJobStep) (string, error) {
-	tempFilename := fmt.Sprintf("%s_%s_*", jobStep.JobId, jobStep.Name)
-	tempfile, err := os.CreateTemp("", tempFilename)
-	if err != nil {
-		return "", err
-	}
-
-	// if script has not shebang, /bin/bash assumed
-	if !strings.HasPrefix(jobStep.Script, "#!") {
-		tempfile.WriteString("#!/bin/bash\n") // XXX #50
-	}
-	_, err = tempfile.WriteString(jobStep.Script)
-	if err != nil {
-		return "", err
-	}
-	err = tempfile.Chmod(os.FileMode(int(0700)))
-	if err != nil {
-		return "", err
-	}
-
-	tempfile.Close()
-	if err != nil {
-		return "", err
-	}
-
-	return tempfile.Name(), nil
-
-}
-
 func (n *sshExecNode) Run(ctx context.Context) {
 
 	jobStep := n.jobStep
@@ -136,12 +117,9 @@ func (n *sshExecNode) Run(ctx context.Context) {
 		log.Trace().Msgf("Run command %s", jobStep.Command)
 
 		n.doCommand(ctx, jobStep.Command)
-		// cmd = exec.CommandContext(ctx, "sh", "-c", jobStep.Command)
-		// n.doCommand(ctx, "sh -c "+jobStep.Command)
 	case objects.JOB_EXEC_TYPE_SCRIPT:
-		// Run script created on initialize #25
 		log.Trace().Msgf("Run script %s", n.scriptPath)
-		// cmd = exec.CommandContext(ctx, n.scriptPath)
+		n.doCommand(ctx, "~/"+n.scriptPath)
 	default:
 		panic(fmt.Sprintf("Unknown execType %s on %s/%s",
 			jobStep.ExecType, jobStep.JobId, jobStep.Name))
@@ -149,7 +127,7 @@ func (n *sshExecNode) Run(ctx context.Context) {
 
 	// teardown:
 	if n.scriptPath != "" {
-		n.doSftpDelete()
+		n.deleteScriptOnRemote(n.scriptPath)
 	}
 
 	if n.sshClient != nil {
@@ -211,46 +189,63 @@ func (n *sshExecNode) pipeToLog(name string, pipe io.Reader) {
 
 }
 
-func (n *sshExecNode) doSftp() {
+// transfer script file to target node and set chmod 700
+func (n *sshExecNode) createScriptOnRemote(filepath string) error {
+	log := util.GetLoggerWithSource(n.GetName(), "doSftp")
+
+	basename := path.Base(filepath)
+	script, err := ioutil.ReadFile(filepath)
+	if err != nil {
+		log.Err(err).Msg("Read temp script failed")
+		return err
+	}
 
 	// open an SFTP session over an existing ssh connection.
 	client, err := sftp.NewClient(n.sshClient)
 	if err != nil {
-		log.Fatal(err)
+		log.Err(err)
+		return err
 	}
 	defer client.Close()
 
-	// leave your mark
-	f, err := client.Create("hello.txt")
+	f, err := client.Create(basename)
 	if err != nil {
-		log.Fatal(err)
+		log.Err(err).Msgf("Failed to create file %s", basename)
+		return err
 	}
-	if _, err := f.Write([]byte("Hello world! " + time.Now().String())); err != nil {
-		log.Fatal(err)
+	if _, err := f.Write(script); err != nil {
+		log.Err(err).Msgf("Failed to write %s", basename)
+		return err
 	}
 	f.Close()
 
-	// check it's there
-	fi, err := client.Lstat("hello.txt")
+	client.Chmod(basename, 0700)
 	if err != nil {
-		log.Fatal(err)
+		log.Err(err).Msgf("Failed to change permission %s", basename)
+		return err
 	}
-	log.Println(fi)
+
+	return nil
 }
 
-func (n *sshExecNode) doSftpDelete() {
+func (n *sshExecNode) deleteScriptOnRemote(filepath string) error {
+	log := util.GetLoggerWithSource(n.GetName(), "doSftp")
+
+	basename := path.Base(filepath)
 
 	// open an SFTP session over an existing ssh connection.
 	client, err := sftp.NewClient(n.sshClient)
 	if err != nil {
-		log.Fatal(err)
+		log.Err(err)
+		return err
 	}
 	defer client.Close()
 
 	// leave your mark
-	err = client.Remove("hello.txt")
+	err = client.Remove(basename)
 	if err != nil {
-		log.Fatal(err)
+		log.Err(err)
 	}
-	client.Close()
+
+	return nil
 }

@@ -3,6 +3,7 @@ package nodemanager
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/yakumo-saki/phantasma-flow/global"
 	"github.com/yakumo-saki/phantasma-flow/job/jobparser"
@@ -64,7 +65,7 @@ func (nm *NodeManager) ExecJobStep(ctx context.Context, step jobparser.Executabl
 		// XXX job fail ? job hold ? #37
 	}
 
-	// Register to nodemanager and run
+	// Run on node
 	nodeInst := nodeInstance{}
 	nodeInst.UseCapacity = step.JobStepDefinition.UseCapacity
 	ctx, cancel := context.WithCancel(ctx)
@@ -73,8 +74,12 @@ func (nm *NodeManager) ExecJobStep(ctx context.Context, step jobparser.Executabl
 	nm.wg.Add(1)
 	nodeMeta.Capacity = nodeMeta.Capacity - nodeInst.UseCapacity
 
+	log.Trace().Msgf("node %s capa %v -> %v", step.Node, nodeMeta.Capacity+nodeInst.UseCapacity, nodeMeta.Capacity)
+
 	execNode.Running = true // prevent cleanUp before goroutine start
 	go execNode.Run(ctx, &nm.wg, step)
+
+	// Register running node to nodemanager
 	nodeMeta.RunningInstances[step.GetId()] = nodeInst
 }
 
@@ -90,4 +95,38 @@ func (nm *NodeManager) HasEnoughCapacity(nodeMeta *nodeMeta, step jobparser.Exec
 			log.Error().Msg(msg + ", continue anyway")
 		}
 	}
+}
+
+func (nm *NodeManager) DebugWaitForAllJobsDone() {
+	log := util.GetLoggerWithSource(nm.GetName(), "WaitForAllJobsDone")
+
+	count := 0
+	for {
+		nm.mutex.Lock()
+		running := false
+		for nodename, nodelist := range nm.nodePool {
+			for e := nodelist.Front(); e != nil; e = e.Next() {
+				nd := e.Value.(*nodeMeta)
+				if len(nd.RunningInstances) > 0 {
+					if count > 3 {
+						log.Debug().Msgf("Still running on %s (%v)", nodename, len(nd.RunningInstances))
+						count = 0
+					} else {
+						count++
+					}
+					running = true
+					continue
+				}
+			}
+		}
+
+		nm.mutex.Unlock()
+		if running {
+			// wait for cleanup goroutine
+			time.Sleep(1 * time.Second)
+		} else {
+			return
+		}
+	}
+
 }

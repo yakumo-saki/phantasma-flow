@@ -29,7 +29,7 @@ func (nm *NodeManager) cleanUpNodePool(exeMsg *message.ExecuterMsg) {
 
 			delete(meta.RunningInstances, instId)
 		}
-		log.Trace().Msgf("Cleanup done. %s node RunningInstances=%v",
-			meta.Def.Id, len(meta.RunningInstances))
+		log.Trace().Msgf("Cleanup done. %s node RunningInstances=%v Cap=%v",
+			meta.Def.Id, len(meta.RunningInstances), meta.Capacity)
 	}
 }
