@@ -18,7 +18,8 @@ type NodeManager struct {
 	mutex      sync.Mutex
 	wg         sync.WaitGroup
 
-	// map[nodename] list.List<nodeMeta> only first nodemeta is used
+	// map nodename -> list.List<*nodeMeta>
+	// only first nodemeta is used.
 	// 2nd or later nodemetas stored when node setting is changed.
 	// and then first nodemeta is deprecated.
 	nodePool map[string]*list.List

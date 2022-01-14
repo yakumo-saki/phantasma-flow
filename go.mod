@@ -15,6 +15,12 @@ require github.com/ulule/deepcopier v0.0.0-20200430083143-45decc6639b6
 require gopkg.in/yaml.v2 v2.4.0
 
 require (
+	github.com/kr/fs v0.1.0 // indirect
+	github.com/pkg/sftp v1.13.4
+	golang.org/x/crypto v0.0.0-20210421170649-83a5a9bb288b 
+)
+
+require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect

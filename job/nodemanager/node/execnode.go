@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/yakumo-saki/phantasma-flow/global/consts"
 	"github.com/yakumo-saki/phantasma-flow/job/jobparser"
 	"github.com/yakumo-saki/phantasma-flow/messagehub"
 	"github.com/yakumo-saki/phantasma-flow/pkg/message"
@@ -25,10 +26,15 @@ func (n *ExecNode) Initialize(def objects.NodeDefinition, jobStep jobparser.Exec
 	n.nodeDef = def
 
 	var impl execNodeImpl
-	if def.NodeType == objects.NODE_TYPE_LOCAL {
-		lo := localExecNode{}
-		impl = &lo
-	} else {
+	switch def.NodeType {
+
+	case consts.NODE_TYPE_LOCAL:
+		node := localExecNode{}
+		impl = &node
+	case consts.NODE_TYPE_SSH:
+		node := sshExecNode{}
+		impl = &node
+	default:
 		msg := fmt.Sprintf("Error Node %s: nodeType %s is unknown. %v", def.Id, def.NodeType, def)
 		panic(msg)
 	}
