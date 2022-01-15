@@ -1,0 +1,6 @@
+[submodule "server"]
+	path = server
+	url = https://github.com/yakumo-saki/phantasma-flow-server.git
+[submodule "cli"]
+	path = cli
+	url = https://github.com/yakumo-saki/phantasma-flow-cli.git
