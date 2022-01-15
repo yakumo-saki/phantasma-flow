@@ -34,6 +34,7 @@ Release repository for phantasma-flow
 
 ## ディレクトリ構造
 
+```
 PHFLOW_HOME
   definitions    `PHFLOW_DEF_DIR`
     config       設定ファイルyaml
@@ -43,6 +44,7 @@ PHFLOW_HOME
     logs         ジョブ実行ログ 
     meta         ジョブ実行結果ログ
   tmp            `PHFLOW_TEMP_DIR` 実行中ログ書き込み os.temp使うべき？
+```
 
 ## 関連リポジトリ
 
