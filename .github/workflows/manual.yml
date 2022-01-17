@@ -32,6 +32,8 @@ jobs:
     steps:
       - name: checkout
         uses: actions/checkout@v2
+        with:
+          submodules: 'recursive'
       - name: version
         run: go version
       - name: build server
