@@ -35,7 +35,7 @@ jobs:
       - name: version
         run: go version
       - name: build server
-        run: cd serv && go build .
+        run: cd server && go build .
       - name: build cli
         run: cd cli && go build -o phctl .
 
