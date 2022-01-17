@@ -29,7 +29,7 @@ jobs:
       - name: workaround
         run: sudo rm /usr/bin/go
       - name: workaround modify PATH 
-        run: export PATH := $(GOPATH)/bin:$(PATH) 
+        run: export PATH=$(GOPATH)/bin:$(PATH) 
       - name: version
         run: go version
 
