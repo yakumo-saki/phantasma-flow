@@ -25,20 +25,10 @@ jobs:
         uses: actions/setup-go@v2
         with:
           go-version: '^1.17.0' # The Go version to download (if necessary) and use.
-      # https://github.com/actions/setup-go/issues/107
       - name: workaround
         run: sudo rm /usr/bin/go
       - name: workaround modify PATH 
         run: export PATH=$(GOPATH)/bin:$(PATH) 
-      - name: version
-        run: go version
-
-  build:
-    runs-on: ubuntu-latest  
-    needs: setup
-    steps:
-      - name: workaround
-        run: sudo rm /usr/bin/go
       - name: version
         run: go version
       - name: checkout
