@@ -40,6 +40,8 @@ jobs:
       - name: build cli
         run: cd cli && go build -o phctl .
       - name: create tar.gz
+        run: cp server/phantasma-flow && cp cli/phctl
+      - name: create tar.gz
         run: tar czvf phantasma-flow-linux-amd64.tar.gz phantasma-flow phctl README.md
       - name: Pre release
         uses: softprops/action-gh-release@v1
