@@ -36,11 +36,11 @@ jobs:
       - name: build cli
         run: cd cli && go build -o phctl .
       - name: add date to release body
-        run: "LANG=C date '+* %Y/%m/%d %H:%M:%S' >> ../edge.txt"
+        run: "LANG=C date '+- %Y/%m/%d %H:%M:%S' >> edge.txt"
       - name: add git commit-id to release body (server)
-        run: 'cd server && git log -n 1 --pretty=format:"* server: %H" >> ../edge.txt'
+        run: 'cd server && echo `git log -n 1 --pretty=format:"- server: %H"` >> ../edge.txt'
       - name: add git commit-id to release body (cli)
-        run: 'cd cli && git log -n 1 --pretty=format:"* cli: %H" >> ../edge.txt'
+        run: 'cd cli && echo `git log -n 1 --pretty=format:"- cli: %H"` >> ../edge.txt'
       - name: copy binary to home
         run: cp server/phantasma-flow . && cp cli/phctl .
       - name: create tar.gz
