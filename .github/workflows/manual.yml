@@ -46,6 +46,7 @@ jobs:
       - name: Pre release
         uses: softprops/action-gh-release@v1
         with:
+          tag_name: "edge"
           name: "Edge"
           prerelease: true
           body: "Not for production"
