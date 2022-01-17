@@ -32,6 +32,7 @@ jobs:
         uses: actions/checkout@v2
         with:
           submodules: 'recursive'
+          repository:  yakumo-saki/phantasma-flow
       - name: build server
         run: cd server && go build .
       - name: build cli
