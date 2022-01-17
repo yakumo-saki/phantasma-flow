@@ -39,4 +39,12 @@ jobs:
         run: cd server && go build .
       - name: build cli
         run: cd cli && go build -o phctl .
-
+      - name: create tar.gz
+        run: tar czvf phantasma-flow-linux-amd64.tar.gz phantasma-flow phctl README.md
+      - name: Pre release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: "Edge"
+          prerelease: true
+          body: "Not for production"
+          files: phantasma-flow-linux-amd64.tar.gz
