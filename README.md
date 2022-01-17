@@ -3,6 +3,8 @@
 Under heavy development
 Release repository for phantasma-flow
 
+Do not use `edge` release for production.
+
 ## What is phantasma flow?
 
 * 小規模向け超簡易ジョブスケジューラ
