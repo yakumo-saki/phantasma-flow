@@ -39,6 +39,8 @@ jobs:
         run: cd server && go build .
       - name: build cli
         run: cd cli && go build -o phctl .
+      - name: add date to release body
+        run: "LANG=C date '+%Y/%m/%d %H:%M:%S' >> ../edge.txt"
       - name: add git commit-id to release body (server)
         run: 'cd server && git log -n 1 --pretty=format:"server: %H" >> ../edge.txt'
       - name: add git commit-id to release body (cli)
