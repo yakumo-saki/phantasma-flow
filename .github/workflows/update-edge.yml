@@ -16,5 +16,5 @@ jobs:
         run: |
           curl -Ss -X POST -H "Authorization: token ${{ secrets.DISPATCH_TOKEN }}" \
                        -H "Accept: application/vnd.github.everest-preview+json" \
-                       --data '{"event_type": "cli"}' \
+                       --data '{"event_type": "server"}' \
                        https://api.github.com/repos/yakumo-saki/phantasma-flow/dispatches
