@@ -41,11 +41,11 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-go-
       - name: set GOPATH
-        run: 'cd .. && echo "GOPATH=`pwd`" >> $GITHUB_ENV'
+        run: 'echo "GOPATH=`pwd`" >> $GITHUB_ENV'
       - name: build server
-        run: cd server && go build .
+        run: cd server && go build -trimpath .
       - name: build cli
-        run: cd cli && go build -o phctl .
+        run: cd cli && go build -o phctl -trimpath .
       - name: add date to release body
         run: "TZ=JST-9 LANG=C date '+- %Y/%m/%d %H:%M:%S %z' >> edge.txt"
       - name: add git commit-id to release body (server)
