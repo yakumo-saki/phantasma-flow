@@ -208,21 +208,21 @@ func readMetaLogfile(jobId string) (*objects.JobMetaLog, error) {
 	// unreadable yaml
 	bytes, err := ioutil.ReadFile(metaFilePath)
 	if err != nil {
-		log.Err(err).Msgf("JobMeta yaml unreadable.")
+		log.Err(err).Msgf("JobMeta unreadable. %s", metaFilePath)
 		return nil, err
 	}
 
 	meta := &objects.JobMetaLog{}
 	err = yaml.Unmarshal(bytes, meta)
 	if err != nil {
-		log.Err(err).Msgf("JobMeta yaml is broken.")
+		log.Err(err).Msgf("JobMeta is empty or broken. %s", metaFilePath)
 		return nil, err
 	}
 
 	// validation
 	if meta.Kind != objects.KIND_JOB_META {
-		err = fmt.Errorf("JobMeta yaml has wrong kind %s", meta.Kind)
-		log.Err(err).Msgf("JobMeta has wrong kind")
+		err = fmt.Errorf("JobMeta yaml has wrong kind '%s'", meta.Kind)
+		log.Err(err).Msg("")
 		return nil, err
 	}
 
