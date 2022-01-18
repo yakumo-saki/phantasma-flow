@@ -3,10 +3,12 @@ package node
 import (
 	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"path"
 	"sync/atomic"
 
@@ -104,8 +106,9 @@ func (n *sshExecNode) getAuthMethod() ssh.AuthMethod {
 	}
 }
 
-func (n *sshExecNode) Run(ctx context.Context) {
+func (n *sshExecNode) Run(ctx context.Context) int {
 
+	exitcode := 0
 	jobStep := n.jobStep
 
 	log := util.GetLoggerWithSource(n.GetName(), "run").With().
@@ -116,13 +119,13 @@ func (n *sshExecNode) Run(ctx context.Context) {
 	case objects.JOB_EXEC_TYPE_COMMAND:
 		log.Trace().Msgf("Run command %s", jobStep.Command)
 
-		n.doCommand(ctx, jobStep.Command)
+		exitcode = n.doCommand(ctx, jobStep.Command)
 	case objects.JOB_EXEC_TYPE_SCRIPT:
 		log.Trace().Msgf("Run script %s", n.scriptPath)
-		n.doCommand(ctx, "~/"+n.scriptPath)
+		exitcode = n.doCommand(ctx, "~/"+n.scriptPath)
 	default:
-		panic(fmt.Sprintf("Unknown execType %s on %s/%s",
-			jobStep.ExecType, jobStep.JobId, jobStep.Name))
+		log.Error().Msgf("Unknown execType %s on %s/%s", jobStep.ExecType, jobStep.JobId, jobStep.Name)
+		return EC_DEF_ERR
 	}
 
 	// teardown:
@@ -136,9 +139,13 @@ func (n *sshExecNode) Run(ctx context.Context) {
 			log.Warn().Err(err).Msgf("SSH Close error")
 		}
 	}
+
+	return exitcode
 }
 
-func (n *sshExecNode) doCommand(ctx context.Context, cmd string) {
+// doCommand exec cmd.
+//  Returns exitcode. exitcode will be negative value. (exec failed etc)
+func (n *sshExecNode) doCommand(ctx context.Context, cmd string) int {
 	log := util.GetLoggerWithSource(n.GetName(), "doCommand")
 
 	session, err := n.sshClient.NewSession()
@@ -165,12 +172,36 @@ func (n *sshExecNode) doCommand(ctx context.Context, cmd string) {
 
 	if err := session.Start(cmd); err != nil {
 		log.Err(err).Msgf("Failed to run: %s", cmd)
+		return -1
 	}
 	err = session.Wait()
-	if err != nil {
-		log.Err(err).Msgf("wait err: %s", cmd)
+	code, msg := sshExitCodeFromError(err)
+	if code != 0 {
+		log.Debug().Err(err).Msgf("Exitcode: %v msg: %s", code, msg)
 	}
 
+	return code
+}
+
+func sshExitCodeFromError(err error) (int, string) {
+
+	var (
+		ee *exec.ExitError
+		em *ssh.ExitMissingError
+		pe *os.PathError
+	)
+
+	if err == nil {
+		return 0, "no error"
+	} else if errors.As(err, &ee) {
+		return ee.ExitCode(), "non-zero exit code"
+	} else if errors.As(err, &em) {
+		return EC_MISSING, "ExitMissingError"
+	} else if errors.As(err, &pe) {
+		return EC_PATH_ERR, "PathError, no such file or permission denied"
+	}
+
+	return EC_OTHER_ERR, "Unknown error"
 }
 
 func (n *sshExecNode) pipeToLog(name string, pipe io.Reader) {

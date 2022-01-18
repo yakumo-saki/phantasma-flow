@@ -43,7 +43,9 @@ func (n *localExecNode) Initialize(def objects.NodeDefinition, jobStep jobparser
 	return nil
 }
 
-func (n *localExecNode) Run(ctx context.Context) {
+// Run runs initialized jobstep.
+//  Returns exitcode (may negative value, example -1 means signal killed)
+func (n *localExecNode) Run(ctx context.Context) int {
 
 	jobStep := n.jobStep
 
@@ -81,12 +83,14 @@ func (n *localExecNode) Run(ctx context.Context) {
 
 	err = cmd.Run() // block until process exit
 	if err != nil {
-		log.Err(err)
+		log.Err(err).Msg("")
 	}
 
 	if n.scriptPath != "" {
 		os.Remove(n.scriptPath)
 	}
+
+	return cmd.ProcessState.ExitCode()
 }
 
 func (n *localExecNode) pipeToLog(name string, pipe io.Reader) {

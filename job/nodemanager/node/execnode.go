@@ -51,10 +51,16 @@ func (n *ExecNode) Run(ctx context.Context, wg *sync.WaitGroup, jobStep jobparse
 	n.Running = true
 	n.sendJobStepStartMsg(jobStep)
 
-	n.node.Run(ctx)
+	exitcode := n.node.Run(ctx)
+
+	// TODO check exit code, job success or fail
+	success := true
+	if exitcode != 0 {
+		success = false
+	}
 
 	n.Running = false
-	n.sendJobStepEndMsg(jobStep)
+	n.sendJobStepEndMsg(jobStep, exitcode, success)
 	wg.Done()
 }
 
@@ -64,9 +70,10 @@ func (n *ExecNode) sendJobStepStartMsg(jobstep jobparser.ExecutableJobStep) {
 	messagehub.Post(messagehub.TOPIC_JOB_REPORT, msg)
 }
 
-func (n *ExecNode) sendJobStepEndMsg(jobstep jobparser.ExecutableJobStep) {
+func (n *ExecNode) sendJobStepEndMsg(jobstep jobparser.ExecutableJobStep, exitcode int, success bool) {
 	msg := n.createExecuterMsg(jobstep, message.JOB_STEP_END)
-
+	msg.ExitCode = exitcode
+	msg.Success = success
 	messagehub.Post(messagehub.TOPIC_JOB_REPORT, msg)
 }
 
@@ -78,7 +85,6 @@ func (n *ExecNode) createExecuterMsg(jobstep jobparser.ExecutableJobStep, subjec
 	msg.StepName = jobstep.Name
 	msg.Node = jobstep.Node
 	msg.Subject = subject
-
 	// fmt.Printf("Job REPORT: %s, Job:%s/%s RunId:%s\n", subject, msg.JobId, msg.StepName, msg.RunId)
 
 	return &msg

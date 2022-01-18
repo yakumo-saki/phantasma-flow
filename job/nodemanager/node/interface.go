@@ -15,6 +15,7 @@ type execNodeImpl interface {
 	Initialize(def objects.NodeDefinition, jobStep jobparser.ExecutableJobStep) error
 
 	// Run jobStep (passed on Initialize). when error occured, job step must be fail.
-	// After run, do cleanup.
-	Run(ctx context.Context)
+	//  After run, do cleanup.
+	//  Must return exitcode
+	Run(ctx context.Context) int
 }
