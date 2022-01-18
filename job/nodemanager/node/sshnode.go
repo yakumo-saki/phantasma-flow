@@ -3,12 +3,10 @@ package node
 import (
 	"bufio"
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
-	"os/exec"
 	"path"
 	"sync/atomic"
 
@@ -175,33 +173,10 @@ func (n *sshExecNode) doCommand(ctx context.Context, cmd string) int {
 		return -1
 	}
 	err = session.Wait()
-	code, msg := sshExitCodeFromError(err)
-	if code != 0 {
-		log.Debug().Err(err).Msgf("Exitcode: %v msg: %s", code, msg)
-	}
+	code, msg := exitCodeFromError(err)
+	log.Debug().Err(err).Msgf("Exitcode: %v msg: %s", code, msg)
 
 	return code
-}
-
-func sshExitCodeFromError(err error) (int, string) {
-
-	var (
-		ee *exec.ExitError
-		em *ssh.ExitMissingError
-		pe *os.PathError
-	)
-
-	if err == nil {
-		return 0, "no error"
-	} else if errors.As(err, &ee) {
-		return ee.ExitCode(), "non-zero exit code"
-	} else if errors.As(err, &em) {
-		return EC_MISSING, "ExitMissingError"
-	} else if errors.As(err, &pe) {
-		return EC_PATH_ERR, "PathError, no such file or permission denied"
-	}
-
-	return EC_OTHER_ERR, "Unknown error"
 }
 
 func (n *sshExecNode) pipeToLog(name string, pipe io.Reader) {

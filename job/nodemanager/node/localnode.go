@@ -81,16 +81,20 @@ func (n *localExecNode) Run(ctx context.Context) int {
 		log.Err(err)
 	}
 
-	err = cmd.Run() // block until process exit
+	err = cmd.Start()
 	if err != nil {
-		log.Err(err).Msg("")
+		log.Err(err).Msg("cmd.Start() caused error")
 	}
+
+	cmd.Wait()
+	code, msg := exitCodeFromError(err)
+	log.Debug().Err(err).Msgf("Exitcode: %v msg: %s", code, msg)
 
 	if n.scriptPath != "" {
 		os.Remove(n.scriptPath)
 	}
 
-	return cmd.ProcessState.ExitCode()
+	return code
 }
 
 func (n *localExecNode) pipeToLog(name string, pipe io.Reader) {
