@@ -24,16 +24,24 @@ jobs:
         run: export PATH=$(GOPATH)/bin:$(PATH) 
       - name: version
         run: go version
-      - name: checkout
+      - name: checkout release repo
+        uses: actions/checkout@v2
+      - name: checkout server
         uses: actions/checkout@v2
         with:
           repository: yakumo-saki/phantasma-flow-server
           path: server
-      - name: checkout
+      - name: checkout cli
         uses: actions/checkout@v2
         with:
           repository: yakumo-saki/phantasma-flow-cli
           path: cli
+      - uses: actions/cache@v2
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
       - name: build server
         run: cd server && go build .
       - name: build cli
