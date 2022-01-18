@@ -89,15 +89,15 @@ func (m *LogFileExporter) HouseKeep(logpath string, count int) int {
 		}
 	}
 
-	keys := make([]string, 0, len(filemap))
+	filedates := make([]string, 0, len(filemap))
 	for k := range filemap {
-		keys = append(keys, k)
+		filedates = append(filedates, k)
 	}
-	sortedDates := sort.StringSlice(keys)
+	sort.Strings(filedates)
 
-	deleteIdx := len(files) - int(count)
+	deleteIdx := len(filedates) - int(count)
 	deleted := 0
-	for idx, key := range sortedDates {
+	for idx, key := range filedates {
 		if idx < deleteIdx {
 			fullpath := path.Join(logpath, filemap[key])
 			log.Debug().Msgf("deleting %s", fullpath)
