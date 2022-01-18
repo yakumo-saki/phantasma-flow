@@ -100,6 +100,7 @@ func (m *LogFileExporter) HouseKeep(logpath string, count int) int {
 	for idx, key := range sortedDates {
 		if idx < deleteIdx {
 			fullpath := path.Join(logpath, filemap[key])
+			log.Debug().Msgf("deleting %s", fullpath)
 			err := os.Remove(fullpath)
 			if err == nil {
 				deleted++

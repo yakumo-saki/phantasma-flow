@@ -194,7 +194,7 @@ func (m *jobLogMetaListener) ReadOrCreateMetaLog(jobId string) {
 // readMetaLogfile is read yaml directly. (not thru MetaListerner)
 //  Only use this when metalistener of jobId is not exist.
 func readMetaLogfile(jobId string) (*objects.JobMetaLog, error) {
-	log := util.GetLoggerWithSource("ReadMetaLogfile")
+	log := util.GetLoggerWithSource("readMetaLogfile")
 
 	logDir := repository.GetJobMetaDirectory()
 	filename := fmt.Sprintf("%s.yaml", jobId)
