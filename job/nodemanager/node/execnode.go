@@ -54,9 +54,11 @@ func (n *ExecNode) Run(ctx context.Context, wg *sync.WaitGroup, jobStep jobparse
 
 	exitcode := n.node.Run(ctx)
 
-	// TODO check exit code, job success or fail
 	success := true
-	if exitcode != 0 {
+	if exitcode < 0 {
+		success = false // negative exitcode is always failure
+	} else if exitcode > 0 {
+		// TODO #43 Implement need exit code threshold
 		success = false
 	}
 

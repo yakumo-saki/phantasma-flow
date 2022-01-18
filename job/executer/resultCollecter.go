@@ -48,7 +48,7 @@ func (ex *Executer) resultCollecter(startWg, stopWg *sync.WaitGroup) {
 				delete(ex.jobQueue, exeMsg.RunId)
 				ex.mutex.Unlock()
 			case message.JOB_STEP_END:
-				log.Debug().Msgf("Got JOB_STEP_END %v", exeMsg)
+				// log.Debug().Msgf("Got JOB_STEP_END %v", exeMsg)
 				// step_end then store job result.
 				// step_end then check return code and abort job if failed
 				ex.mutex.Lock()
@@ -56,18 +56,22 @@ func (ex *Executer) resultCollecter(startWg, stopWg *sync.WaitGroup) {
 				stepResult := qjob.StepResults[exeMsg.StepName]
 				stepResult.Ended = true
 
-				// TODO #43 Implement need exit code threshold
-				if exeMsg.ExitCode == 0 {
+				//
+				if exeMsg.Success {
 					// job step success. run next step by queueExecuter
 					stepResult.Success = true
+
+					reason := fmt.Sprintf("Job '%s' (runId:%s) , jobstep '%s' is success. exitcode is %v",
+						exeMsg.JobId, exeMsg.RunId, exeMsg.StepName, exeMsg.ExitCode)
+					log.Info().Msg(reason)
 				} else {
 					// job step failed. fail all jobsteps to prevent further run.
 					stepResult.Success = false
 
 					ex.failJobSteps(qjob, exeMsg.RunId)
 
-					reason := fmt.Sprintf("Job '%s' (runId:%s) mark as failed, jobstep '%s' is failed.",
-						exeMsg.JobId, exeMsg.RunId, exeMsg.StepName)
+					reason := fmt.Sprintf("Job '%s' (runId:%s) mark as failed, jobstep '%s' is failed. exitcode is %v",
+						exeMsg.JobId, exeMsg.RunId, exeMsg.StepName, exeMsg.ExitCode)
 					log.Info().Msg(reason)
 
 					// send job end log
