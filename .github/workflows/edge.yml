@@ -41,7 +41,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-go-
       - name: set GOPATH
-        run:  echo "GOPATH=`pwd`" >> $GITHUB_ENV
+        run: 'cd .. && echo "GOPATH=`pwd`" >> $GITHUB_ENV'
       - name: build server
         run: cd server && go build .
       - name: build cli
