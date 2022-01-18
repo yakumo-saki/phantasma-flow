@@ -24,12 +24,14 @@ jobs:
         run: export PATH=$(GOPATH)/bin:$(PATH) 
       - name: version
         run: go version
-      - name: checkout
+      - name: checkout release repo
+        uses: actions/checkout@v2
+      - name: checkout server
         uses: actions/checkout@v2
         with:
           repository: yakumo-saki/phantasma-flow-server
           path: server
-      - name: checkout
+      - name: checkout cli
         uses: actions/checkout@v2
         with:
           repository: yakumo-saki/phantasma-flow-cli
