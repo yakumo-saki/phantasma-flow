@@ -55,7 +55,7 @@ jobs:
       - name: copy binary to home
         run: cp server/phantasma-flow . && cp cli/phctl .
       - name: create tar.gz
-        run: tar czvf phantasma-flow-linux-amd64.tar.gz phantasma-flow phctl README.md
+        run: tar czvf phantasma-flow-linux-amd64.tar.gz phantasma-flow phctl README.md edge.txt
       - name: Pre release
         uses: softprops/action-gh-release@v1
         with:
