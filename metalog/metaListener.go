@@ -97,7 +97,9 @@ func (m *jobLogMetaListener) Start(params *logMetaListenerParams, wg *sync.WaitG
 				log.Trace().Msg("Stop child process because job is ended.")
 
 				// delete metalog results over limit
-				m.MetaLog.Results = m.MetaLog.Results[:jobResultCount]
+				if len(m.MetaLog.Results) > jobResultCount {
+					m.MetaLog.Results = m.MetaLog.Results[:jobResultCount]
+				}
 
 				m.Mutex.Unlock()
 				goto shutdown
