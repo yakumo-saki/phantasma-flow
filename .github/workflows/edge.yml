@@ -36,6 +36,12 @@ jobs:
         with:
           repository: yakumo-saki/phantasma-flow-cli
           path: cli
+      - uses: actions/cache@v2
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
       - name: build server
         run: cd server && go build .
       - name: build cli
