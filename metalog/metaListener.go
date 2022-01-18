@@ -191,7 +191,8 @@ func (m *jobLogMetaListener) ReadOrCreateMetaLog(jobId string) {
 	m.MetaLog = meta
 }
 
-//
+// readMetaLogfile is read yaml directly. (not thru MetaListerner)
+//  Only use this when metalistener of jobId is not exist.
 func readMetaLogfile(jobId string) (*objects.JobMetaLog, error) {
 	log := util.GetLoggerWithSource("ReadMetaLogfile")
 
@@ -220,7 +221,8 @@ func readMetaLogfile(jobId string) (*objects.JobMetaLog, error) {
 
 	// validation
 	if meta.Kind != objects.KIND_JOB_META {
-		log.Err(err).Msgf("JobMeta yaml has wrong kind %s.", meta.Kind)
+		err = fmt.Errorf("JobMeta yaml has wrong kind %s", meta.Kind)
+		log.Err(err).Msgf("JobMeta has wrong kind")
 		return nil, err
 	}
 
