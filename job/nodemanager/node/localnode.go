@@ -62,7 +62,9 @@ func (n *localExecNode) Run(ctx context.Context) int {
 	case objects.JOB_EXEC_TYPE_SCRIPT:
 		// Run script created on initialize #25
 		log.Trace().Msgf("Run script %s", n.scriptPath)
-		cmd = exec.CommandContext(ctx, n.scriptPath)
+		// TODO TEST without context
+		// cmd = exec.CommandContext(ctx, n.scriptPath)
+		cmd = exec.Command(n.scriptPath)
 	default:
 		panic(fmt.Sprintf("Unknown execType %s on %s/%s",
 			jobStep.ExecType, jobStep.JobId, jobStep.Name))
@@ -86,7 +88,7 @@ func (n *localExecNode) Run(ctx context.Context) int {
 		log.Err(err).Msg("cmd.Start() caused error")
 	}
 
-	cmd.Wait()
+	err = cmd.Wait()
 	code, msg := exitCodeFromError(err)
 	log.Debug().Err(err).Msgf("Exitcode: %v msg: %s", code, msg)
 
