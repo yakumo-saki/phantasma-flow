@@ -20,8 +20,6 @@ jobs:
           go-version: '^1.17.0' # The Go version to download (if necessary) and use.
       - name: workaround
         run: sudo rm /usr/bin/go
-      - name: workaround modify PATH 
-        run: export PATH=$(GOPATH)/bin:$(PATH) 
       - name: version
         run: go version
       - name: checkout release repo
@@ -43,7 +41,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-go-
       - name: set GOPATH
-        run: export GOPATH=`pwd`
+        run:  echo "GOPATH=`pwd`" >> $GITHUB_ENV
       - name: build server
         run: cd server && go build .
       - name: build cli
