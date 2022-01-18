@@ -50,6 +50,7 @@ func (n *ExecNode) Initialize(def objects.NodeDefinition, jobStep jobparser.Exec
 func (n *ExecNode) Run(ctx context.Context, wg *sync.WaitGroup, jobStep jobparser.ExecutableJobStep) {
 	n.Running = true
 	n.sendJobStepStartMsg(jobStep)
+	n.sendJobStepStartLog(jobStep)
 
 	exitcode := n.node.Run(ctx)
 
@@ -61,6 +62,8 @@ func (n *ExecNode) Run(ctx context.Context, wg *sync.WaitGroup, jobStep jobparse
 
 	n.Running = false
 	n.sendJobStepEndMsg(jobStep, exitcode, success)
+	n.sendJobStepEndLog(jobStep, exitcode, success)
+
 	wg.Done()
 }
 
@@ -88,4 +91,33 @@ func (n *ExecNode) createExecuterMsg(jobstep jobparser.ExecutableJobStep, subjec
 	// fmt.Printf("Job REPORT: %s, Job:%s/%s RunId:%s\n", subject, msg.JobId, msg.StepName, msg.RunId)
 
 	return &msg
+}
+
+func (n *ExecNode) sendJobStepStartLog(jobstep jobparser.ExecutableJobStep) {
+	lm := n.createJobLogMsg(jobstep)
+	lm.Stage = objects.LM_STAGE_JOB
+	lm.Message = fmt.Sprintf("Jobstep %s start.", jobstep.JobStepDefinition.Name)
+	messagehub.Post(messagehub.TOPIC_JOB_LOG, lm)
+}
+
+func (n *ExecNode) sendJobStepEndLog(jobstep jobparser.ExecutableJobStep, exitcode int, success bool) {
+	lm := n.createJobLogMsg(jobstep)
+	lm.Stage = objects.LM_STAGE_JOB
+
+	result := "SUCCESS"
+	if !success {
+		result = "FAILURE"
+	}
+
+	lm.Message = fmt.Sprintf("Jobstep %s ended. Result is %s. exitcode is %v.",
+		jobstep.Name, result, exitcode)
+	messagehub.Post(messagehub.TOPIC_JOB_LOG, lm)
+}
+
+func (n *ExecNode) createJobLogMsg(jobstep jobparser.ExecutableJobStep) *objects.JobLogMessage {
+	lm := jobparser.CreateJobLogMsg(jobstep)
+	lm.Source = n.GetName()
+	lm.JobStep = jobstep.Name
+
+	return lm
 }

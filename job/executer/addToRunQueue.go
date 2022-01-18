@@ -8,7 +8,6 @@ import (
 	"github.com/yakumo-saki/phantasma-flow/messagehub"
 	"github.com/yakumo-saki/phantasma-flow/pkg/message"
 	"github.com/yakumo-saki/phantasma-flow/pkg/objects"
-	"github.com/yakumo-saki/phantasma-flow/util"
 )
 
 // AddToRunQueue enques ExecutableJobSteps into ex.jobQueue[runid]
@@ -70,13 +69,8 @@ func (ex *Executer) createExecuterMsg(jobstep jobparser.ExecutableJobStep, subje
 }
 
 func (ex *Executer) createJobLogMsg(jobstep jobparser.ExecutableJobStep) *objects.JobLogMessage {
-	lm := objects.JobLogMessage{}
+	lm := jobparser.CreateJobLogMsg(jobstep)
 	lm.Source = ex.GetName()
-	lm.Version = jobstep.Version
-	lm.JobId = jobstep.JobId
-	lm.RunId = jobstep.RunId
-	lm.JobNumber = jobstep.JobNumber
-	lm.LogDateTime = util.GetDateTimeString()
 
-	return &lm
+	return lm
 }
