@@ -1,9 +1,12 @@
 # phantasma-flow
 
-Under heavy development
-Release repository for phantasma-flow
+Work in progress.
 
-Do not use `edge` release for production.
+# 現状
+
+ジョブ実行：ローカル／リモートでジョブが実行可能。 指定時刻／n分ごと。ログ集積とりあえずOK。
+ジョブ定義：設定ファイルを手動で記述することで定義可能。 WebUI実装予定
+ジョブ結果確認：ログファイルを見るしかない。WebUIに実装予定
 
 ## What is phantasma flow?
 
@@ -19,10 +22,9 @@ Do not use `edge` release for production.
 ## Non goals
 
 * High Availability (マルチマスタ）
-* ジョブ実行のロバストネス（実行タイミングに落ちていた場合はそのジョブは実行されない）
+* ジョブ実行のロバストネス（実行タイミングにデーモンが落ちていた場合はそのジョブは実行されない）
 * プラグイン機構（有用だがむしろ混乱の元になるのでプラグインより本体に取り込むのを優先。取り込めないようなものなら諦める）
 * Web UI （このプロジェクトではやらない。別プロジェクトとして作成）
-
 
 ## ラフな設計
 
@@ -36,7 +38,6 @@ Do not use `edge` release for production.
 
 ## ディレクトリ構造
 
-```
 PHFLOW_HOME
   definitions    `PHFLOW_DEF_DIR`
     config       設定ファイルyaml
@@ -46,9 +47,10 @@ PHFLOW_HOME
     logs         ジョブ実行ログ 
     meta         ジョブ実行結果ログ
   tmp            `PHFLOW_TEMP_DIR` 実行中ログ書き込み os.temp使うべき？
-```
 
 ## 関連リポジトリ
+
+関連リポジトリはgolangの標準に則っていない＆モジュールの共有に問題があるので１つのリポジトリに統合予定。
 
 * github.com/yakumosaki/phantasma-flow-cli  ... phantasma-flow CLI
 * github.com/yakumosaki/phantasma-flow-web  ... phantasma-flow Web GUI using CLI

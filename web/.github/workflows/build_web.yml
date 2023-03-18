@@ -1,0 +1,64 @@
+name: Create Release (edge)
+
+# Controls when the action will run. Workflow runs when manually triggered using the UI
+# or API.
+on:
+  push:
+    branches: [ main ]
+  workflow_call:
+  workflow_dispatch:
+  repository_dispatch:
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  build:
+    runs-on: ubuntu-latest  
+    steps:
+      - name: setup-go
+        uses: actions/setup-go@v2
+        with:
+          go-version: '^1.17.0' # The Go version to download (if necessary) and use.
+      - name: workaround
+        run: sudo rm /usr/bin/go
+      - name: version
+        run: go version
+      - name: checkout release repo
+        uses: actions/checkout@v2
+      - name: checkout server
+        uses: actions/checkout@v2
+        with:
+          repository: yakumo-saki/phantasma-flow-web
+          path: web
+      - uses: actions/cache@v2
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+      #- name: set GOPATH
+      #  run: 'echo "GOPATH=`pwd`" >> $GITHUB_ENV'
+      - name: build
+        run: cd web && go build -trimpath .
+      - name: get release body base from phantasma-flow repo
+        run: wget https://raw.githubusercontent.com/yakumo-saki/phantasma-flow/main/edge.txt
+      - name: add date to release body
+        run: "TZ=JST-9 LANG=C date '+- %Y/%m/%d %H:%M:%S %z' >> edge.txt"
+      - name: add git commit-id to release body (web)
+        run: 'cd web && echo `git log -n 1 --pretty=format:"- web: %H"` >> ../edge.txt'
+        
+      # -------- BUILD ARTIFACT --------
+      - name: create release dir
+        run: mkdir release
+      - name: copy binary to home
+        run: cp web/phantasma-flow-web release/ && cp -r web/extra web/templates release/
+      - name: create tar.gz
+        run: cd release && tar czvf ../phantasma-flow-web-linux-amd64.tar.gz .
+      - name: Pre release
+        uses: softprops/action-gh-release@v1
+        with:
+          repository: yakumo-saki/phantasma-flow-web
+          tag_name: "edge"
+          name: "Edge"
+          prerelease: true
+          body_path: "edge.txt"
+          files: phantasma-flow-*.tar.gz

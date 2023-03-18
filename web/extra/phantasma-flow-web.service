@@ -1,0 +1,14 @@
+[Unit]
+Description=Phantasma-flow Web UI
+
+[Service]
+User=changeme
+Group=changeme
+Environment="GIN_MODE=release"
+WorkingDirectory=/opt/phantasma-flow/web
+ExecStart=/opt/phantasma-flow/web/phantasma-flow-web
+Restart=always
+KillMode=process
+
+[Install]
+WantedBy=multi-user.target
